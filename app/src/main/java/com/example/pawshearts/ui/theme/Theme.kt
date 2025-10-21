@@ -1,0 +1,25 @@
+package com.example.pawshearts.ui.theme
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+private val LightColors = lightColorScheme(
+    primary = OrangeEA,
+    secondary = OrangeEA,
+    background = LightBackground,
+    surface = Color.White,
+    onPrimary = Color.White,
+    onBackground = DarkText,
+    onSurface = DarkText
+)
+
+@Composable
+fun Theme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = LightColors,
+        typography = AppTypography,
+        content = content
+    )
+}
