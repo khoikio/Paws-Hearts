@@ -90,7 +90,7 @@ private fun BottomNavItem(
     isActive: Boolean,
     onClick: () -> Unit
 ) {
-    val activeBg = Color(0xFFFFA726)
+    val activeBg = Color(0xFFEA5600)
     val inactiveIconTint = Color(0xFF909090)
     val activeIconTint = Color.White
     val labelColor = if (isActive) Color.White else Color(0xFF6B6B6B)

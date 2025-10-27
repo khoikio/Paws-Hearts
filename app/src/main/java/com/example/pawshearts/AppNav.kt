@@ -37,9 +37,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.pawshearts.screens.AdoptScreen
-import com.example.pawshearts.screens.DonateScreen
+import com.example.pawshearts.screens.PetDetailScreen
 import com.example.pawshearts.screens.HomeScreen
-import com.example.pawshearts.screens.ProfileScreen
+import com.example.pawshearts.screens.PostCard
 import com.example.pawshearts.ui.theme.NavItem
 import com.example.pawshearts.ui.theme.LightBackground
 
@@ -57,9 +57,9 @@ fun App() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME)    { HomeScreen(nav) }
-            composable(Routes.DONATE)  { DonateScreen(nav) }
+            composable(Routes.DONATE)  { PetDetailScreen(nav,petId = "1") }
             composable(Routes.ADOPT)   { AdoptScreen(nav) }
-            composable(Routes.PROFILE) { ProfileScreen(nav) }
+            composable(Routes.PROFILE) { PostCard(post = PetPost(), onClick = {}) }
         }
     }
 }

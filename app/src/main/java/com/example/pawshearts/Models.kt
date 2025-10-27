@@ -25,6 +25,7 @@ data class PetPost(
     val photos: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
+
 )
 
 data class AdoptionRequest(
