@@ -8,6 +8,10 @@ import com.example.pawshearts.ui.theme.Theme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Theme { App() } }
+        setContent {
+            Theme {
+                AppRoot()
+            }
+        }
     }
 }

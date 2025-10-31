@@ -1,4 +1,4 @@
-package com.example.pawshearts
+package com.example.pawshearts.navmodel
 
 object Routes {
     const val HOME = "home"
