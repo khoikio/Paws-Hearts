@@ -50,7 +50,6 @@ fun AppRoot() {
     val nav = rememberNavController()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Paws & Hearts") }) },
         bottomBar = { BottomBar(nav) }
     ) { innerPadding ->
         NavHost(
@@ -60,9 +59,9 @@ fun AppRoot() {
         ) {
             // 4 tab chính
             composable(Routes.HOME)    { HomeScreen(nav) }
-            composable(Routes.DONATE)  { DonateScreen(nav) }
+            composable(Routes.DONATE)  { DonateScreen() }
             composable(Routes.ADOPT)   { AdoptScreen(nav) }
-            composable(Routes.PROFILE) { ProfileScreen(nav) }
+            composable(Routes.PROFILE) { ProfileScreen() }
 
             // màn chi tiết thú cưng (để thành viên 1 hiển thị thông tin chi tiết)
             composable(
