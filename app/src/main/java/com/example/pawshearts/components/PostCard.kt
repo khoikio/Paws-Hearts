@@ -20,47 +20,46 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.pawshearts.PetPost
+import com.example.pawshearts.ui.theme.DarkText
+import com.example.pawshearts.ui.theme.GrayText
 
 @Composable
 fun PostCard(post: PetPost, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp) // Khoảng cách giữa các card
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Thêm đổ bóng nhẹ
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column {
-            // Phần nội dung
-            Column(modifier = Modifier.padding(16.dp)) {
-                // Thông tin người đăng
-                UserInfoRow()
+            // 1. Thông tin người đăng
+            UserInfoRow()
+
+            // 2. Ảnh lớn của bài đăng
+            AsyncImage(
+                model = post.photos.firstOrNull() ?: "",
+                contentDescription = post.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp), // Tăng chiều cao ảnh cho giống Figma
+                contentScale = ContentScale.Crop
+            )
+
+            // Phần nội dung bên dưới ảnh
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                // 3. Mô tả bài đăng
+                Text(
+                    text = post.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = DarkText
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Mô tả bài đăng (dùng lại title và các thông tin khác)
-                Text(
-                    text = "${post.title} cần được giải cứu! Em là ${post.type}, giới tính ${post.gender}. Rất ngoan và thân thiện. Cần tìm một mái ấm yêu thương. Hãy liên hệ nếu bạn có thể giúp đỡ!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                // Ảnh lớn của bài đăng
-                AsyncImage(
-                    model = post.photos.firstOrNull() ?: "",
-                    contentDescription = post.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp), // Chiều cao cố định cho ảnh
-                    contentScale = ContentScale.Crop // Crop ảnh để vừa với khung hình
-                )
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Hàng chứa các nút tương tác (Thích, Bình luận, Chia sẻ)
+                // 4. Hàng chứa các nút tương tác
                 InteractionRow()
             }
         }
@@ -70,14 +69,16 @@ fun PostCard(post: PetPost, onClick: () -> Unit) {
 @Composable
 fun UserInfoRow() {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Avatar người đăng
             AsyncImage(
-                model = "https://picsum.photos/200", // Thay bằng URL avatar thật
+                model = "https://picsum.photos/seed/paws/200", // Thay bằng URL avatar thật
                 contentDescription = "User Avatar",
                 modifier = Modifier
                     .size(40.dp)
@@ -85,25 +86,26 @@ fun UserInfoRow() {
                     .background(Color.LightGray)
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             // Tên và thời gian đăng
             Column {
                 Text(
-                    text = "Vàng", // Thay bằng tên người đăng thật
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Kim Gang", // Thay bằng tên người đăng thật
+                    style = MaterialTheme.typography.titleMedium,
+                    color = DarkText
                 )
                 Text(
-                    text = "56 phút trước", // Thay bằng thời gian đăng thật
+                    text = "2 giờ trước", // Thay bằng thời gian đăng thật
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = GrayText
                 )
             }
         }
 
         // Nút "..."
         IconButton(onClick = { /* Xử lý khi nhấn nút more */ }) {
-            Icon(Icons.Default.MoreHoriz, contentDescription = "More options", tint = Color.Gray)
+            Icon(Icons.Default.MoreHoriz, contentDescription = "More options", tint = GrayText)
         }
     }
 }
@@ -119,11 +121,18 @@ fun InteractionRow() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             InteractionButton(icon = Icons.Default.FavoriteBorder, text = "128") { /* TODO: Handle like */ }
             Spacer(modifier = Modifier.width(24.dp))
-            InteractionButton(icon = Icons.Default.ChatBubbleOutline, text = "45") { /* TODO: Handle comment */ }
+            InteractionButton(icon = Icons.Default.ChatBubbleOutline, text = "16") { /* TODO: Handle comment */ }
         }
 
-        // Nút bên phải (Share)
-        InteractionButton(icon = Icons.Default.Share, text = "Chia sẻ") { /* TODO: Handle share */ }
+        // Nút bên phải (Share) - chỉ có icon
+        IconButton(onClick = { /* TODO: Handle share */ }) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = "Share",
+                tint = GrayText,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 
@@ -140,13 +149,13 @@ private fun InteractionButton(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.Gray,
+            tint = GrayText,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            color = Color.Gray,
+            color = GrayText,
             style = MaterialTheme.typography.bodyMedium
         )
     }

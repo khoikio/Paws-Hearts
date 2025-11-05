@@ -5,6 +5,8 @@ object Routes {
     const val DONATE = "donate"
     const val ADOPT = "adopt"
     const val PROFILE = "profile"
+    const val LOGIN = "login"
+    const val REGISTER = "register"
 
     // Detail: truyền postId
     const val PET_DETAIL = "pet/{id}"

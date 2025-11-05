@@ -3,7 +3,8 @@ package com.example.pawshearts.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Brand palette
-val OrangeEA       = Color(0xFFEA5600)
+val OrangeEA        = Color(0xFFEA5600)
+val OrangeDark      = Color(0xFFD44C00) // Darker variant for button press, etc.
 val LightBackground = Color(0xFFFFF3E8)
 val DarkText        = Color(0xFF111111)
 val GrayText        = Color(0xFF666666)

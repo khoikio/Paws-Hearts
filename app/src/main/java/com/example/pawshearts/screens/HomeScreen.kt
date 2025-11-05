@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,15 +27,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.pawshearts.FakeRepository
 import com.example.pawshearts.components.PostCard
 import com.example.pawshearts.goPetDetail
+import com.example.pawshearts.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(nav: NavHostController) {
-    val posts = remember { FakeRepository.getFeed() }
+fun HomeScreen(
+    nav: NavHostController,
+    homeViewModel: HomeViewModel = viewModel()
+) {
+    val uiState by homeViewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -72,13 +78,19 @@ fun HomeScreen(nav: NavHostController) {
 
         // Search bar
         TextField(
-            value = "",
-            onValueChange = {},
+            value = uiState.searchQuery,
+            onValueChange = { homeViewModel.onSearchQueryChange(it) },
             placeholder = { Text("Search") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon"
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(Color(0xFFFDEEE2), shape = MaterialTheme.shapes.medium),
+                .padding(horizontal = 16.dp),
+            shape = CircleShape, // Makes the corners fully rounded
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Color(0xFFFDEEE2),
                 focusedContainerColor = Color(0xFFFDEEE2),
@@ -93,7 +105,7 @@ fun HomeScreen(nav: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(top = 8.dp)
         ) {
-            items(posts) { post ->
+            items(uiState.displayedPosts) { post ->
                 PostCard(post = post, onClick = { nav.goPetDetail(post.postId) })
             }
         }

@@ -3,6 +3,7 @@ package com.example.pawshearts
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.example.pawshearts.navmodel.Routes
 import com.example.pawshearts.ui.theme.Theme
 
 class MainActivity : ComponentActivity() {
@@ -10,7 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Theme {
-                AppRoot()
+                AppRoot(startDestination = Routes.LOGIN)
             }
         }
     }
