@@ -19,50 +19,76 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.pawshearts.PetPost
+import com.example.pawshearts.data.PetPost
 
 @Composable
 fun PostCard(post: PetPost, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp) // Khoảng cách giữa các card
+            .padding(vertical = 8.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Thêm đổ bóng nhẹ
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column {
-            // Phần nội dung
-            Column(modifier = Modifier.padding(16.dp)) {
-                // Thông tin người đăng
-                UserInfoRow()
+        Column(modifier = Modifier.padding(16.dp)) {
 
-                Spacer(modifier = Modifier.height(12.dp))
+            // Thông tin người đăng
+            UserInfoRow()
 
-                // Mô tả bài đăng (dùng lại title và các thông tin khác)
-                Text(
-                    text = "${post.title} cần được giải cứu! Em là ${post.type}, giới tính ${post.gender}. Rất ngoan và thân thiện. Cần tìm một mái ấm yêu thương. Hãy liên hệ nếu bạn có thể giúp đỡ!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                // Ảnh lớn của bài đăng
-                AsyncImage(
-                    model = post.photos.firstOrNull() ?: "",
-                    contentDescription = post.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp), // Chiều cao cố định cho ảnh
-                    contentScale = ContentScale.Crop // Crop ảnh để vừa với khung hình
-                )
+            // Tiêu đề bài đăng
+            Text(
+                text = post.title,
+                style = MaterialTheme.typography.titleMedium
+            )
 
+            Spacer(modifier = Modifier.height(4.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+            // Thông tin thú cưng (giống grab pet app)
+            Text(
+                text = "${post.breed} • ${post.ageMonth} tháng • ${post.weightKg} kg • ${post.gender}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
 
-                // Hàng chứa các nút tương tác (Thích, Bình luận, Chia sẻ)
-                InteractionRow()
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Mô tả
+            Text(
+                text = post.description,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Ảnh thú cưng (lấy ảnh đầu tiên trong list)
+            AsyncImage(
+                model = post.imageURL.firstOrNull(),
+                contentDescription = post.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Địa điểm
+            Text(
+                text = "📍 ${post.location}",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Nút tương tác
+            InteractionRow()
         }
     }
 }
@@ -75,9 +101,8 @@ fun UserInfoRow() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Avatar người đăng
             AsyncImage(
-                model = "https://picsum.photos/200", // Thay bằng URL avatar thật
+                model = "https://picsum.photos/200",
                 contentDescription = "User Avatar",
                 modifier = Modifier
                     .size(40.dp)
@@ -87,22 +112,13 @@ fun UserInfoRow() {
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Tên và thời gian đăng
             Column {
-                Text(
-                    text = "Vàng", // Thay bằng tên người đăng thật
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "56 phút trước", // Thay bằng thời gian đăng thật
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+                Text(text = "Người đăng ẩn danh", style = MaterialTheme.typography.titleSmall)
+                Text(text = "56 phút trước", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
             }
         }
 
-        // Nút "..."
-        IconButton(onClick = { /* Xử lý khi nhấn nút more */ }) {
+        IconButton(onClick = { /* More options */ }) {
             Icon(Icons.Default.MoreHoriz, contentDescription = "More options", tint = Color.Gray)
         }
     }
@@ -115,15 +131,13 @@ fun InteractionRow() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Nhóm nút bên trái (Like, Comment)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            InteractionButton(icon = Icons.Default.FavoriteBorder, text = "128") { /* TODO: Handle like */ }
+            InteractionButton(icon = Icons.Default.FavoriteBorder, text = "128") {}
             Spacer(modifier = Modifier.width(24.dp))
-            InteractionButton(icon = Icons.Default.ChatBubbleOutline, text = "45") { /* TODO: Handle comment */ }
+            InteractionButton(icon = Icons.Default.ChatBubbleOutline, text = "45") {}
         }
 
-        // Nút bên phải (Share)
-        InteractionButton(icon = Icons.Default.Share, text = "Chia sẻ") { /* TODO: Handle share */ }
+        InteractionButton(icon = Icons.Default.Share, text = "Chia sẻ") {}
     }
 }
 
@@ -137,17 +151,8 @@ private fun InteractionButton(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.clickable { onClick() }
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = text,
-            color = Color.Gray,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Text(text = text, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
     }
 }
