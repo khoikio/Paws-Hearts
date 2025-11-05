@@ -6,6 +6,9 @@ object Routes {
     const val ADOPT = "adopt"
     const val PROFILE = "profile"
 
+    const val LOGIN_SCREEN = "login"
+    const val REGISTER_SCREEN = "register"
+
     // Detail: truyền postId
     const val PET_DETAIL = "pet/{id}"
     fun petDetail(id: String) = "pet/$id"
