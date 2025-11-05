@@ -54,13 +54,13 @@ fun AppRoot() {
     // khai bao dung firebaseauth
     val auth = remember { FirebaseAuth.getInstance() }
     // Nếu currentUser tồn tại, chuyển thẳng tới HOME
-    val startRoute = remember(auth) {
-        if (auth.currentUser != null) {
-            Routes.HOME // Nếu đã login, vào Home
-        } else {
-            Routes.LOGIN_SCREEN // Nếu chưa login, vào Login
-        }
-    }
+//    val startRoute = remember(auth) {
+//        if (auth.currentUser != null) {
+//            Routes.LOGIN_SCREEN // Nếu đã login (currentUser CÓ), vào Home
+//        } else {
+//            Routes.LOGIN_SCREEN // Nếu chưa login (currentUser NULL), vào Login
+//        }
+//    }
     // Logic hiển thị BottomBar (Giữ nguyên)
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
     val showBottomBar = currentRoute != Routes.LOGIN_SCREEN && currentRoute != Routes.REGISTER_SCREEN
@@ -76,7 +76,7 @@ fun AppRoot() {
     ) { innerPadding ->
         NavHost(
             navController = nav,
-            startDestination = startRoute,// CHAY TRANG LOGIN DAU TIEN
+            startDestination = Routes.LOGIN_SCREEN,// CHAY TRANG LOGIN DAU TIEN dung lai startRoute
             modifier = Modifier.padding(innerPadding)
         ) {
             // 4 tab chính
