@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "8321690499",
-    "project_id": "pawshearts-8a76f",
-    "storage_bucket": "pawshearts-8a76f.firebasestorage.app"
+    "project_number": "771564365435",
+    "project_id": "paws-hearts-13e60",
+    "storage_bucket": "paws-hearts-13e60.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:8321690499:android:08cf2a0968d19260a8a4b6",
+        "mobilesdk_app_id": "1:771564365435:android:870bdb11e41a8070d4e4de",
         "android_client_info": {
           "package_name": "com.example.pawshearts"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "8321690499-h84vl5ue3jcsp5bn3vsktdjtfngpje0o.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC1OCnhYQRt7GlN3-DWBHUkr-M8-xseDgo"
+          "current_key": "AIzaSyAn9sxBc28FdD5sEm6Z3MP84kmVMHPtUG0"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "8321690499-h84vl5ue3jcsp5bn3vsktdjtfngpje0o.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

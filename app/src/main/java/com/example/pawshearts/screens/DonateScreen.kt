@@ -17,12 +17,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DonateScreen() {
+fun DonateScreen(nav: NavHostController) {
     var currentView by remember { mutableStateOf("menu") }
     var amount by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -444,8 +445,4 @@ fun TopBar(title: String, onBack: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewDonateScreen() {
-    DonateScreen()
-}
+

@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pawshearts.auth.LoginScreen
 import com.example.pawshearts.navmodel.NavItem
 import com.example.pawshearts.navmodel.Routes
 import com.example.pawshearts.screens.AdoptScreen
@@ -43,25 +45,47 @@ import com.example.pawshearts.screens.HomeScreen
 import com.example.pawshearts.components.PetDetailScreen
 import com.example.pawshearts.screens.ProfileScreen
 import com.example.pawshearts.ui.theme.LightBackground
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot() {
     val nav = rememberNavController()
-
+    // khai bao dung firebaseauth
+    val auth = remember { FirebaseAuth.getInstance() }
+    // Nếu currentUser tồn tại, chuyển thẳng tới HOME
+//    val startRoute = remember(auth) {
+//        if (auth.currentUser != null) {
+//            Routes.LOGIN_SCREEN // Nếu đã login (currentUser CÓ), vào Home
+//        } else {
+//            Routes.LOGIN_SCREEN // Nếu chưa login (currentUser NULL), vào Login
+//        }
+//    }
+    // Logic hiển thị BottomBar (Giữ nguyên)
+    val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN && currentRoute != Routes.REGISTER_SCREEN
     Scaffold(
-        bottomBar = { BottomBar(nav) }
+        topBar = {
+            if (showBottomBar) {
+                TopAppBar(title = { Text("Paws & Hearts") })
+            }
+        },
+        bottomBar = { if (showBottomBar) {
+            BottomBar(nav)
+        } }
     ) { innerPadding ->
         NavHost(
             navController = nav,
-            startDestination = Routes.HOME,
+            startDestination = Routes.LOGIN_SCREEN,// CHAY TRANG LOGIN DAU TIEN dung lai startRoute
             modifier = Modifier.padding(innerPadding)
         ) {
             // 4 tab chính
+            composable(Routes.REGISTER_SCREEN) { RegisterScreen(nav) }
+            composable(Routes.LOGIN_SCREEN) { LoginScreen(nav) }
             composable(Routes.HOME)    { HomeScreen(nav) }
-            composable(Routes.DONATE)  { DonateScreen() }
+            composable(Routes.DONATE)  { DonateScreen(nav) }
             composable(Routes.ADOPT)   { AdoptScreen(nav) }
-            composable(Routes.PROFILE) { ProfileScreen() }
+            composable(Routes.PROFILE) { ProfileScreen(nav) }
 
             // màn chi tiết thú cưng (để thành viên 1 hiển thị thông tin chi tiết)
             composable(
@@ -76,6 +100,11 @@ fun AppRoot() {
             }
         }
     }
+}
+
+@Composable
+fun RegisterScreen(x0: NavHostController) {
+    TODO("Not yet implemented")
 }
 
 /**

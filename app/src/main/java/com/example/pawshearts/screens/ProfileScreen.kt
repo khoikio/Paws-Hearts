@@ -34,11 +34,11 @@ import com.example.pawshearts.data.PetPost
 import com.example.pawshearts.components.PostCard
 import com.example.pawshearts.components.PostAdopt
 import com.example.pawshearts.components.ProfileTopBar
-import androidx.compose.material.icons.filled.Camera
+import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(nav: NavHostController) {
     // ========== USER INFO ==========
     var userName by remember { mutableStateOf(" UserName") }
     var userEmail by remember { mutableStateOf("NameEmail@gmail.com") }
