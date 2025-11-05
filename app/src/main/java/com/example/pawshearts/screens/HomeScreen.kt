@@ -1,39 +1,39 @@
 package com.example.pawshearts.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.pawshearts.FakeRepository
 import com.example.pawshearts.components.PostCard
 import com.example.pawshearts.goPetDetail
+import com.example.pawshearts.data.PetPost
+import com.example.pawshearts.data.PetRepository
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
-    val posts = remember { FakeRepository.getFeed() }
+
+    val repo = remember { PetRepository() }
+    var posts by remember { mutableStateOf<List<PetPost>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+
+    // Load danh sách từ Firestore
+    LaunchedEffect(Unit) {
+        loading = true
+        posts = repo.getAllPets()
+        loading = false
+    }
 
     Column(
         modifier = Modifier
@@ -41,7 +41,7 @@ fun HomeScreen(nav: NavHostController) {
             .background(Color(0xFFF5F5F5))
     ) {
 
-        // Top Bar: Message - Title - Notification
+        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -49,28 +49,20 @@ fun HomeScreen(nav: NavHostController) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { /* TODO: mở màn hình tin nhắn */ }) {
-                Icon(
-                    imageVector = Icons.Filled.Message,
-                    contentDescription = "Tin nhắn",
-                    tint = Color(0xFFEA5600)
-                )
+            IconButton(onClick = { }) {
+                Icon(Icons.Filled.Message, contentDescription = null, tint = Color(0xFFEA5600))
             }
             Text(
                 text = "Paws & Hearts",
                 color = Color(0xFFEA5600),
                 style = MaterialTheme.typography.headlineMedium
             )
-            IconButton(onClick = { /* TODO: mở notification */ }) {
-                Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = "Thông báo",
-                    tint = Color(0xFFEA5600)
-                )
+            IconButton(onClick = { }) {
+                Icon(Icons.Filled.Notifications, contentDescription = null, tint = Color(0xFFEA5600))
             }
         }
 
-        // Search bar
+        // Search (chưa áp dụng filter, để sau)
         TextField(
             value = "",
             onValueChange = {},
@@ -87,7 +79,29 @@ fun HomeScreen(nav: NavHostController) {
             )
         )
 
-        // List of posts
+        // Loading
+        if (loading) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 24.dp),
+                contentAlignment = Alignment.Center
+            ) { Text("Đang tải dữ liệu...") }
+            return
+        }
+
+        // Không có bài đăng
+        if (posts.isEmpty()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 24.dp),
+                contentAlignment = Alignment.Center
+            ) { Text("Chưa có thú cưng nào được đăng") }
+            return
+        }
+
+        // Danh sách bài đăng Firestore
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
