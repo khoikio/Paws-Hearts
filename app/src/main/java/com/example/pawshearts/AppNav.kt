@@ -54,6 +54,7 @@ import com.example.pawshearts.screens.AdoptScreen
 import com.example.pawshearts.screens.DonateScreen
 import com.example.pawshearts.screens.HomeScreen
 import com.example.pawshearts.components.PetDetailScreen
+import com.example.pawshearts.screens.CommentScreen
 import com.example.pawshearts.screens.ProfileScreen
 import com.example.pawshearts.ui.theme.LightBackground
 import com.google.firebase.auth.FirebaseAuth
@@ -71,7 +72,6 @@ fun AppRoot() {
     Scaffold(
         topBar = {
             if (showBottomBar) {
-                TopAppBar(title = { Text("Paws & Hearts") })
             }
         },
         bottomBar = { if (showBottomBar) {
@@ -143,6 +143,17 @@ fun AppRoot() {
                 PetDetailScreen(
                     id = petId,
                     onBack = { nav.popBackStack() }
+                )
+            }
+            composable(
+                route = "${Routes.COMMENT_SCREEN}/{postId}", // <-- Tên route
+                arguments = listOf(navArgument("postId") { type = NavType.StringType }) // <-- Lấy postId
+            ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+
+                CommentScreen(
+                    postId = postId,
+                    onBack = { nav.popBackStack() } // Bấm Back là lùi
                 )
             }
         }
