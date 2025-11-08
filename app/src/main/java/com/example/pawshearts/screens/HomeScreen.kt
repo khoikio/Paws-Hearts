@@ -1,5 +1,6 @@
 package com.example.pawshearts.screens
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,36 +13,39 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- M PHẢI CÓ IMPORT NÀY
+import androidx.lifecycle.viewmodel.compose.viewModel // <-- M PHẢI CÓ IMPORT NÀY
 import androidx.navigation.NavHostController
+import com.example.pawshearts.auth.AuthViewModel
+import com.example.pawshearts.auth.AuthViewModelFactory
 import com.example.pawshearts.components.PostCard
-import com.example.pawshearts.goPetDetail
-import com.example.pawshearts.data.PetPost
-import com.example.pawshearts.data.PetRepository
-import kotlinx.coroutines.launch
+import com.example.pawshearts.goPetDetail // <-- M PHẢI CÓ IMPORT NÀY
+import com.example.pawshearts.navmodel.Routes
+// T XÓA PetPost VÀ PetRepository ĐI, M XÀI HÀNG XỊN KKK
+// import com.example.pawshearts.data.PetPost
+// import com.example.pawshearts.data.PetRepository
+import com.example.pawshearts.post.PostViewModel // <-- M PHẢI IMPORT HÀNG XỊN
+import com.example.pawshearts.post.PostViewModelFactory // <-- M PHẢI IMPORT HÀNG XỊN
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
-
-    val repo = remember { PetRepository() }
-    var posts by remember { mutableStateOf<List<PetPost>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
-
-    // Load danh sách từ Firestore
+    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory())
+    val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
+    // THÊM CÁI NÀY ĐỂ LẤY currentUserId
+    val context = LocalContext.current.applicationContext as Application
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    val currentUserId = authViewModel.currentUser?.uid ?: ""
     LaunchedEffect(Unit) {
-        loading = true
-        posts = repo.getAllPets()
-        loading = false
+        postViewModel.fetchAllPosts()
     }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,8 +65,6 @@ fun HomeScreen(nav: NavHostController) {
                 Icon(Icons.Filled.Notifications, contentDescription = null, tint = Color(0xFFEA5600))
             }
         }
-
-        // Search (chưa áp dụng filter, để sau)
         TextField(
             value = "",
             onValueChange = {},
@@ -78,39 +80,40 @@ fun HomeScreen(nav: NavHostController) {
                 focusedIndicatorColor = Color.Transparent
             )
         )
-
-        // Loading
-        if (loading) {
+        if (allPosts.isEmpty()) {
             Box(
                 Modifier
                     .fillMaxSize()
                     .padding(top = 24.dp),
                 contentAlignment = Alignment.Center
-            ) { Text("Đang tải dữ liệu...") }
-            return
-        }
-
-        // Không có bài đăng
-        if (posts.isEmpty()) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = 24.dp),
-                contentAlignment = Alignment.Center
-            ) { Text("Chưa có thú cưng nào được đăng") }
-            return
-        }
-
-        // Danh sách bài đăng Firestore
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(top = 8.dp)
-        ) {
-            items(posts) { post ->
-                PostCard(post = post, onClick = { nav.goPetDetail(post.postId) })
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                items(allPosts) { post ->
+                    PostCard(
+                        post = post,
+                        currentUserId = currentUserId, // <-- TRUYỀN ID
+                        onClick = { nav.goPetDetail(post.id) },
+                        onLikeClick = {
+                            if (currentUserId.isNotBlank()) { // Check  đăng nhập chưa
+                                postViewModel.toggleLike(post.id, currentUserId)
+                            }
+                        },
+                        onCommentClick = {
+                            nav.navigate(Routes.comment(post.id))
+                        },
+                        onShareClick = {
+                            // T VỚI M TÍNH SAU KKK :v
+                        }
+                    )
+                }
             }
         }
     }
 }
-

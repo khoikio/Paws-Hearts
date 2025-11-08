@@ -12,4 +12,6 @@ object Routes {
     // Detail: truyền postId
     const val PET_DETAIL = "pet/{id}"
     fun petDetail(id: String) = "pet/$id"
+    const val COMMENT_SCREEN = "comment_screen"
+    fun comment(postId: String) = "$COMMENT_SCREEN/$postId"
 }
