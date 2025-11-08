@@ -17,19 +17,19 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pawshearts.components.CustomBottomNavigation
+import com.example.pawshearts.components.PetDetailScreen
 import com.example.pawshearts.navmodel.NavItem
 import com.example.pawshearts.navmodel.Routes
 import com.example.pawshearts.screens.AdoptScreen
 import com.example.pawshearts.screens.DonateScreen
 import com.example.pawshearts.screens.HomeScreen
 import com.example.pawshearts.screens.LoginScreen
-import com.example.pawshearts.components.PetDetailScreen
 import com.example.pawshearts.screens.ProfileScreen
 import com.example.pawshearts.screens.RegisterScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppRoot(startDestination: String) {
+fun AppRoot() {
     val nav = rememberNavController()
     val items = remember {
         listOf(
@@ -39,15 +39,19 @@ fun AppRoot(startDestination: String) {
             NavItem.Profile
         )
     }
-    val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+    val authRepository = remember { AuthRepository() }
+    val startDestination = if (authRepository.isUserLoggedIn()) Routes.HOME else Routes.LOGIN
+
+    val currentRoute by nav.currentBackStackEntryAsState()
+    val showBottomBar = currentRoute?.destination?.route !in listOf(Routes.LOGIN, Routes.REGISTER, Routes.PET_DETAIL)
 
     Scaffold(
-        //topBar = { TopAppBar(title = { Text("Paws & Hearts") }) },
+        topBar = { TopAppBar(title = { Text("Paws & Hearts") }) },
         bottomBar = {
-            if (currentRoute !in listOf(Routes.LOGIN, Routes.REGISTER)) {
+            if (showBottomBar) {
                 CustomBottomNavigation(
                     items = items,
-                    selectedRoute = currentRoute ?: Routes.HOME,
+                    selectedRoute = currentRoute?.destination?.route ?: Routes.HOME,
                     onItemSelected = {
                         nav.navigate(it.route) {
                             popUpTo(Routes.HOME) { saveState = true }

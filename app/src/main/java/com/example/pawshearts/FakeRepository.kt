@@ -1,5 +1,6 @@
 package com.example.pawshearts
 
+import android.util.Log
 import com.example.pawshearts.PetPost
 
 /**

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.devtools.ksp) // Add KSP plugin
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -67,6 +68,12 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx) // Kotlin extensions for Coroutines support
     ksp(libs.androidx.room.compiler)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.analytics)
 
     // Test Dependencies
     testImplementation(libs.junit)

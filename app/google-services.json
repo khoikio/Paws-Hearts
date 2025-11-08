@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "82841880511",
+    "project_id": "pawshearts-6fc3f",
+    "storage_bucket": "pawshearts-6fc3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:82841880511:android:d19894d95582555da0030a",
+        "android_client_info": {
+          "package_name": "com.example.pawshearts"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhxbxcgkOnLdM5j0wHtudJTXK3BZCEU8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
