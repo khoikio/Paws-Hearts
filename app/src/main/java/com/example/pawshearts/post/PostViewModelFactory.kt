@@ -3,7 +3,7 @@ package com.example.pawshearts.post
 import android.app.Application // <-- M PHẢI CÓ CÁI NÀY
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.pawshearts.data.repository.PostRepositoryImpl
+import com.example.pawshearts.post.PostRepositoryImpl
 import com.google.firebase.firestore.FirebaseFirestore
 
 

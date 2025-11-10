@@ -1,8 +1,9 @@
-package com.example.pawshearts.data.model
+package com.example.pawshearts.post
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.firebase.Timestamp
+
 @Entity(tableName = "posts")
 data class Post(
     @PrimaryKey
@@ -11,7 +12,7 @@ data class Post(
     val username: String? = null, // Tên thằng đăng
     val userAvatarUrl: String? = null, // Avatar thằng đăng
 
-    val createdAt: Timestamp = Timestamp.now(), // Thời gian đăng bài
+    val createdAt: Timestamp = Timestamp.Companion.now(), // Thời gian đăng bài
 
 
     val petName: String = "",
@@ -26,5 +27,3 @@ data class Post(
     val likes: List<String> = emptyList(), // Danh sách ID thằng like
     val commentCount: Int = 0, // Số lượng bình luận
 )
-
-

@@ -5,9 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.data.model.Comment
-import com.example.pawshearts.data.model.Post
-import com.example.pawshearts.data.repository.PostRepository
+import com.example.pawshearts.post.Comment
+import com.example.pawshearts.post.Post
+import com.example.pawshearts.post.PostRepository
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

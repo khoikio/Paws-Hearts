@@ -1,4 +1,4 @@
-package com.example.pawshearts.data
+package com.example.pawshearts.adopt
 
 data class Adopt(
     val id: Int,

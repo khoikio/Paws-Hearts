@@ -1,4 +1,4 @@
-package com.example.pawshearts.screens
+package com.example.pawshearts.post
 
 import android.app.Application
 import androidx.compose.foundation.background
@@ -27,10 +27,6 @@ import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
-import com.example.pawshearts.components.formatTimestamp
-import com.example.pawshearts.data.model.Comment
-import com.example.pawshearts.post.PostViewModel
-import com.example.pawshearts.post.PostViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

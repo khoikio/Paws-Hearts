@@ -1,10 +1,10 @@
-package com.example.pawshearts.data.repository
+package com.example.pawshearts.auth
 
 import android.net.Uri
 import android.util.Log
-import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.data.local.UserDao
 import com.example.pawshearts.data.model.UserData
+import com.example.pawshearts.auth.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -21,8 +21,6 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import com.google.firebase.auth.FirebaseAuthException // <-- M PHẢI CÓ CÁI NÀY
 import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.tasks.await
-import kotlin.toString
 
 /**
  * Lớp này triển khai (implements) AuthRepository.

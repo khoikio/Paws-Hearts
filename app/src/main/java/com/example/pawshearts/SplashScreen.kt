@@ -1,4 +1,4 @@
-package com.example.pawshearts.screens
+package com.example.pawshearts
 
 
 import androidx.compose.foundation.Image
@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
-import com.example.pawshearts.R // M NHỚ IMPORT R
 import com.example.pawshearts.navmodel.Routes
 import kotlinx.coroutines.delay
 

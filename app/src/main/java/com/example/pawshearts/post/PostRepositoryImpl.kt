@@ -1,20 +1,17 @@
-package com.example.pawshearts.data.repository
+package com.example.pawshearts.post
 
 import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.data.model.Comment
-import com.example.pawshearts.data.model.Post
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.lang.Exception
-import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.tasks.await
 
 /**
  * Thằng này chịu trách nhiệm nói chuyện với Firestore collection "posts".
@@ -219,4 +216,3 @@ class PostRepositoryImpl(
         }
     }
 }
-

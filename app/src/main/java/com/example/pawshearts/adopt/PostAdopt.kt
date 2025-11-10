@@ -1,4 +1,4 @@
-package com.example.pawshearts.components
+package com.example.pawshearts.adopt
 
 
 
@@ -14,7 +14,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
-import com.example.pawshearts.data.Adopt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

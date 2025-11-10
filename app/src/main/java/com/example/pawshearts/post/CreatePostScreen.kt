@@ -1,4 +1,4 @@
-package com.example.pawshearts.screens
+package com.example.pawshearts.post
 
 import android.app.Application
 import android.net.Uri
@@ -28,8 +28,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
-import com.example.pawshearts.post.PostViewModel
-import com.example.pawshearts.post.PostViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

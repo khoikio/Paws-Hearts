@@ -1,4 +1,4 @@
-package com.example.pawshearts
+package com.example.pawshearts.navmodel
 
 import android.app.Application
 import androidx.compose.foundation.background
@@ -23,9 +23,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -48,19 +46,17 @@ import com.example.pawshearts.auth.AuthRootScreen
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
 
-import com.example.pawshearts.navmodel.NavItem
-import com.example.pawshearts.navmodel.Routes
-import com.example.pawshearts.screens.AdoptScreen
-import com.example.pawshearts.screens.DonateScreen
-import com.example.pawshearts.screens.HomeScreen
-import com.example.pawshearts.components.PetDetailScreen
+import com.example.pawshearts.adopt.AdoptScreen
+import com.example.pawshearts.donate.DonateScreen
+import com.example.pawshearts.post.HomeScreen
+import com.example.pawshearts.post.PetDetailScreen
 import com.example.pawshearts.post.PostViewModel
 import com.example.pawshearts.post.PostViewModelFactory
-import com.example.pawshearts.screens.CommentScreen
-import com.example.pawshearts.screens.CreatePostScreen
-import com.example.pawshearts.screens.MyPostsScreen
-import com.example.pawshearts.screens.ProfileScreen
-import com.example.pawshearts.screens.SplashScreen
+import com.example.pawshearts.post.CommentScreen
+import com.example.pawshearts.post.CreatePostScreen
+import com.example.pawshearts.post.MyPostsScreen
+import com.example.pawshearts.profile.ProfileScreen
+import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.ui.theme.LightBackground
 import com.google.firebase.auth.FirebaseAuth
 

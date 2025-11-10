@@ -1,6 +1,7 @@
-package com.example.pawshearts.data.model
+package com.example.pawshearts.post
 
 import com.google.firebase.Timestamp
+
 // dung Firebase FIRESTORE
 data class Comment(
     val id: String = "",
@@ -11,5 +12,5 @@ data class Comment(
     val userAvatarUrl: String? = null,
 
     val text: String = "", // <-- Nội dung cmt
-    val createdAt: Timestamp = Timestamp.now()
+    val createdAt: Timestamp = Timestamp.Companion.now()
 )

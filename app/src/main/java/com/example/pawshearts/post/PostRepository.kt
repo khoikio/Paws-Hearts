@@ -1,9 +1,7 @@
-package com.example.pawshearts.data.repository
+package com.example.pawshearts.post
 
 import android.net.Uri
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.data.model.Comment
-import com.example.pawshearts.data.model.Post
 import kotlinx.coroutines.flow.Flow
 
 //interface la luat cho PostReposirory

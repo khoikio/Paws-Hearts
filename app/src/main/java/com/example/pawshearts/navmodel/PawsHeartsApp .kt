@@ -1,4 +1,4 @@
-package com.example.pawshearts
+package com.example.pawshearts.navmodel
 
 import android.app.Application
 import com.google.firebase.FirebaseApp

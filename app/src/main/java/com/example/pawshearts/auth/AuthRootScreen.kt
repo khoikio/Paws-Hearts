@@ -25,7 +25,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import androidx.navigation.NavController
 // XÓA CÁI IMPORT AuthRepositoryImpl ĐI
-// import com.example.pawshearts.data.repository.AuthRepositoryImpl // <-- XÓA CÁI NÀY
+// import com.example.pawshearts.auth.AuthRepositoryImpl // <-- XÓA CÁI NÀY
 
 // T THÊM 2 IMPORT NÀY
 import com.example.pawshearts.auth.AuthViewModel
