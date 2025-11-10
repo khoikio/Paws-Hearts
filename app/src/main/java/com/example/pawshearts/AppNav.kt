@@ -54,8 +54,13 @@ import com.example.pawshearts.screens.AdoptScreen
 import com.example.pawshearts.screens.DonateScreen
 import com.example.pawshearts.screens.HomeScreen
 import com.example.pawshearts.components.PetDetailScreen
+import com.example.pawshearts.post.PostViewModel
+import com.example.pawshearts.post.PostViewModelFactory
 import com.example.pawshearts.screens.CommentScreen
+import com.example.pawshearts.screens.CreatePostScreen
+import com.example.pawshearts.screens.MyPostsScreen
 import com.example.pawshearts.screens.ProfileScreen
+import com.example.pawshearts.screens.SplashScreen
 import com.example.pawshearts.ui.theme.LightBackground
 import com.google.firebase.auth.FirebaseAuth
 
@@ -68,7 +73,11 @@ fun AppRoot() {
 
     // Logic hiển thị BottomBar (Giữ nguyên)
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN && currentRoute != Routes.REGISTER_SCREEN
+
+    // THÊM ĐIỀU KIỆN NÈ M KKK :D
+    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN &&
+            currentRoute != Routes.REGISTER_SCREEN &&
+            currentRoute != Routes.SPLASH_SCREEN // <-- THÊM CÁI NÀY VÔ
     Scaffold(
         topBar = {
             if (showBottomBar) {
@@ -80,9 +89,27 @@ fun AppRoot() {
     ) { innerPadding ->
         NavHost(
             navController = nav,
-            startDestination = Routes.LOGIN_SCREEN,// CHAY TRANG LOGIN DAU TIEN dung lai startRoute
+            startDestination = Routes.SPLASH_SCREEN,// CHAY TRANG LOGIN DAU TIEN dung lai startRoute
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Routes.SPLASH_SCREEN) {
+                SplashScreen(navController = nav)
+            }
+            composable(Routes.CREATE_POST_SCREEN) {
+                CreatePostScreen(navController = nav)
+            }
+            // tab mở trang các bài viết đã đăng của user
+            composable (Routes.MY_POSTS_SCREEN){
+                val context = LocalContext.current.applicationContext as Application
+                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+                val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
+
+                MyPostsScreen(
+                    nav = nav,
+                    authViewModel = authViewModel,
+                    postViewModel = postViewModel
+                )
+            }
             // 4 tab chính
             composable(Routes.LOGIN_SCREEN) { // <-- GIỮ NGUYÊN ROUTE
                 AuthRootScreen(navController = nav) // <-- GỌI MÀN HÌNH KHUNG MỚI
@@ -102,12 +129,7 @@ fun AppRoot() {
                 // 4. Lấy dữ liệu người dùng TỪ ROOM (qua ViewModel)
                 val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle(null)
 
-                // 5. Bắt đầu gọi tải profile (nếu chưa có)
-                LaunchedEffect(authViewModel.currentUser) {
-                    if(authViewModel.currentUser != null) {
-                        authViewModel.fetchUserProfile(authViewModel.currentUser!!.uid)
-                    }
-                }
+
 
                 // 6. Kiểm tra và gọi ProfileScreen
                 if (firestoreProfile != null) { // Giờ M check 'firestoreProfile' từ Room

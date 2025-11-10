@@ -32,11 +32,10 @@ import com.example.pawshearts.post.PostViewModelFactory // <-- M PHẢI IMPORT H
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
-    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory())
-    val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
-    // THÊM CÁI NÀY ĐỂ LẤY currentUserId
     val context = LocalContext.current.applicationContext as Application
+    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context)) // <-- HẾT LỖI
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
     val currentUserId = authViewModel.currentUser?.uid ?: ""
     LaunchedEffect(Unit) {
         postViewModel.fetchAllPosts()

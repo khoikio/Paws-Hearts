@@ -11,7 +11,8 @@ interface  PostRepository{
     // đẩy bài đăng lên fireStor
     suspend fun createPost(post: Post): AuthResult<Unit>
     // them ham lay bai viet cua mot user cu the
-    fun getMyPostsFlow(userId: String): Flow<List<Post>>
+    fun getPostsByUserId(userId: String): Flow<List<Post>>
+
     // lay het bai bo vao home
     fun fetchAllPostsFlow(): Flow<List<Post>>
     // ham tim, like
@@ -20,4 +21,5 @@ interface  PostRepository{
     fun getCommentsFlow(postId: String): Flow<List<Comment>>
     suspend fun addComment(comment: Comment): AuthResult<Unit>
     suspend fun uploadImage(uri: Uri): AuthResult<String>
+    fun getPostById(postId: String): Flow<Post?>
 }

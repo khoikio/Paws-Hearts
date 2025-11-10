@@ -129,14 +129,15 @@ fun AuthRootScreen(navController: NavController) {
         ) {
             // Header
             Text(
-                if (isLoginMode) "Nice to see you again" else "Create Account",
+                if (isLoginMode) "Paws & Hearts" else "Tạo tài khoản",
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.align(Alignment.Start)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = if (isLoginMode) Color(0xFFE65100) else Color.Black
             )
             if (!isLoginMode) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Sign up to get started",
+                    "Đăng Ký để bắt đầu",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.Start)
@@ -204,7 +205,7 @@ fun AuthRootScreen(navController: NavController) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "Login",
+                        "Đăng nhập",
                         color = if (isLoginMode) Color.White else Color.DarkGray,
                         fontWeight = if (isLoginMode) FontWeight.Bold else FontWeight.Normal,
                         style = MaterialTheme.typography.titleMedium
@@ -219,7 +220,7 @@ fun AuthRootScreen(navController: NavController) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "Register",
+                        "Đăng ký",
                         color = if (!isLoginMode) Color.White else Color.DarkGray,
                         fontWeight = if (!isLoginMode) FontWeight.Bold else FontWeight.Normal,
                         style = MaterialTheme.typography.titleMedium

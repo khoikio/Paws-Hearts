@@ -38,15 +38,13 @@ fun CommentScreen(
     postId: String, // <-- AppNav nó sẽ truyền ID bài post vô đây
     onBack: () -> Unit // <-- Để M bấm nút Back
 ) {
-    // 1. LẤY 2 VIEWMODEL (M cần PostVM để lấy/đăng cmt, M cần AuthVM để lấy info của M)
-    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory())
-
     val context = LocalContext.current.applicationContext as Application
+    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-
     // 2. LẤY DATA (List cmt và info của M)
     val comments by postViewModel.comments.collectAsStateWithLifecycle()
     val addCommentState by postViewModel.addCommentState.collectAsStateWithLifecycle()
+    val userData by authViewModel.userProfile.collectAsStateWithLifecycle(null)
     val currentUser = authViewModel.currentUser // T lấy FirebaseUser cho lẹ
 
     // 3. STATE CHO Ô TEXTFIELD Ở DƯỚI
@@ -57,6 +55,7 @@ fun CommentScreen(
     LaunchedEffect(postId) {
         postViewModel.fetchComments(postId)
     }
+
 
     // 5. TỰ CUỘN XUỐNG KHI M GỬI CMT MỚI
     LaunchedEffect(comments.size) {
@@ -83,15 +82,15 @@ fun CommentScreen(
                 onTextChange = { myCommentText = it },
                 isLoading = (addCommentState is AuthResult.Loading),
                 onSendClick = {
-                    if (currentUser != null) {
+                    if (currentUser != null && userData != null) {
                         postViewModel.addComment(
                             postId = postId,
-                            userId = currentUser.uid,
-                            username = currentUser.displayName ?: "User", // M nên lấy từ UserData cho xịn
-                            userAvatarUrl = currentUser.photoUrl?.toString(), // Tương tự
+                            userId = currentUser.uid, // Hoặc userData.userId
+                            username = userData?.username,
+                            userAvatarUrl = userData?.profilePictureUrl, // <-- LẤY ẢNH
                             text = myCommentText
                         )
-                        myCommentText = "" // Xóa text sau khi gửi
+                        myCommentText = ""
                     }
                 }
             )

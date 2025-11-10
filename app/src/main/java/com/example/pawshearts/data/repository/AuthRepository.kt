@@ -1,6 +1,7 @@
 package com.example.pawshearts.data.repository
 
 
+import android.net.Uri
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.data.model.UserData
 import com.google.firebase.auth.FirebaseAuth
@@ -26,4 +27,5 @@ interface AuthRepository {
     // Hàm cập nhật thông tin người dùng lên Firebase
     suspend fun updateUserPersonalInfo(phone: String, address: String)
     suspend fun updateProfile(newName: String, newEmail: String)
+    suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<String>
 }
