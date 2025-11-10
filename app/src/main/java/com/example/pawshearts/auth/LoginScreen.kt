@@ -41,8 +41,6 @@ fun LoginTabScreen(
 ) {
     // Local state for visibility (Mắt)
     var showPassword by remember { mutableStateOf(false) }
-
-    // Sử dụng input state từ AuthRootScreen (Hàng này không cần Remember vì nó là param)
     val emailOrPhone = prefillEmail
     val password = prefillPassword
 
@@ -61,7 +59,7 @@ fun LoginTabScreen(
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
-            label = { Text("Enter password") },
+            label = { Text("Nhập mật khẩu") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password") },
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
@@ -86,10 +84,10 @@ fun LoginTabScreen(
                 // Checkbox Remember me
                 var rememberMe by remember { mutableStateOf(false) }
                 Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
-                Text("Remember me")
+                Text("Ghi Nhớ tôi")
             }
             Text(
-                "Forgot password?",
+                "Quên mật khẩu?",
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable { /* TODO: Forgot password */ }
             )
@@ -114,7 +112,7 @@ fun LoginTabScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Sign in", style = MaterialTheme.typography.titleMedium)
+                Text("Đăng nhập", style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -129,7 +127,7 @@ fun LoginTabScreen(
             Divider(modifier = Modifier.weight(1f), color = Color.LightGray)
 
             Text(
-                "Or sign in with",
+                "Hoặc đăng nhập với",
                 style = MaterialTheme.typography.labelMedium,
                 color = Color(0xFFE65100), // Màu cam
                 fontWeight = FontWeight.Bold
@@ -158,7 +156,7 @@ fun LoginTabScreen(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "Sign in with Google",
+                "Đăng nhập với Google",
                 color = Color.Black,
                 style = MaterialTheme.typography.titleMedium
             )

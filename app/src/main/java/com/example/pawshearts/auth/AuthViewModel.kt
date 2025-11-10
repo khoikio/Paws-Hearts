@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+
 
 
 class AuthViewModel(
@@ -49,18 +51,45 @@ class AuthViewModel(
 
     fun updateAvatar(uri: Uri) {
         viewModelScope.launch {
-            // repository.updateUserAvatar(uri) // Bạn cần tạo hàm này trong Repository
-            Log.d("AuthViewModel", "Chức năng updateAvatar cần được triển khai trong Repository.")
+            val userId = currentUser?.uid
+            if (userId == null) {
+                Log.e("AuthViewModel", "Đéo up avatar đc vì M chưa login KKK")
+                return@launch
+            }
+
+            // Tạm thời T ko báo Loading (M muốn M tự thêm State)
+            // NÓ GỌI HÀM XỊN M VỪA CODE BÊN REPO NÈ KKK
+            val result = repository.uploadAvatar(userId, uri)
+
+            if (result is AuthResult.Error) {
+                Log.e("AuthViewModel", "Lỗi up avatar: ${result.message}")
+                // M nên hiện Toast lỗi ở đây
+            }
+
         }
     }
     private val _userProfile = MutableStateFlow<UserData?>(null)
     val userProfile: StateFlow<UserData?> = _userProfile.asStateFlow()
-    fun fetchUserProfile(userId: String) {
+    init {
+        fetchUserProfile() // <-- M CÓ GỌI HÀM NÀY Ở ĐÂY KHÔNG M? :@
+    }
+    fun fetchUserProfile() {
+        // 1. T VỚI M TỰ LẤY ID KKK
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+        // 2. T VỚI M CHECK
+        if (currentUserId.isNullOrBlank()) {
+            Log.w("AuthVM", "không  có user, không fetch profile:v")
+            _userProfile.value = null // Set nó null cho chắc KKK
+            return // Return mẹ đi
+        }
+
+        // 3. M GỌI REPO BẰNG 'currentUserId' MỚI LẤY KKK
         viewModelScope.launch {
-            // Gọi hàm trong repository
-            // Hàm này nó trả về 1 Flow từ Room
-            // và CŨNG kích hoạt 1 listener tới Firestore luôn rồi
-            repository.getUserProfileFlow(userId).collect { userDataFromRoom ->
+            Log.d("AuthVM", "Bắt đầu fetch profile cho $currentUserId")
+
+            // SỬA THÀNH 'currentUserId' NÈ M ƠI KKK :@
+            repository.getUserProfileFlow(currentUserId).collect { userDataFromRoom ->
                 _userProfile.value = userDataFromRoom
             }
         }

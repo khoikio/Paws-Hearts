@@ -35,12 +35,14 @@ class PostViewModel(
     private val _addCommentState = MutableStateFlow<AuthResult<Unit>?>(null)
     val addCommentState: StateFlow<AuthResult<Unit>?> = _addCommentState.asStateFlow()
     // --- THÊM HÀM NÀY ĐỂ BẮT ĐẦU TẢI BÀI ---
+    private val _selectedPost = MutableStateFlow<Post?>(null)
+    val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
     fun fetchMyPosts(userId: String) {
         //  check để nó ko gọi hàm này 1000 lần
         if (userId.isBlank()) return
 
         viewModelScope.launch {
-            repository.getMyPostsFlow(userId).collect { posts ->
+            repository.getPostsByUserId(userId).collect { posts ->
                 _myPosts.value = posts // Cập nhật list
             }
         }
@@ -166,6 +168,14 @@ class PostViewModel(
 
             // 5. Báo kết quả
             _addCommentState.value = result
+        }
+    }
+    fun fetchPostDetails(postId: String) {
+        if (postId.isBlank()) return
+        viewModelScope.launch {
+            repository.getPostById(postId).collect { post ->
+                _selectedPost.value = post // Cập nhật bài
+            }
         }
     }
     fun clearAddCommentState() {

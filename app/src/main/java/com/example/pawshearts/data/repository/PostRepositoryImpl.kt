@@ -41,8 +41,8 @@ class PostRepositoryImpl(
             AuthResult.Error(e.message ?: "Lỗi cmnr")
         }
     }
-    // them ham getMyPostFlow (bai viet cua User)
-    override fun getMyPostsFlow(userId: String): Flow<List<Post>> {
+    // them ham getPostsByUserId (bai viet cua User)
+    override fun getPostsByUserId(userId: String): Flow<List<Post>> {
         return callbackFlow {
             // Mở 1 kênh lắng nghe
             val listener = firestore.collection("posts")
@@ -192,6 +192,30 @@ class PostRepositoryImpl(
         } catch (e: Exception) {
             Log.e("PostRepoImpl", "Lỗi up ảnh", e)
             AuthResult.Error(e.message ?: "Lỗi cmnr")
+        }
+    }
+    override fun getPostById(postId: String): Flow<Post?> {
+        // T trả về 1 'callbackFlow' cho nó real-time
+        return callbackFlow {
+            // Mở 1 kênh lắng nghe
+            val listener = firestore.collection("posts").document(postId)
+                .addSnapshotListener { snapshot, error ->
+
+                    if (error != null) {
+                        Log.e("PostRepoImpl", "Lỗi nghe 1 Post", error)
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        val post = snapshot.toObject(Post::class.java)
+                        trySend(post) // Gửi 1 BÀI về ViewModel
+                    } else {
+                        trySend(null) // Bài đéo tồn tại
+                    }
+                }
+
+            // Khi ViewModel bị hủy, tự gỡ listener
+            awaitClose { listener.remove() }
         }
     }
 }

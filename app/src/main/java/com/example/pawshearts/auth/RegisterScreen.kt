@@ -1,5 +1,6 @@
 package com.example.pawshearts.auth
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,16 +21,20 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.ui.platform.LocalContext // <-- T THÊM CÁI NÀY
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterTabScreen(
-    viewModel: AuthViewModel, // LỖI 1: T SỬA AuthViewModel_online THÀNH AuthViewModel
+    viewModel: AuthViewModel,
     isLoading: Boolean,
-    onSwitchToLogin: () -> Unit // Cái này M giữ, nhưng T nghĩ M ko cần :v
+    onSwitchToLogin: () -> Unit
 ) {
-    // --- REGISTER FIELDS LOCAL STATE (T giữ nguyên KKK) ---
+    // --- REGISTER FIELDS LOCAL STAT
     var registerFullName by remember { mutableStateOf("") }
     var registerEmail by remember { mutableStateOf("") }
     var registerPassword by remember { mutableStateOf("") }
@@ -38,7 +43,7 @@ fun RegisterTabScreen(
     var showConfirmPassword by remember { mutableStateOf(false) }
     var agreeToTerms by remember { mutableStateOf(false) }
 
-    // T LẤY CÁI NÀY ĐỂ CHECK EMAIL HỢP LỆ
+    // CÁI NÀY ĐỂ CHECK EMAIL HỢP LỆ
     val context = LocalContext.current
 
     // REGISTER FORM UI
@@ -46,13 +51,11 @@ fun RegisterTabScreen(
         OutlinedTextField(
             value = registerFullName,
             onValueChange = { registerFullName = it },
-            label = { Text("Full Name") },
+            label = { Text("Họ và tên") },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Full Name") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-
-        // T SỬA LẠI CÁCH CHECK EMAIL CỦA M 1 TÍ CHO NÓ GỌN
         val isEmailValid = registerEmail.isBlank() || android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail).matches()
         OutlinedTextField(
             value = registerEmail,
@@ -76,13 +79,13 @@ fun RegisterTabScreen(
         OutlinedTextField(
             value = registerPassword,
             onValueChange = { registerPassword = it },
-            label = { Text("Password") },
+            label = { Text("Mật khẩu") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password") },
             trailingIcon = {
                 IconButton(onClick = { showRegisterPassword = !showRegisterPassword }) {
                     Icon(
                         imageVector = if (showRegisterPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (showRegisterPassword) "Hide" else "Show"
+                        contentDescription = if (showRegisterPassword) "ẩn" else "hiện"
                     )
                 }
             },
@@ -97,13 +100,13 @@ fun RegisterTabScreen(
         OutlinedTextField(
             value = registerConfirmPassword,
             onValueChange = { registerConfirmPassword = it },
-            label = { Text("Confirm Password") },
+            label = { Text("Xác minh mật khẩu") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Confirm Password") },
             trailingIcon = {
                 IconButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
                     Icon(
                         imageVector = if (showConfirmPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (showConfirmPassword) "Hide" else "Show"
+                        contentDescription = if (showConfirmPassword) "ẩn" else "hiện"
                     )
                 }
             },
@@ -127,12 +130,30 @@ fun RegisterTabScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(checked = agreeToTerms, onCheckedChange = { agreeToTerms = it })
-            Text("I agree to the ")
-            Text(
-                "Terms & Conditions",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { /* TODO */ }
+
+            // T GỘP 2 CÁI TEXT LẠI LÀM 1 CHO NÓ XỊN KKK :D
+            val annotatedString = buildAnnotatedString {
+                append("Tôi đồng ý với ")
+                pushStringAnnotation(tag = "TERMS", annotation = "terms") // Đánh dấu
+                withStyle(style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                ) {
+                    append("Điều khoản & Điều kiện")
+                }
+                pop()
+            }
+
+            ClickableText(
+                text = annotatedString,
+                onClick = { offset ->
+                    annotatedString.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                        .firstOrNull()?.let {
+                            //  code  mở link web ở đây
+                            Log.d("Register", "Điều khoản ")
+                        }
+                }
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
@@ -156,7 +177,7 @@ fun RegisterTabScreen(
                             viewModel.registerWithEmail(
                                 registerEmail.trim(),
                                 registerPassword,
-                                registerFullName.trim() // T CHƯA THẤY M SỬA CÁI NÀY
+                                registerFullName.trim()
                             )
 
 
@@ -175,7 +196,7 @@ fun RegisterTabScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Sign Up", style = MaterialTheme.typography.titleMedium)
+                Text("Đăng ký", style = MaterialTheme.typography.titleMedium)
             }
         }
     }

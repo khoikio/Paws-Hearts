@@ -1,5 +1,6 @@
 package com.example.pawshearts.data.repository
 
+import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.data.local.UserDao
@@ -18,63 +19,67 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import com.google.firebase.auth.FirebaseAuthException // <-- M PHẢI CÓ CÁI NÀY
+import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.tasks.await
+import kotlin.toString
 
 /**
  * Lớp này triển khai (implements) AuthRepository.
- * Đây là "người trung gian" thực sự, chịu trách nhiệm:
- * 1. Giao tiếp với Firebase (Authentication và Firestore).
- * 2. Giao tiếp với cơ sở dữ liệu Room cục bộ (thông qua UserDao).
- * 3. Đồng bộ hóa dữ liệu giữa Firebase và Room.
  */
 class AuthRepositoryImpl(
-    private val userDao: UserDao,          // Công cụ để nói chuyện với Room
-    private val firestore: FirebaseFirestore,  // Công cụ để nói chuyện với Firestore
+    private val userDao: UserDao,
+    private val firestore: FirebaseFirestore,
 ) : AuthRepository {
-    // Lấy instance của Firebase Auth để sử dụng trong toàn bộ lớp
-    override val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    // Cung cấp một cách nhanh để lấy người dùng hiện tại
+    override val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
+    private val usersCollection = firestore.collection("users")
     override val currentUser: FirebaseUser?
         get() = auth.currentUser
 
-    /**
-     * Hàm này M gọi ở trên nhưng M chưa code (M xóa TODO á KKK)
-     * Nó sẽ trả về một Flow<Boolean> báo cáo trạng thái đăng nhập
-     */
     override val isUserLoggedInFlow: Flow<Boolean>
         get() = auth.authStateChanges().map { user: FirebaseUser? -> user != null }
-
 
     // --- CÁC HÀM XÁC THỰC ---
 
     override suspend fun registerWithEmail(email: String, password: String, fullName: String): AuthResult<FirebaseUser> {
-        return withContext(Dispatchers.IO) { // Chạy trên luồng nền để không treo UI
+        return withContext(Dispatchers.IO) {
             try {
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
                 if (user != null) {
-                    // 1. TẠO BẢN GHI BAN ĐẦU TRÊN FIRESTORE cho người dùng mới
                     val newUser = UserData(
                         userId = user.uid,
                         username = fullName,
                         profilePictureUrl = user.photoUrl?.toString(),
                         email = user.email,
-                        phone = null, // Các trường mới ban đầu là null
-                        address = null
+                        phone = null,
+                        address = null,
+                        role = "user" // <-- T THÊM CÂI 'role' M QUÊN NÈ
                     )
                     firestore.collection("users").document(user.uid).set(newUser).await()
-
-                    // 2. (Tùy chọn nhưng nên có) Ghi ngay vào Room để UI cập nhật tức thì
                     userDao.insertOrUpdateUser(newUser)
-
                     AuthResult.Success(user)
                 } else {
                     AuthResult.Error("Đăng ký thất bại, không có thông tin người dùng.")
                 }
+
+                // CỤC M BỊ THIẾU NÈ KKK
+            } catch (e: FirebaseAuthException) {
+                Log.e("AuthRepo", "Register error (Firebase)", e)
+                val errorMessage = when (e.errorCode) {
+                    "ERROR_NETWORK_REQUEST_FAILED" -> "Lỗi kết nối internet? "
+                    "ERROR_INVALID_EMAIL" -> "Email người dùng chưa đăng ký"
+                    "ERROR_EMAIL_ALREADY_IN_USE" -> "Email đã đăng ký" // LỖI CỦA M NÈ
+                    "ERROR_WEAK_PASSWORD" -> "Mật khẩu ít nhất 6 ký tự"
+                    else -> "Lỗi đăng ký: ${e.message}"
+                }
+                AuthResult.Error(errorMessage)
+
             } catch (e: Exception) {
-                // Giữ nguyên các khối catch lỗi của bạn để xử lý các trường hợp cụ thể
-                Log.e("AuthRepo", "Register error", e)
-                AuthResult.Error(e.message ?: "Lỗi không xác định khi đăng ký.")
+                Log.e("AuthRepo", "Register error (Non-Firebase)", e)
+                AuthResult.Error(e.message ?: "Lỗi -.-")
             }
         }
     }
@@ -83,12 +88,24 @@ class AuthRepositoryImpl(
         return withContext(Dispatchers.IO) {
             try {
                 val result = auth.signInWithEmailAndPassword(email, password).await()
-                // Sau khi đăng nhập, listener trong `getUserProfileFlow` sẽ tự động lo việc
-                // đồng bộ dữ liệu từ Firebase về Room.
                 AuthResult.Success(result.user!!)
+
+                // CỤC NÀY M CŨNG THIẾU NÈ KKK (CHO LỖI LOGIN)
+            } catch (e: FirebaseAuthException) {
+                Log.e("AuthRepo", "Login error (Firebase)", e)
+                val errorMessage = when (e.errorCode) {
+                    "ERROR_NETWORK_REQUEST_FAILED" -> "Lỗi kết nối internet?"
+                    "ERROR_INVALID_EMAIL" -> "Email chưa đăng ký"
+                    "ERROR_WRONG_PASSWORD" -> "Sai mật khẩu rồi M :("
+                    "ERROR_USER_NOT_FOUND" -> "Email chưa đăng ký"
+                    "ERROR_INVALID_CREDENTIAL" -> "Sai email hoặc mật khẩu "
+                    else -> "Lỗi đéo biết: ${e.message}"
+                }
+                AuthResult.Error(errorMessage)
+
             } catch (e: Exception) {
-                Log.e("AuthRepo", "Login error", e)
-                AuthResult.Error(e.message ?: "Lỗi không xác định khi đăng nhập.")
+                Log.e("AuthRepo", "Login error (Non-Firebase)", e)
+                AuthResult.Error(e.message ?: "Lỗi -.-")
             }
         }
     }
@@ -99,8 +116,6 @@ class AuthRepositoryImpl(
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
                 val result = auth.signInWithCredential(credential).await()
                 val user = result.user!!
-
-                // Nếu là người dùng mới, tạo bản ghi trên Firestore
                 if (result.additionalUserInfo?.isNewUser == true) {
                     val newUser = UserData(
                         userId = user.uid,
@@ -108,11 +123,12 @@ class AuthRepositoryImpl(
                         profilePictureUrl = user.photoUrl?.toString(),
                         email = user.email,
                         phone = null,
-                        address = null
+                        address = null,
+                        role = "user" // <-- T THÊM CẢ VÔ GOOGLE
                     )
                     firestore.collection("users").document(user.uid).set(newUser).await()
+                    userDao.insertOrUpdateUser(newUser) // Sync về Room
                 }
-
                 AuthResult.Success(user)
             } catch (e: Exception) {
                 Log.e("AuthRepository", "Google sign-in error: ${e.message}", e)
@@ -124,9 +140,8 @@ class AuthRepositoryImpl(
     override suspend fun logout() {
         val userId = currentUser?.uid
         auth.signOut()
-        // Xóa dữ liệu người dùng khỏi Room cục bộ để bảo mật
         if (userId != null) {
-            withContext(Dispatchers.IO) { // Đảm bảo chạy trên IO
+            withContext(Dispatchers.IO) {
                 userDao.deleteUserById(userId)
             }
         }
@@ -135,25 +150,18 @@ class AuthRepositoryImpl(
     // --- CÁC HÀM QUẢN LÝ DỮ LIỆU NGƯỜI DÙNG ---
 
     override fun getUserProfileFlow(userId: String): Flow<UserData?> {
-        // Nếu không có userId, trả về một Flow rỗng để tránh lỗi
         if (userId.isBlank()) {
             return flowOf(null)
         }
-
-        // Mở một kênh lắng nghe thời gian thực với tài liệu của người dùng trên Firestore
         firestore.collection("users").document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.w("AuthRepo", "Lỗi lắng nghe Firestore", error)
                     return@addSnapshotListener
                 }
-
                 if (snapshot != null && snapshot.exists()) {
-                    // Chuyển đổi tài liệu Firestore thành đối tượng UserData
                     val firestoreUser = snapshot.toObject(UserData::class.java)
                     if (firestoreUser != null) {
-                        // Khi có dữ liệu mới từ Firebase, cập nhật nó vào Room
-                        // Việc này chạy trên một coroutine riêng để không block luồng chính
                         CoroutineScope(Dispatchers.IO).launch {
                             Log.d("AuthRepo", "Syncing data from Firebase to Room for user: ${firestoreUser.userId}")
                             userDao.insertOrUpdateUser(firestoreUser)
@@ -161,62 +169,69 @@ class AuthRepositoryImpl(
                     }
                 }
             }
-
         return userDao.getUserById(userId)
+    }
+    override suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<String> {
+        return try {
+            val fileName = "avatars/${userId}_${System.currentTimeMillis()}"
+            val imageRef = storage.reference.child(fileName)
+
+            // 2. ĐẨY FILE LÊN (putFile)
+            imageRef.putFile(uri).await()
+
+            // 3. LẤY LẠI CÁI LINK WEB (http://...)
+            val downloadUrl = imageRef.downloadUrl.await()
+            val urlString = downloadUrl.toString()
+
+            // 4. CẬP NHẬT LẠI FIRESTORE (Database)
+            // (Nó tự báo 'likes' / 'commentCount' vì M 'Gỡ App' rồi KKK)
+            usersCollection.document(userId).update("profilePictureUrl", urlString).await()
+
+            Log.d("AuthRepoImpl", "Up avatar thành công: $urlString")
+            AuthResult.Success(urlString) // <-- Trả link xịn
+
+        } catch (e: Exception) {
+            Log.e("AuthRepoImpl", "Lỗi up avatar", e)
+            AuthResult.Error(e.message ?: "Lỗi cmnr")
+        }
     }
 
     override suspend fun updateUserPersonalInfo(phone: String, address: String) {
         val userId = auth.currentUser?.uid ?: return
-
         val updates = mapOf(
             "phone" to phone,
             "address" to address
         )
-
         firestore.collection("users").document(userId)
             .update(updates)
             .await()
     }
-
 
     override suspend fun updateProfile(newName: String, newEmail: String) {
         val userId = auth.currentUser?.uid ?: return
-
         val updates = mapOf(
-            "username" to newName, // Cập nhật username (M đặt là username trong UserData)
+            "username" to newName,
             "email" to newEmail
         )
-
-        // 1. Cập nhật Auth (Tạm thời T bỏ qua, vì đổi email Auth phức tạp)
-        // auth.currentUser?.updateEmail(newEmail)?.await()
-
-        // 2. Cập nhật Firestore
+        // Tạm bỏ qua updateEmail trên Auth (phức tạp)
         firestore.collection("users").document(userId)
             .update(updates)
             .await()
-
-        // Listener trong 'getUserProfileFlow' sẽ tự thấy và cập nhật Room
     }
 }
-
-
-/**
- * HÀM M BỊ THIẾU NÈ KKK :v
- * Hàm này T code để M dùng cho cái 'isUserLoggedInFlow' ở trên
- */
 private fun FirebaseAuth.authStateChanges(): Flow<FirebaseUser?> {
     return callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
-            // Gửi user (có thể null) vào Flow
             trySend(auth.currentUser)
         }
-        // Gắn listener vào
         addAuthStateListener(listener)
-
-        // Khi Flow bị hủy (VD: ViewModel bị destroy), gỡ listener ra
         awaitClose {
             removeAuthStateListener(listener)
         }
     }
+
 }
+
+
+
 

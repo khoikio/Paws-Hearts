@@ -14,4 +14,7 @@ object Routes {
     fun petDetail(id: String) = "pet/$id"
     const val COMMENT_SCREEN = "comment_screen"
     fun comment(postId: String) = "$COMMENT_SCREEN/$postId"
+    const val SPLASH_SCREEN = "splash_screen"
+    const val CREATE_POST_SCREEN = "create_post_screen"
+    const val MY_POSTS_SCREEN = "my-posts" // taps hiện các bài đăng
 }
