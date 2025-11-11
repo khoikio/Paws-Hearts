@@ -17,5 +17,6 @@ data class UserData(
     val email: String? = null,
     val phone: String? = null,
     val address: String? = null,
-    val role: String? = "user"  // mac dinh ai dang ki deu la user
+    val role: String? = "user" , // mac dinh ai dang ki deu la user
+    val isAdmin: Boolean = false
 )

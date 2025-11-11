@@ -81,26 +81,39 @@ class AuthRepositoryImpl(
             }
         }
     }
-
+    private suspend fun syncProfileToLocal(userId: String) {
+        try {
+            val documentSnapshot = firestore.collection("users").document(userId).get().await()
+            val firestoreUser = documentSnapshot.toObject(UserData::class.java)
+            if (firestoreUser != null) {
+                userDao.insertOrUpdateUser(firestoreUser)
+                Log.d("AuthRepo", "Đã đồng bộ profile từ Firestore về Room cho user: $userId")
+            } else {
+                Log.w("AuthRepo", "Không tìm thấy user trên Firestore để đồng bộ: $userId")
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepo", "Lỗi khi đồng bộ profile về Room", e)
+        }
+    }
     override suspend fun loginWithEmail(email: String, password: String): AuthResult<FirebaseUser> {
         return withContext(Dispatchers.IO) {
             try {
                 val result = auth.signInWithEmailAndPassword(email, password).await()
-                AuthResult.Success(result.user!!)
-
-                // CỤC NÀY M CŨNG THIẾU NÈ KKK (CHO LỖI LOGIN)
+                val user = result.user!!
+                // GỌI HÀM ĐỒNG BỘ NGAY SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+                syncProfileToLocal(user.uid)
+                AuthResult.Success(user)
             } catch (e: FirebaseAuthException) {
                 Log.e("AuthRepo", "Login error (Firebase)", e)
                 val errorMessage = when (e.errorCode) {
                     "ERROR_NETWORK_REQUEST_FAILED" -> "Lỗi kết nối internet?"
                     "ERROR_INVALID_EMAIL" -> "Email chưa đăng ký"
-                    "ERROR_WRONG_PASSWORD" -> "Sai mật khẩu rồi M :("
+                    "ERROR_WRONG_PASSWORD" -> "Sai mật khẩu rồi:("
                     "ERROR_USER_NOT_FOUND" -> "Email chưa đăng ký"
                     "ERROR_INVALID_CREDENTIAL" -> "Sai email hoặc mật khẩu "
                     else -> "Lỗi đéo biết: ${e.message}"
                 }
                 AuthResult.Error(errorMessage)
-
             } catch (e: Exception) {
                 Log.e("AuthRepo", "Login error (Non-Firebase)", e)
                 AuthResult.Error(e.message ?: "Lỗi -.-")
@@ -108,13 +121,22 @@ class AuthRepositoryImpl(
         }
     }
 
+    // TRONG FILE AuthRepositoryImpl.kt
+
     override suspend fun signInWithGoogle(idToken: String): AuthResult<FirebaseUser> {
         return withContext(Dispatchers.IO) {
             try {
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
                 val result = auth.signInWithCredential(credential).await()
                 val user = result.user!!
-                if (result.additionalUserInfo?.isNewUser == true) {
+
+                // --- LOGIC "UPSERT" - KIỂM TRA VÀ TẠO MỚI ---
+                val userDocRef = firestore.collection("users").document(user.uid)
+                val document = userDocRef.get().await()
+
+                // NẾU DOCUMENT CHƯA TỒN TẠI
+                if (!document.exists()) {
+                    Log.w("AuthRepo", "User ${user.uid} chưa có document trên Firestore, đang tạo mới...")
                     val newUser = UserData(
                         userId = user.uid,
                         username = user.displayName,
@@ -122,11 +144,17 @@ class AuthRepositoryImpl(
                         email = user.email,
                         phone = null,
                         address = null,
-                        role = "user" // <-- T THÊM CẢ VÔ GOOGLE
+                        role = "user",
+                        isAdmin = false // Thêm cả trường mới vào
                     )
-                    firestore.collection("users").document(user.uid).set(newUser).await()
-                    userDao.insertOrUpdateUser(newUser) // Sync về Room
+                    // TẠO MỚI DOCUMENT
+                    userDocRef.set(newUser).await()
                 }
+                // --- KẾT THÚC LOGIC "UPSERT" ---
+
+                // Bây giờ ta chắc chắn document đã tồn tại, tiến hành đồng bộ về Room
+                syncProfileToLocal(user.uid)
+
                 AuthResult.Success(user)
             } catch (e: Exception) {
                 Log.e("AuthRepository", "Google sign-in error: ${e.message}", e)
@@ -135,14 +163,27 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun refreshUserProfile() {
+        val userId = auth.currentUser?.uid ?: return
+        withContext(Dispatchers.IO) {
+            syncProfileToLocal(userId) // Gọi lại hàm private cho gọn
+        }
+    }
+
     override suspend fun logout() {
-        val userId = currentUser?.uid
-        auth.signOut()
+        val userId = currentUser?.uid // Lấy ID của user hiện tại
+
+        // BƯỚC 1: XÓA DỮ LIỆU CỦA USER NÀY KHỎI ROOM TRƯỚC
         if (userId != null) {
             withContext(Dispatchers.IO) {
+                Log.d("AuthRepo", "Đang xóa user $userId khỏi Room...")
                 userDao.deleteUserById(userId)
             }
         }
+
+        // BƯỚC 2: SAU KHI DỌN DẸP XONG, MỚI ĐĂNG XUẤT KHỎI FIREBASE
+        auth.signOut()
+        Log.d("AuthRepo", "Đã đăng xuất khỏi Firebase.")
     }
 
     // --- CÁC HÀM QUẢN LÝ DỮ LIỆU NGƯỜI DÙNG ---
@@ -151,24 +192,9 @@ class AuthRepositoryImpl(
         if (userId.isBlank()) {
             return flowOf(null)
         }
-        firestore.collection("users").document(userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Log.w("AuthRepo", "Lỗi lắng nghe Firestore", error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null && snapshot.exists()) {
-                    val firestoreUser = snapshot.toObject(UserData::class.java)
-                    if (firestoreUser != null) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            Log.d("AuthRepo", "Syncing data from Firebase to Room for user: ${firestoreUser.userId}")
-                            userDao.insertOrUpdateUser(firestoreUser)
-                        }
-                    }
-                }
-            }
         return userDao.getUserById(userId)
     }
+
     override suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<String> {
         return try {
             val fileName = "avatars/${userId}_${System.currentTimeMillis()}"
