@@ -1,448 +1,154 @@
-package com.example.pawshearts.donate
+package com.example.pawshearts.donate // <-- M check package xịn
 
+// === M IMPORT MẤY CÁI NÀY VÔ KKK ===
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler // Tí T với M mở link Momo KKK
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.pawshearts.R // M phải có 3 cái icon này trong drawable nha KKK
+import com.example.pawshearts.navmodel.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonateScreen(nav: NavHostController) {
-    var currentView by remember { mutableStateOf("menu") }
-    var amount by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var showDialog by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    // Tí T với M xài cái này để mở link Momo/Google Form KKK
+    val uriHandler = LocalUriHandler.current
 
-
-    val moneyHistory = remember { mutableStateListOf<String>() }
-    val itemHistory = remember { mutableStateListOf<String>() }
-
-    val buttonColor = Color(0xFFE65100)
-    val iconColor = Color(0xFFE65100)
-
-    when (currentView) {
-        "menu" -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Quyên Góp Quỹ Tình Nguyện",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "🐾 Paw & Heart 💖",
-                    fontSize = 28.sp,
-                    color = iconColor,
-                    fontWeight = FontWeight.Bold
-                )
-                CardOption("Quyên góp tài chính", Icons.Default.MonetizationOn, iconColor) {
-                    currentView = "moneyMenu"
-                }
-                CardOption("Quyên góp vật phẩm", Icons.Default.CardGiftcard, iconColor) {
-                    currentView = "itemMenu"
-                }
-                CardOption("Đăng ký tình nguyện viên", Icons.Default.Person, iconColor) {
-                    currentView = "volunteer"
-                }
-            }
-        }
-
-        "moneyMenu" -> {
-            SubMenuScreen(
-                title = "Quyên góp tài chính",
-                onDonateClick = { currentView = "moneyDonate" },
-                onHistoryClick = { currentView = "moneyHistory" },
-                onBack = { currentView = "menu" }
-            )
-        }
-
-        "moneyDonate" -> {
-            DonateMoneyScreen(
-                amount = amount,
-                onAmountChange = { amount = it },
-                onSubmit = {
-                    val date = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
-                    moneyHistory.add("Đã quyên góp ${amount} VNĐ vào $date")
-                    message = "Cảm ơn bạn đã quyên góp $amount VNĐ 💖"
-                    showDialog = true
-                    currentView = "moneyHistory"
-                },
-                onBack = { currentView = "moneyMenu" },
-                buttonColor = buttonColor
-            )
-        }
-
-        "moneyHistory" -> {
-            HistoryScreen(
-                title = "Lịch sử quyên góp tiền",
-                list = moneyHistory,
-                onBack = { currentView = "moneyMenu" },
-                buttonColor = buttonColor
-            )
-        }
-
-        "itemMenu" -> {
-            SubMenuScreen(
-                title = "Quyên góp vật phẩm",
-                onDonateClick = { currentView = "itemDonate" },
-                onHistoryClick = { currentView = "itemHistory" },
-                onBack = { currentView = "menu" }
-            )
-        }
-
-        "itemDonate" -> {
-            val selectedItems = remember { mutableStateListOf<String>() }
-            val customItems = remember { mutableStateMapOf<String, String>() }
-
-            DonateItemScreenMulti(
-                selectedItems = selectedItems,
-                customItems = customItems,
-                onSubmit = { finalItems ->
-                    val date = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
-                    finalItems.forEach { item ->
-                        itemHistory.add("Đã tặng: $item ($date)")
-                    }
-                    message = "Cảm ơn bạn đã tặng ${finalItems.joinToString(", ")} 🎁"
-                    showDialog = true
-                    currentView = "itemHistory"
-                },
-                onBack = { currentView = "itemMenu" },
-                buttonColor = buttonColor
-            )
-        }
-
-        "itemHistory" -> {
-            HistoryScreen(
-                title = "Lịch sử quyên góp vật phẩm",
-                list = itemHistory,
-                onBack = { currentView = "itemMenu" },
-                buttonColor = buttonColor
-            )
-        }
-
-        "volunteer" -> {
-            VolunteerScreen(
-                name = name,
-                email = email,
-                phone = phone,
-                onNameChange = { name = it },
-                onEmailChange = { email = it },
-                onPhoneChange = { phone = it },
-                onSubmit = {
-                    message = "Cảm ơn $name đã đăng ký tình nguyện viên 🧡"
-                    showDialog = true
-                },
-                onBack = { currentView = "menu" },
-                buttonColor = buttonColor
-            )
-        }
-    }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Đóng", color = buttonColor)
-                }
-            },
-            title = { Text("Thông báo") },
-            text = { Text(message, textAlign = TextAlign.Center) }
-        )
-    }
-
-
-}
-
-// ------------------------- DonateItemScreen multi-select -------------------------
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DonateItemScreenMulti(
-    selectedItems: MutableList<String>,
-    customItems: MutableMap<String, String>,
-    onSubmit: (List<String>) -> Unit,
-    onBack: () -> Unit,
-    buttonColor: Color
-) {
-    val items = listOf("Thức ăn", "Cát vệ sinh", "Thuốc", "Đồ chơi", "Khác")
-    val itemDetails = remember { mutableStateMapOf<String, String>() }
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        TopBar("Quyên góp vật phẩm", onBack)
-
-        items.forEach { item ->
-            Column {
-                AssistChip(
-                    onClick = {
-                        if (selectedItems.contains(item)) selectedItems.remove(item)
-                        else selectedItems.add(item)
-                    },
-                    label = { Text(item) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = when (item) {
-                                "Thức ăn" -> Icons.Default.ShoppingBag
-                                "Cát vệ sinh" -> Icons.Default.Pets
-                                "Thuốc" -> Icons.Default.MedicalServices
-                                "Đồ chơi" -> Icons.Default.CardGiftcard
-                                else -> Icons.Default.Edit
-                            },
-                            contentDescription = null
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (selectedItems.contains(item)) buttonColor else Color(0xFFF1F1F1),
-                        labelColor = if (selectedItems.contains(item)) Color.White else Color.Black
+    Scaffold(
+        topBar = {
+            // M GIỮ CÁI TOPBAR M NÓI NÈ KKK
+            TopAppBar(
+                title = {
+                    Text(
+                        "Quyên Góp & Hoạt Động", // T SỬA LẠI TÊN XỊN KKK
+                        fontWeight = FontWeight.Bold
                     )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFFFF3E0), // Màu cam lợt M xài
+                    titleContentColor = Color(0xFFE65100) // Màu cam đậm
                 )
-
-                if (selectedItems.contains(item)) {
-                    val currentText = if (item == "Khác") customItems[item] ?: "" else itemDetails[item] ?: ""
-                    OutlinedTextField(
-                        value = currentText,
-                        onValueChange = { text ->
-                            if (item == "Khác") customItems[item] = text else itemDetails[item] = text
-                        },
-                        label = {
-                            if (item == "Khác") Text("Nhập loại vật phẩm khác")
-                            else Text("Chi tiết $item")
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+            )
         }
-
-        // kiểm tra tất cả item bắt nhập đã điền chưa
-        val canSubmit = selectedItems.isNotEmpty() &&
-                selectedItems.all { item ->
-                    if (item == "Khác") customItems[item]?.isNotBlank() == true
-                    else itemDetails[item]?.isNotBlank() == true
-                }
-
-        Button(
-            onClick = {
-                val finalItems = selectedItems.map { item ->
-                    if (item == "Khác") customItems[item] ?: item
-                    else {
-                        val detailText = itemDetails[item]?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""
-                        item + detailText
-                    }
-                }
-                onSubmit(finalItems)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-            enabled = canSubmit
-        ) {
-            Text("Xác nhận quyên góp", color = Color.White)
-        }
-    }
-
-
-}
-
-// ------------------------- Các màn hình và composable khác -------------------------
-@Composable
-fun HistoryScreen(title: String, list: List<String>, onBack: () -> Unit, buttonColor: Color) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        TopBar(title, onBack)
-        Spacer(modifier = Modifier.height(8.dp))
-
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color(0xFFFFFBF5)) // Màu nền kem
+                .padding(horizontal = 16.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp) // Cách nhau 16dp
         ) {
-            if (list.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("Chưa có lịch sử quyên góp nào", color = Color.Gray)
-                    }
+
+            // TÊN APP M
+            Text(
+                "Paw & Heart 💖",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE65100)
+            )
+            Text(
+                "Chung tay vì các bé 🐾",
+                fontSize = 16.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // === 1. NÚT "ĐỚP" (MOMO/BANK)  ===
+            DonateButton(
+                iconResId = R.drawable.money,
+                iconColor = Color(0xFFE65100), // Màu hường Momo
+                title = "Quyên góp tài chính",
+                subtitle = "Duy trì server và quỹ cứu trợ",
+                onClick = {
+                    nav.navigate(Routes.DONATE_BANK_SCREEN)
                 }
-            } else {
-                items(list) { entry ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(6.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(entry, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                            Text("❤️ Cảm ơn tấm lòng của bạn!", color = buttonColor)
-                        }
-                    }
+            )
+
+            // === 2. NÚT M ĐỔI TÊN NÈ KKK ===
+            DonateButton(
+                iconResId = R.drawable.hoat_dong, // M TỰ THÊM ICON NÀY KKK
+                iconColor = Color(0xFFE65100), // Màu xanh
+                title = "Hoạt động",
+                subtitle = "Tham gia các chiến dịch, sự kiện",
+                onClick = {
+                    nav.navigate(Routes.ACTIVITIES_LIST_SCREEN)
                 }
-            }
+            )
+
+            // === T XÓA MẸ NÚT "VẬT PHẨM" M CHÊ "LỎ" RỒI KKK ===
         }
     }
-
-
 }
 
+// === T TÁCH CÁI NÚT XỊN RA ĐÂY KKK ===
 @Composable
-fun DonateMoneyScreen(
-    amount: String,
-    onAmountChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onBack: () -> Unit,
-    buttonColor: Color
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        TopBar("Quyên góp tài chính", onBack)
-        OutlinedTextField(
-            value = amount,
-            onValueChange = onAmountChange,
-            label = { Text("Nhập số tiền (VNĐ)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-
-        val canSubmit = amount.isNotBlank() && amount.toLongOrNull() != null
-
-        Button(
-            onClick = onSubmit,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-            enabled = canSubmit
-        ) {
-            Text("Xác nhận quyên góp", color = Color.White)
-        }
-    }
-
-
-}
-
-@Composable
-fun SubMenuScreen(
+fun DonateButton(
+    iconResId: Int,
+    iconColor: Color,
     title: String,
-    onDonateClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onBack: () -> Unit
+    subtitle: String,
+    onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        TopBar(title, onBack)
-        CardOption("Thực hiện quyên góp", Icons.Default.VolunteerActivism, Color(0xFFE65100), onDonateClick)
-        CardOption("Lịch sử quyên góp", Icons.Default.History, Color(0xFFE65100), onHistoryClick)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CardOption(title: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp),
         onClick = onClick,
-        elevation = CardDefaults.cardElevation(6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(36.dp))
-            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Medium)
+            // CÁI ICON TRÒN KKK
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(iconColor.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = iconResId),
+                    contentDescription = title,
+                    tint = iconColor,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            // CÁI CHỮ KKK
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    subtitle,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
         }
     }
 }
-
-@Composable
-fun VolunteerScreen(
-    name: String,
-    email: String,
-    phone: String,
-    onNameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
-    onPhoneChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onBack: () -> Unit,
-    buttonColor: Color
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        TopBar("Đăng ký tình nguyện viên", onBack)
-        OutlinedTextField(value = name, onValueChange = onNameChange, label = { Text("Họ và tên") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = email, onValueChange = onEmailChange, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = phone, onValueChange = onPhoneChange, label = { Text("Số điện thoại") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
-
-
-        val canSubmit = name.isNotBlank() && email.isNotBlank() && phone.isNotBlank()
-
-        Button(onClick = onSubmit, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = buttonColor), enabled = canSubmit) {
-            Text("Đăng ký", color = Color.White)
-        }
-    }
-
-
-}
-
-@Composable
-fun TopBar(title: String, onBack: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-        }
-        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-

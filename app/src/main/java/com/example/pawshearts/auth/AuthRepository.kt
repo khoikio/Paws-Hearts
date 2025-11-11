@@ -22,14 +22,16 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String): AuthResult<FirebaseUser>
     suspend fun logout() // <-- T thêm suspend cho nó xịn KKK
 
-    // === MẤY HÀM PROFILE KKK ===
+    // === MẤY HÀM PROFILE ===
     // Hàm lấy thông tin người dùng, trả về một Flow
     fun getUserProfileFlow(userId: String): Flow<UserData?>
+    suspend fun refreshUserProfile()
 
     // Hàm cập nhật thông tin người dùng lên Firebase
     suspend fun updateUserPersonalInfo(phone: String, address: String)
     suspend fun updateProfile(newName: String, newEmail: String)
     suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<String>
+
 }
 
 // M CHỈ CẦN 1 CÁI INTERFACE NÀY THÔI M ƠI KKK :@

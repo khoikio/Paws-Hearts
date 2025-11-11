@@ -8,8 +8,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,8 +34,6 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthViewModel
-import com.example.pawshearts.adopt.PostAdopt
-import com.example.pawshearts.adopt.Adopt
 import com.example.pawshearts.data.model.UserData
 import com.example.pawshearts.post.PostViewModel
 import com.example.pawshearts.post.PostViewModelFactory
@@ -50,7 +46,9 @@ fun ProfileScreen(
     nav: NavHostController,
     userData: UserData,
     outSignOut: () -> Unit,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    postViewModel: PostViewModel
+
 ) {
 
     val user = authViewModel.currentUser
@@ -61,18 +59,9 @@ fun ProfileScreen(
     val phone = userData.phone ?: ""
 
     // (T GIỮ MẤY CÁI STATE CẦN THIẾT)
-    var adopts by remember { mutableStateOf(listOf<Adopt>()) }
-    var selectedTab by remember { mutableStateOf(0) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showEditPersonalDialog by remember { mutableStateOf(false) }
-
-    // SỬA CÁCH M LẤY POSTVIEWMODEL (FIX LỖI CRASH KKK)
-    // 1. M LẤY CONTEXT
     val context = LocalContext.current.applicationContext as Application
-    // 2. M TRUYỀN CONTEXT VÔ CÁI FACTORY M VỪA SỬA
-    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-
-    // T THÊM LẠI CÁI imagePicker M CẦN (ĐỂ HẾT LỖI)
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -295,17 +284,15 @@ fun ProfileScreen(
             }
             Spacer(modifier = Modifier.width(4.dp))
             Button(
-                onClick = { selectedTab = 1 },
+                onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (selectedTab == 1) Color(0xFFE65100)
-                    else MaterialTheme.colorScheme.surface
+                    containerColor = Color(0xFFE65100)
                 ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
                     "Nhận nuôi",
-                    color = if (selectedTab == 1) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
@@ -315,35 +302,7 @@ fun ProfileScreen(
 
 
         // ====== TAB 2: NHẬN NUÔI ======
-        if (selectedTab == 1) {
-            var showCreateDialog by remember { mutableStateOf(false) }
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Button(
-                    onClick = { showCreateDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
-                        .padding(bottom = 12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("➕ Đăng nhận nuôi", color = Color.White, fontSize = 16.sp)
-                }
 
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 500.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(adopts) { adopt ->
-                        PostAdopt(post = adopt, onEditClick = { /* edit */ })
-                    }
-                }
-
-                if (showCreateDialog) {
-                    // ... (M TỰ CODE CÁI TAB NHẬN NUÔI NÀY SAU NHA KKK :v)
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.height(50.dp)) // Thêm tí đệm ở đít
     }

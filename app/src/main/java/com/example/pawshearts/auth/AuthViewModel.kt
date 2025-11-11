@@ -70,30 +70,26 @@ class AuthViewModel(
     }
     private val _userProfile = MutableStateFlow<UserData?>(null)
     val userProfile: StateFlow<UserData?> = _userProfile.asStateFlow()
+
+    // Trong AuthViewModel.kt
     init {
-        fetchUserProfile() // <-- M CÓ GỌI HÀM NÀY Ở ĐÂY KHÔNG M? :@
-    }
-    fun fetchUserProfile() {
-        // 1. T VỚI M TỰ LẤY ID KKK
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-
-        // 2. T VỚI M CHECK
-        if (currentUserId.isNullOrBlank()) {
-            Log.w("AuthVM", "không  có user, không fetch profile:v")
-            _userProfile.value = null // Set nó null cho chắc KKK
-            return // Return mẹ đi
-        }
-
-        // 3. M GỌI REPO BẰNG 'currentUserId' MỚI LẤY KKK
         viewModelScope.launch {
-            Log.d("AuthVM", "Bắt đầu fetch profile cho $currentUserId")
-
-            // SỬA THÀNH 'currentUserId' NÈ M ƠI KKK :@
-            repository.getUserProfileFlow(currentUserId).collect { userDataFromRoom ->
-                _userProfile.value = userDataFromRoom
+            // Lắng nghe trạng thái đăng nhập
+            isUserLoggedIn.collect { loggedIn ->
+                if (loggedIn && currentUser != null) {
+                    // Khi đăng nhập, bắt đầu lắng nghe profile từ Room
+                    repository.getUserProfileFlow(currentUser!!.uid).collect { userData ->
+                        _userProfile.value = userData
+                    }
+                } else {
+                    // Khi đăng xuất, xóa profile
+                    _userProfile.value = null
+                }
             }
         }
     }
+
+
 
 
     // 4. THÊM HÀM CẬP NHẬT INFO CÁ NHÂN (M đã có trong Repo)

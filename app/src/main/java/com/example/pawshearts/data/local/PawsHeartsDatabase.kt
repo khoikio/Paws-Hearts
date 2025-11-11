@@ -12,7 +12,7 @@ import com.example.pawshearts.data.model.UserData
  * @Database: Khai báo đây là một database của Room, chứa các bảng được định nghĩa trong `entities`.
  * `version`: Phiên bản của database. Khi bạn thay đổi cấu trúc bảng, bạn cần tăng version này.
  */
-@Database(entities = [UserData::class], version = 1, exportSchema = false)
+@Database(entities = [UserData::class], version = 2, exportSchema = false) // Version đã được tăng, rất tốt!
 abstract class PawsHeartsDatabase : RoomDatabase() {
 
     // Cung cấp một hàm để các thành phần khác có thể lấy được DAO.
@@ -29,7 +29,13 @@ abstract class PawsHeartsDatabase : RoomDatabase() {
                     context.applicationContext,
                     PawsHeartsDatabase::class.java,
                     "paws_hearts_database" // Tên file database sẽ được tạo trên thiết bị
-                ).build()
+                )
+                    // THÊM DÒNG NÀY ĐỂ SỬA LỖI
+                    // Dòng này sẽ tự động xóa database cũ và tạo lại database mới khi bạn tăng 'version'.
+                    // Rất hữu ích trong quá trình phát triển.
+                    .fallbackToDestructiveMigration()
+                    .build()
+
                 INSTANCE = instance
                 instance
             }
