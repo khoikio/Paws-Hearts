@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -153,9 +154,18 @@ fun AppRoot() {
                         nav = nav,
                         userData = firestoreProfile!!,
                         outSignOut = {
+                            // 1. Ra lệnh cho ViewModel thực hiện logout logic (xóa Room, signOut Firebase)
                             authViewModel.logout()
+
+                            // 2. Điều hướng về màn hình Login và thực hiện "CÚ ĐẤM HẠT NHÂN" vào back stack
                             nav.navigate(Routes.LOGIN_SCREEN) {
-                                popUpTo(nav.graph.id) { inclusive = true }
+                                // Xóa tất cả mọi thứ trong back stack cho đến màn hình gốc của đồ thị
+                                popUpTo(nav.graph.id) {
+                                    // Xóa luôn cả màn hình gốc đó (chính là AppRoot chứa các ViewModel)
+                                    inclusive = true
+                                }
+                                // Đảm bảo chỉ có một bản sao của màn hình Login được tạo ra
+                                launchSingleTop = true
                             }
                         },
                         authViewModel = authViewModel,
@@ -274,12 +284,12 @@ private fun BottomBar(nav: NavHostController) {
                         .weight(1f)
                         .clip(RoundedCornerShape(24.dp))
                         .clickable {
-                            if (currentRoute != item.route) {
-                                nav.navigate(item.route) {
-                                    popUpTo(Routes.HOME) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                            nav.navigate(item.route){
+                                popUpTo(nav.graph.findStartDestination().id) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally

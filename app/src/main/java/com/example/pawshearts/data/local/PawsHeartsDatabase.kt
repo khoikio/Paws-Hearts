@@ -12,7 +12,7 @@ import com.example.pawshearts.data.model.UserData
  * @Database: Khai báo đây là một database của Room, chứa các bảng được định nghĩa trong `entities`.
  * `version`: Phiên bản của database. Khi bạn thay đổi cấu trúc bảng, bạn cần tăng version này.
  */
-@Database(entities = [UserData::class], version = 2, exportSchema = false) // Version đã được tăng, rất tốt!
+@Database(entities = [UserData::class], version = 3, exportSchema = false) // Version đã được tăng, rất tốt!
 abstract class PawsHeartsDatabase : RoomDatabase() {
 
     // Cung cấp một hàm để các thành phần khác có thể lấy được DAO.

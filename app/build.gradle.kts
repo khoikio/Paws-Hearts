@@ -25,12 +25,16 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            // TẮT R8 KHI DEBUG ĐỂ TRÁNH CRASH VÀ BUILD NHANH HƠN
+            isMinifyEnabled = false
         }
     }
     compileOptions {

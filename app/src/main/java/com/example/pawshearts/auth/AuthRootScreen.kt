@@ -37,21 +37,13 @@ import com.example.pawshearts.auth.AuthViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthRootScreen(navController: NavController) {
-    // T BỎ CÁI AuthViewModelProvider CỦA M RA
-    // AuthViewModelProvider { viewModel -> // <-- BỎ CÁI NÀY
-
-    val context = LocalContext.current
-
-    // --- LẤY VIEWMODEL THEO CÁCH ĐÚNG NÈ KKK ---
-    val application = context.applicationContext as Application
-    val authViewModelFactory = AuthViewModelFactory(application)
-    val viewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
-    // ----------------------------------------------
+    val context = LocalContext.current.applicationContext as Application
+    // Chỉ cần 1 dòng này là đủ cho cả màn hình
+    val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     val isLoggedIn by viewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
-    // --- GLOBAL STATES ---
     var isLoginMode by remember { mutableStateOf(true) } // <-- State Chuyển đổi Tab
 
     // Register fields (Cần giữ lại để sau khi đăng ký thành công, form cũ không bị mất data)
@@ -66,14 +58,18 @@ fun AuthRootScreen(navController: NavController) {
     val isLoading = authState is AuthResult.Loading
     val prefilled by viewModel.prefilledCredentials.collectAsStateWithLifecycle()
 
-    // Navigate when logged in
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
+    // Chỉ giữ lại một LaunchedEffect duy nhất
+    LaunchedEffect(authState) {
+        if (authState is AuthResult.Success) {
+            // Đăng nhập/Đăng ký thành công thì đi về HOME và xóa hết màn hình cũ.
             navController.navigate(Routes.HOME) {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
         }
     }
+
+// XÓA HOÀN TOÀN cái LaunchedEffect(isLoggedIn) đi.
+
 
     // Auto-Fill logic (Sau khi Register thành công)
     LaunchedEffect(prefilled) {

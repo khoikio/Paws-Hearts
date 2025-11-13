@@ -140,8 +140,46 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = userName, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
-            Text(text = userEmail, fontSize = 14.sp, color = Color.Gray)
+
+// Dùng Row để chứa Tên và Tag Admin nằm cạnh nhau
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Khoảng cách giữa các item trong Row
+            ) {
+                // Text hiển thị tên, giữ nguyên như cũ
+                Text(
+                    text = userName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                )
+
+                // KIỂM TRA VÀ HIỂN THỊ TAG ADMIN
+                // Dùng 'userData' mà màn hình đã nhận vào để kiểm tra
+                if (userData.isAdmin) {
+                    // Dùng Card để tạo cái nền màu cam cho đẹp
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE65100)) // Màu cam đậm
+                    ) {
+                        // Text "Admin" bên trong Card
+                        Text(
+                            text = "Admin",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+// Text hiển thị email, giữ nguyên như cũ
+            Text(
+                text = userEmail,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
         }
 
 

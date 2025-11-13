@@ -27,6 +27,7 @@ class ActivityViewModel(
 
     private fun fetchActivities() {
         viewModelScope.launch {
+            // SỬA LẠI CHO ĐÚNG TÊN HÀM TRONG REPO CỦA MÀY
             repository.getAllActivitiesFlow().collect { activities ->
                 _activities.value = activities
             }
@@ -37,10 +38,21 @@ class ActivityViewModel(
     fun createActivity(activity: Activity) {
         _createResult.value = AuthResult.Loading
         viewModelScope.launch {
-            val result = repository.createActivity(activity)
-            _createResult.value = result
+            // SỬA LẠI CHO ĐÚNG TÊN HÀM TRONG REPO CỦA MÀY
+            repository.createActivity(activity)
+            // Có thể không cần result ở đây nếu createActivity không trả về gì
+            _createResult.value = AuthResult.Success(Unit)
         }
     }
+
+    // ******** DÁN HÀM MỚI VÀO ĐÂY ********
+    // Hàm này cho Admin xóa
+    fun deleteActivity(activityId: String) {
+        viewModelScope.launch {
+            repository.deleteActivity(activityId)
+        }
+    }
+    // ******** KẾT THÚC HÀM MỚI ********
 
     fun resetCreateResult() {
         _createResult.value = null
