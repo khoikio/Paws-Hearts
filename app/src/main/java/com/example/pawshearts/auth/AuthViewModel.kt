@@ -73,22 +73,35 @@ class AuthViewModel(
 
     // Trong AuthViewModel.kt
     init {
+        // 1. Nếu có user đăng nhập, đi lấy profile về ngay và luôn
+        currentUser?.uid?.let { userId ->
+            viewModelScope.launch {
+                // Ra lệnh cho Repository đồng bộ dữ liệu từ Firestore về Room
+                repository.refreshUserProfile()
+            }
+        }
+
+        // 2. Bắt đầu lắng nghe dữ liệu profile từ Room
         viewModelScope.launch {
-            // Lắng nghe trạng thái đăng nhập
-            isUserLoggedIn.collect { loggedIn ->
-                if (loggedIn && currentUser != null) {
-                    // Khi đăng nhập, bắt đầu lắng nghe profile từ Room
-                    repository.getUserProfileFlow(currentUser!!.uid).collect { userData ->
-                        _userProfile.value = userData
+            // Lắng nghe sự thay đổi của user (đăng nhập/đăng xuất)
+            repository.isUserLoggedInFlow.collect { isLoggedIn ->
+                if (isLoggedIn && currentUser != null) {
+                    // Nếu đã đăng nhập, bắt đầu collect từ Room
+                    repository.getUserProfileFlow(currentUser!!.uid).collect { userDataFromRoom ->
+                        _userProfile.value = userDataFromRoom
                     }
                 } else {
-                    // Khi đăng xuất, xóa profile
+                    // Nếu đăng xuất, set profile về null
                     _userProfile.value = null
                 }
             }
         }
     }
-
+    fun refreshProfile() {viewModelScope.launch {
+        Log.d("AuthVM", "Nhận được lệnh refresh profile từ UI...")
+        repository.refreshUserProfile()
+    }
+    }
 
 
 

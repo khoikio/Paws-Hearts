@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import com.example.pawshearts.data.model.Activity // M nhớ import Activity
 
+
 // T GIẢ SỬ M SẼ 'inject' CÁI FIREBASE VÔ KKK
 class ActivityRepositoryImpl(
     private val firestore: FirebaseFirestore
 ) : ActivityRepository {
+    private val activitiesCollection = firestore.collection("activities")
 
     // === 1. TẠO HÀM LẤY TẤT CẢ ACTIVITIES (NGHE REAL-TIME) KKK ===
     override fun getAllActivitiesFlow(): Flow<List<Activity>> {
@@ -55,6 +57,16 @@ class ActivityRepositoryImpl(
         } catch (e: Exception) {
             Log.e("ActivityRepoImpl", "Đăng hoạt động THẤT BẠI KKK :@", e)
             AuthResult.Error(e.message ?: "Lỗi đéo biết KKK :v")
+        }
+    }
+    override suspend fun deleteActivity(activityId: String) {
+        try {
+            // Gọi lệnh xóa document có ID tương ứng trên Firestore
+            activitiesCollection.document(activityId).delete().await()
+            Log.d("ActivityRepo", "Đã xóa hoạt động $activityId thành công.")
+        } catch (e: Exception) {
+            Log.e("ActivityRepo", "Lỗi khi xóa hoạt động $activityId", e)
+            // Ở đây mày có thể ném ra lỗi để báo cho ViewModel biết
         }
     }
 }

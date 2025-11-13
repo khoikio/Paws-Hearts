@@ -51,7 +51,7 @@ fun MyAdoptPostsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bài nhận nuôi của T :3") },
+                title = { Text("Bài nhận nuôi của bạn") },
                 navigationIcon = {
                     IconButton(onClick = { nav.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")

@@ -147,7 +147,7 @@ fun CreatePostButton(
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    "M muốn tìm chủ cho bé nào?",
+                    "Bạn muốn tìm chủ cho bé nào?",
                     color = Color.Gray,
                     fontWeight = FontWeight.SemiBold
                 )
