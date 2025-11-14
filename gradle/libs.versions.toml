@@ -24,7 +24,9 @@ coroutinesPlayServices = "1.8.1-GA"
 room = "2.6.1"
 datastore = "1.1.1"
 protobuf = "3.25.3"
-protobufPlugin = "0.9.4" # <-- Tuổi cho Plugin Proto
+protobufPlugin = "0.9.4"
+firebaseAi = "17.5.0"
+uiUnit = "1.9.4" # <-- Tuổi cho Plugin Proto
 
 [libraries]
 # --- BỘ CORE & COMPOSE (CŨ CỦA MÀY) ---
@@ -63,6 +65,8 @@ protobuf-javalite = { group = "com.google.protobuf", name = "protobuf-javalite",
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai", version.ref = "firebaseAi" }
+androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

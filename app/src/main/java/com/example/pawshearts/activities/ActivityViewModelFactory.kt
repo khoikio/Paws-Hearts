@@ -3,8 +3,10 @@ package com.example.pawshearts.activities
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.FirebaseApiNotAvailableException
 
 // CÁI NÀY LÀ CÁI "NHÀ MÁY" ĐỂ M 'inject' CÁI REPO VÔ VM KKK
 class ActivityViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
