@@ -6,11 +6,10 @@ object Routes {
     const val ADOPT = "adopt"
     const val PROFILE = "profile"
 
+    const val NOTIFICATION = "notification"
     const val LOGIN_SCREEN = "login"
     const val REGISTER_SCREEN = "register"
     const val SPLASH_SCREEN = "splash_screen"
-
-    const val NOTIFICATION_SCREEN ="notifications"
 
     const val PET_DETAIL = "pet/{id}"
     fun petDetail(id: String) = "pet/$id"
@@ -28,4 +27,7 @@ object Routes {
 
     const val ACTIVITIES_LIST_SCREEN = "activities_list"
     const val CREATE_ACTIVITY_SCREEN = "create_activity"
+
+    const val NOTIFICATION_SCREEN ="notifications"
+
 }

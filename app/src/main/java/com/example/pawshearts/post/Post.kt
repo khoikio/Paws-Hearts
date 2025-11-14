@@ -7,7 +7,7 @@ import com.google.firebase.Timestamp
 @Entity(tableName = "posts")
 data class Post(
     @PrimaryKey
-    val id: String = "", // ID của bài post
+    val postId: String = "", // ID của bài post, lấy để có j thông báo 
     val userId: String = "", // ID của thằng đăng bài :D
     val username: String? = null, // Tên thằng đăng
     val userAvatarUrl: String? = null, // Avatar thằng đăng

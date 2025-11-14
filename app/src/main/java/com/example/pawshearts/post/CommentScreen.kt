@@ -124,6 +124,7 @@ fun CommentScreen(
     }
 }
 
+private fun PostViewModel.fetchComments(postId: String) {}
 
 
 /**

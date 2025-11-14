@@ -18,4 +18,5 @@ sealed class NavItem(
     object Donate  : NavItem(Routes.DONATE,  AppIcons.Donate,  "Quyên góp")
     object Adopt   : NavItem(Routes.ADOPT,   AppIcons.Adopt,   "Nhận nuôi")
     object Profile : NavItem(Routes.PROFILE, AppIcons.Profile, "Hồ sơ")
+    object Notification : NavItem(Routes.NOTIFICATION, AppIcons.Notification, "Thông báo")
 }

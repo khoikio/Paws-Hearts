@@ -70,6 +70,10 @@ import com.example.pawshearts.profile.ProfileScreen
 import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.ui.theme.LightBackground
 import com.google.firebase.auth.FirebaseAuth
+import com.example.pawshearts.notifications.NotificationScreen
+import com.example.pawshearts.notifications.NotificationViewModel
+import com.example.pawshearts.notifications.NotificationViewModelFactory
+import com.example.pawshearts.notifications.CreateNotificationScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +85,7 @@ fun AppRoot() {
     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
     val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+    val notificationViewModel: NotificationViewModel = viewModel(factory = NotificationViewModelFactory(context))
     val currentUser = authViewModel.currentUser
     val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
@@ -190,7 +195,7 @@ fun AppRoot() {
             ) { backStack ->
                 val petId = backStack.arguments?.getString("id") ?: ""
                 PetDetailScreen(
-                    id = petId,
+                    postId = petId,
                     onBack = { nav.popBackStack() }
                 )
             }

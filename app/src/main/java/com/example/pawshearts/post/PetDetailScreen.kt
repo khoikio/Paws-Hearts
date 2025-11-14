@@ -25,7 +25,7 @@ import com.example.pawshearts.auth.AuthViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PetDetailScreen(
-    id: String, // <-- AppNav nó truyền ID bài post vô đây
+    postId: String, // <-- AppNav nó truyền ID bài post vô đây
     onBack: () -> Unit // <-- Để M bấm nút Back
 ) {
     // 1. LẤY VIEWMODEL (Y CHANG M SỬA 4 FILE HÔM QUA)
@@ -38,8 +38,8 @@ fun PetDetailScreen(
     val currentUserId = authViewModel.currentUser?.uid ?: ""
 
     // 3. BẮT ĐẦU TẢI CHI TIẾT BÀI (M GỌI HÀM BƯỚC 3)
-    LaunchedEffect(id) {
-        postViewModel.fetchPostDetails(id)
+    LaunchedEffect(postId) {
+        postViewModel.fetchPostDetails(postId)
     }
 
     Scaffold(

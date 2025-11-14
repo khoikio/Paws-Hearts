@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
+import com.example.pawshearts.notifications.NotificationRepository
 import com.example.pawshearts.post.Comment
 import com.example.pawshearts.post.Post
 import com.example.pawshearts.post.PostRepository
@@ -14,8 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+
 class PostViewModel(
-    private val repository: PostRepository
+    private val repository: PostRepository,
+    private val notificationRepository: NotificationRepository,// tạo thông báo khi c bài post mưới cho user thấy
+    private val currentUserId: String
 ) : ViewModel() {
 
     // 1. State để báo cho UI biết là "Đang đăng..." hay "Lỗi"
@@ -95,7 +99,7 @@ class PostViewModel(
 
             // 3. Tạo object Post xịn (với link ảnh xịn)
             val newPost = Post(
-                id = "",
+                postId = "",
                 userId = userId,
                 username = username,
                 userAvatarUrl = userAvatarUrl,
@@ -116,12 +120,26 @@ class PostViewModel(
 
             // 5. Báo kết quả
             _createPostState.value = result
+
+            // 6. Gửi notification cho những người khác (ngoại trừ người tạo post)
+            if (result is AuthResult.Success) {
+                notificationRepository.notifyNewPost(
+                    postId = newPost.postId,
+                    authorId = currentUserId
+                    )
         }
     }
     // ham tim, like'
     fun toggleLike(postId: String, userId: String){
         viewModelScope.launch {
             repository.toggleLike(postId, userId)
+            // Nếu người like không phải chủ bài viết → gửi notification
+            if (post.userId != currentUserId) {
+                notificationRepository.notifyLike(
+                    postId = post.id,
+                    senderId = currentUserId,
+                    postOwnerId = post.userId
+                )
         }
     }
     // ham comment
@@ -168,6 +186,13 @@ class PostViewModel(
 
             // 5. Báo kết quả
             _addCommentState.value = result
+            // 6. Gửi notification cho chủ bài viết (nếu không phải người comment)
+            if (result is AuthResult.Success && post.userId != currentUserId) {
+                notificationRepository.notifyComment(
+                    postId = Post.postId,
+                    senderId = currentUserId,
+                    postOwnerId = Post.userId
+                )
         }
     }
     fun fetchPostDetails(postId: String) {
