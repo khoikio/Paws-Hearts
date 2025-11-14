@@ -28,4 +28,8 @@ object Routes {
 
     const val ACTIVITIES_LIST_SCREEN = "activities_list"
     const val CREATE_ACTIVITY_SCREEN = "create_activity"
+
+    const val MESSAGES = "messages"
+    const val CHAT = "chat/{threadId}"
+    fun chat(threadId: String) = "chat/$threadId"
 }

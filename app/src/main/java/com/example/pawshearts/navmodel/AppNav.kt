@@ -1,7 +1,6 @@
 package com.example.pawshearts.navmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,7 +67,8 @@ import com.example.pawshearts.post.PostViewModelFactory
 import com.example.pawshearts.profile.ProfileScreen
 import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.ui.theme.LightBackground
-import com.google.firebase.auth.FirebaseAuth
+import com.example.pawshearts.messages.ui.screens.MessagesScreen
+import com.example.pawshearts.messages.ui.screens.ChatScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +89,8 @@ fun AppRoot() {
     // THÊM ĐIỀU KIỆN NÈ M KKK :D
     val showBottomBar = currentRoute != Routes.LOGIN_SCREEN &&
             currentRoute != Routes.REGISTER_SCREEN &&
-            currentRoute != Routes.SPLASH_SCREEN
+            currentRoute != Routes.SPLASH_SCREEN&&
+            currentRoute != Routes.CHAT
 
     Scaffold(
         topBar = {},
@@ -239,6 +239,29 @@ fun AppRoot() {
                 CreateActivityScreen(
                     nav = nav,
                     activityViewModel = activityViewModel
+                )
+            }
+
+            // ====== MÀN DANH SÁCH TIN NHẮN ======
+            composable(Routes.MESSAGES) {
+                MessagesScreen(
+                    onBackClick = { nav.popBackStack() },
+                    onThreadClick = { threadId ->
+                        nav.navigate(Routes.chat(threadId))
+                    }
+                )
+            }
+
+// ====== MÀN CHAT CHI TIẾT ======
+            composable(
+                route = Routes.CHAT,
+                arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
+
+                ChatScreen(
+                    threadId = threadId,
+                    onBackClick = { nav.popBackStack() }
                 )
             }
 

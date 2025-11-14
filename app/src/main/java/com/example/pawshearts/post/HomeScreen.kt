@@ -99,7 +99,7 @@ fun HomeScreen(nav: NavHostController) {
                 )
 
 
-                IconButton(onClick = { /*TODO*/ }) {
+                IconButton(onClick = { nav.navigate(Routes.MESSAGES) }) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_chat),
                         contentDescription = "Chat",
