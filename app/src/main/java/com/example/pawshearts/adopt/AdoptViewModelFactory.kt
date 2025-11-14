@@ -10,8 +10,8 @@ class AdoptViewModelFactory(private val application: Application) : ViewModelPro
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AdoptViewModel::class.java)) {
-            // Tạm thời T 'inject' Firebase ở đây
             val firestore = Firebase.firestore
+            // ⚠️ Cần đảm bảo AdoptRepositoryImpl có thể truy cập được
             val repository = AdoptRepositoryImpl(firestore)
             return AdoptViewModel(repository) as T
         }

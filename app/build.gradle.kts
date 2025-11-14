@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.protobuf.javalite)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.foundation)
     ksp(libs.androidx.room.compiler) // Room
 
     implementation(platform(libs.firebase.bom))

@@ -96,7 +96,12 @@ fun MyAdoptPostsScreen(
             } else {
                 items(myAdoptPosts) { adoptPost ->
                     // M XÀI LẠI CÁI PostAdopt CỦA M KKK
-                    PostAdopt(post = adoptPost, onEditClick = { /* edit */ })
+                    PostAdopt(
+                        post = adoptPost, onEditClick = { /* edit */ },
+                        postUI = TODO(),
+                        adoptViewModel = TODO(),
+                        navController = TODO()
+                    )
                 }
             }
         }

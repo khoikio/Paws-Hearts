@@ -4,23 +4,25 @@ import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
 data class Adopt(
-    // ID Tụi nó sẽ tự tạo
-    val id: String = "", // Firebase tự điền
-    val userId: String = "", // ID
-    val userName: String = "", // Tên
-    val userAvatarUrl: String? = null, // Avatar
+    val id: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val userAvatarUrl: String? = null,
 
-    // Thông tin Pet M nhập KKK
     val petName: String = "",
-    val petBreed: String = "", // Giống
-    val petAge: Int = 0, // Tuổi (tháng)
-    val petWeight: Double = 0.0, // Cân nặng (kg)
-    val petGender: String = "", // Giới tính
-    val petLocation: String = "", // Khu vực
-    val description: String = "", // Mô tả
-    val imageUrl: String? = null, // Ảnh Pet
+    val petBreed: String = "",
+    val petAge: Long = 0L, // Sửa thành Long để tương thích với Firestore
+    val petWeight: Double = 0.0,
+    val petGender: String = "",
+    val petLocation: String = "",
+    val description: String = "",
+    val imageUrl: String? = null,
+
+    // --- BỔ SUNG CHỨC NĂNG TƯƠNG TÁC ---
+    val likeCount: Long = 0L, // Sửa thành Long
+    val commentCount: Long = 0L, // Sửa thành Long
+    val shareCount: Int = 0,
 
     @ServerTimestamp
-    val timestamp: Date? = null // Giờ đăng
-
+    val timestamp: Date? = null
 )

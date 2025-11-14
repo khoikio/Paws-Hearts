@@ -12,10 +12,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning // Cần cho AlertDialog
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color // Cần cho AlertDialog
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +30,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
+// ⚠️ Cần import PostViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,15 +39,17 @@ fun CreatePostScreen(
 ) {
     val context = LocalContext.current.applicationContext as Application
 
-    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context)) // <-- HẾT LỖI
+    // 1. KHỞI TẠO VM (SỬA DÙNG PostViewModelFactory)
+    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
-    // 2. LẤY DATA (Info của M)
+    // 2. LẤY DATA
     val userData by authViewModel.userProfile.collectAsStateWithLifecycle(null)
-    val createPostState by postViewModel.createPostState.collectAsStateWithLifecycle()
+    // ⬇️ Tên biến này là createPostState
+    val createPostState by postViewModel.createPostState.collectAsStateWithLifecycle(initialValue = AuthResult.Idle)
 
 
-    // 4. MẤY CÁI STATE T "BÊ" TỪ DIALOG QUA
+    // 3. STATE CHO FORM VÀ DIALOG
     var name by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
     var ageMonth by remember { mutableStateOf("") }
@@ -53,30 +58,33 @@ fun CreatePostScreen(
     var location by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     var imgUri by remember { mutableStateOf<Uri?>(null) }
+    var showErrorDialog by remember { mutableStateOf<String?>(null) } // Thêm state cho dialog
 
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> if (uri != null) imgUri = uri }
 
-    // 5. CÁI LAUNCHEDEFFECT T CŨNG "BÊ" QUA LUÔN
-    // (Nó tự Back khi M đăng xong)
+    // 4. XỬ LÝ KẾT QUẢ VÀ TỰ BACK (SỬA LỖI UNRESOLVED REFERENCE)
     LaunchedEffect(createPostState) {
         when (createPostState) {
+            is AuthResult.Idle -> { /* Do nothing */ }
+
+            is AuthResult.Loading -> { /* Do nothing, UI đã xử lý */ }
+
             is AuthResult.Success -> {
-                Log.d("CreatePostScreen", "Đăng bài thành công!")
-                postViewModel.clearCreatePostState()
-                navController.popBackStack() // <-- TỰ ĐỘNG BACK
+                // Đăng thành công -> Tự động Back
+                navController.popBackStack()
+                postViewModel.clearCreatePostState() // SỬA: Dùng postViewModel
             }
             is AuthResult.Error -> {
-                Log.e("CreatePostScreen", "Lỗi đăng bài: ${(createPostState as AuthResult.Error).message}")
-                postViewModel.clearCreatePostState() // T reset lỗi (M nên hiện Toast)
-            }
-            is AuthResult.Loading -> {
-                Log.d("CreatePostScreen", "Đang đăng bài...")
+                // Hiển thị dialog lỗi
+                showErrorDialog = (createPostState as AuthResult.Error).message
+                postViewModel.clearCreatePostState() // SỬA: Dùng postViewModel
             }
             null -> {}
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -87,27 +95,33 @@ fun CreatePostScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                // NÚT "ĐĂNG" XỊN NÈ KKK
                 actions = {
                     TextButton(
                         onClick = {
                             if (createPostState !is AuthResult.Loading && userData != null) {
-                                postViewModel.createPost(
-                                    userId = userData!!.userId, // Lấy ID xịn
-                                    username = userData!!.username,
-                                    userAvatarUrl = userData!!.profilePictureUrl,
-                                    petName = name,
-                                    petBreed = breed,
-                                    petAge = ageMonth.toIntOrNull() ?: 0,
-                                    petGender = gender,
-                                    location = location,
-                                    weightKg = weightKg.toDoubleOrNull() ?: 0.0,
-                                    imageUri = imgUri, // M vừa code up ảnh
-                                    description = desc
-                                )
+                                // ⚠️ Sửa: Dùng safe call và Elvis operator cho non-nullable fields
+                                val currentData = userData
+                                if (currentData != null) {
+                                    postViewModel.createPost(
+                                        userId = currentData.userId,
+                                        username = currentData.username.orEmpty(),
+                                        userAvatarUrl = currentData.profilePictureUrl,
+                                        petName = name,
+                                        petBreed = breed,
+                                        petAge = ageMonth.toIntOrNull() ?: 0,
+                                        petGender = gender,
+                                        location = location,
+                                        weightKg = weightKg.toDoubleOrNull() ?: 0.0,
+                                        imageUri = imgUri,
+                                        description = desc
+                                    )
+                                } else {
+                                    showErrorDialog = "Dữ liệu người dùng chưa tải xong. Vui lòng thử lại."
+                                }
                             }
                         },
-                        enabled = (createPostState !is AuthResult.Loading && userData != null)
+                        // Chỉ cho phép đăng khi không Loading và có UserData
+                        enabled = (createPostState !is AuthResult.Loading && userData != null && name.isNotBlank())
                     ) {
                         if (createPostState is AuthResult.Loading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -120,13 +134,13 @@ fun CreatePostScreen(
         }
     ) { innerPadding ->
 
-        // 6. CÁI FORM T "BÊ" TỪ DIALOG QUA
+        // FORM
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp, vertical = 24.dp)
-                .verticalScroll(rememberScrollState()), // M cuộn tẹt ga
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Tên thú cưng") }, modifier = Modifier.fillMaxWidth())
@@ -149,5 +163,19 @@ fun CreatePostScreen(
                 )
             }
         }
+
+        // DIALOG HIỂN THỊ LỖI
+        if (showErrorDialog != null) {
+            AlertDialog(
+                onDismissRequest = { showErrorDialog = null },
+                icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red) },
+                title = { Text("Lỗi Đăng bài") },
+                text = { Text(showErrorDialog ?: "Lỗi không xác định") },
+                confirmButton = {
+                    TextButton(onClick = { showErrorDialog = null }) { Text("OK") }
+                }
+            )
+        }
     }
 }
+

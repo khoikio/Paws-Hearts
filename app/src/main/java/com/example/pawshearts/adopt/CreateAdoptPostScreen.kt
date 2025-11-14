@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.auth.AuthResult
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch // Import này vẫn cần cho FormTextField, nhưng bạn có thể không cần nếu không dùng coroutine trong Composable chính
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,11 +36,11 @@ fun CreateAdoptPostScreen(
     nav: NavHostController,
     adoptViewModel: AdoptViewModel
 ) {
-    // 1. T VỚI M TẠO STATE (BIẾN NHỚ) CHO CÁI FORM
+    // 1. STATE CHO FORM
     var petName by remember { mutableStateOf("") }
     var petBreed by remember { mutableStateOf("") }
-    var petAge by remember { mutableStateOf("") } // Tuổi (String)
-    var petWeight by remember { mutableStateOf("") } // Cân nặng (String)
+    var petAge by remember { mutableStateOf("") }
+    var petWeight by remember { mutableStateOf("") }
     var petGender by remember { mutableStateOf("") }
     var petLocation by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -53,27 +53,27 @@ fun CreateAdoptPostScreen(
         imageUri = uri
     }
 
-    // 3. T VỚI M "NGHE" KẾT QUẢ ĐĂNG BÀI TỪ VM
+    // 3. NGHE KẾT QUẢ ĐĂNG BÀI VÀ CÁC STATE PHỤ
     val postResult by adoptViewModel.postResult.collectAsState()
-    val scope = rememberCoroutineScope()
     var showLoading by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf<String?>(null) }
 
-    // 4. T VỚI M XỬ LÝ KẾT QUẢ
+    // 4. XỬ LÝ KẾT QUẢ
     LaunchedEffect(postResult) {
         when (postResult) {
             is AuthResult.Loading -> showLoading = true
             is AuthResult.Success -> {
                 showLoading = false
-                nav.popBackStack() // Đăng thành công -> T với M "Back"
-                adoptViewModel.resetPostResult()
+                nav.popBackStack()
+                adoptViewModel.resetCreateResult() // Đã giải quyết lỗi tham chiếu
             }
             is AuthResult.Error -> {
                 showLoading = false
                 showErrorDialog = (postResult as AuthResult.Error).message
-                adoptViewModel.resetPostResult()
+                adoptViewModel.resetCreateResult() // Đã giải quyết lỗi tham chiếu
             }
-            null -> showLoading = false
+            // 'else' bao gồm trường hợp null và AuthResult.Idle
+            else -> showLoading = false
         }
     }
 
@@ -87,18 +87,16 @@ fun CreateAdoptPostScreen(
                     }
                 },
                 actions = {
-                    // NÚT "ĐĂNG" XỊN VCL KKK
                     TextButton(
                         onClick = {
-                            if (!showLoading) { // Nếu đéo đang tải...
-                                // M GỌI HÀM VM M ƠI KKK
+                            if (!showLoading) {
                                 adoptViewModel.createAdoptPost(
                                     petName, petBreed, petAge, petWeight,
                                     petGender, petLocation, description, imageUri
                                 )
                             }
                         },
-                        enabled = !showLoading // Đang tải thì M "mờ" nút đi
+                        enabled = !showLoading && petName.isNotBlank() && petBreed.isNotBlank()
                     ) {
                         Text(
                             "ĐĂNG",
@@ -117,7 +115,7 @@ fun CreateAdoptPostScreen(
         }
     ) { paddingValues ->
 
-        // 5. CÁI FORM KKK
+        // FORM
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -156,7 +154,7 @@ fun CreateAdoptPostScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // MẤY CÁI Ô NHẬP LIỆU
+            // CÁC Ô NHẬP LIỆU
             FormTextField(
                 value = petName,
                 onValueChange = { petName = it },
@@ -198,7 +196,7 @@ fun CreateAdoptPostScreen(
             )
         }
 
-        // 6. CÁI LOADING VÀ DIALOG BÁO LỖI
+        // LOADING VÀ DIALOG BÁO LỖI
         if (showLoading) {
             Box(
                 modifier = Modifier

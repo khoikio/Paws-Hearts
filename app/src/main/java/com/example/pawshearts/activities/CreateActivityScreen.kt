@@ -42,9 +42,13 @@ fun CreateActivityScreen(
     LaunchedEffect(createResult) {
         when (createResult) {
             is AuthResult.Loading -> showLoading = true
+
+            // ✅ BỔ SUNG TRẠNG THÁI IDLE
+            is AuthResult.Idle -> showLoading = false
+
             is AuthResult.Success -> {
                 showLoading = false
-                nav.popBackStack() // Đăng thành công -> T với M "Back"
+                nav.popBackStack()
                 activityViewModel.resetCreateResult()
             }
             is AuthResult.Error -> {
@@ -52,6 +56,7 @@ fun CreateActivityScreen(
                 showErrorDialog = (createResult as AuthResult.Error).message
                 activityViewModel.resetCreateResult()
             }
+            // ✅ Xử lý trường hợp null (khi biến StateFlow ban đầu là null)
             null -> showLoading = false
         }
     }

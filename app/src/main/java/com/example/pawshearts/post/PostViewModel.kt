@@ -1,13 +1,9 @@
 package com.example.pawshearts.post
 
-
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.post.Comment
-import com.example.pawshearts.post.Post
-import com.example.pawshearts.post.PostRepository
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,24 +17,28 @@ class PostViewModel(
     // 1. State để báo cho UI biết là "Đang đăng..." hay "Lỗi"
     private val _createPostState = MutableStateFlow<AuthResult<Unit>?>(null)
     val createPostState: StateFlow<AuthResult<Unit>?> = _createPostState.asStateFlow()
-    // --- THÊM CỤM NÀY ĐỂ GIỮ LIST BÀI ĐĂNG ---
+
+    // --- THÊM CỤM NÀY ĐỂ GIỮ LIST BÀI ĐĂNG CỦA TÔI ---
     private val _myPosts = MutableStateFlow<List<Post>>(emptyList())
     val myPosts: StateFlow<List<Post>> = _myPosts.asStateFlow()
-    // --- THÊM CỤM NÀY CHO HOME SCREEN ---
+
+    // --- THÊM CỤM NÀY CHO HOME SCREEN (TẤT CẢ BÀI ĐĂNG) ---
     private val _allPosts = MutableStateFlow<List<Post>>(emptyList())
     val allPosts: StateFlow<List<Post>> = _allPosts.asStateFlow()
-    //Ham Comment
+
+    // Ham Comment
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     val comments: StateFlow<List<Comment>> = _comments.asStateFlow()
 
     // 2. Ô nhớ để báo state ĐĂNG cmt (Loading/Error/Success)
     private val _addCommentState = MutableStateFlow<AuthResult<Unit>?>(null)
     val addCommentState: StateFlow<AuthResult<Unit>?> = _addCommentState.asStateFlow()
-    // --- THÊM HÀM NÀY ĐỂ BẮT ĐẦU TẢI BÀI ---
+
+    // --- BÀI ĐĂNG ĐANG XEM CHI TIẾT ---
     private val _selectedPost = MutableStateFlow<Post?>(null)
     val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
+
     fun fetchMyPosts(userId: String) {
-        //  check để nó ko gọi hàm này 1000 lần
         if (userId.isBlank()) return
 
         viewModelScope.launch {
@@ -47,6 +47,7 @@ class PostViewModel(
             }
         }
     }
+
     // ham nay cho home
     fun fetchAllPosts() {
         viewModelScope.launch {
@@ -55,6 +56,7 @@ class PostViewModel(
             }
         }
     }
+
     fun createPost(
         // Thông tin thằng đăng (M lấy từ AuthViewModel/UserData)
         userId: String,
@@ -68,7 +70,7 @@ class PostViewModel(
         petGender: String?,
         location: String?,
         weightKg: Double?,
-        imageUri: Uri?, // <-- T SỬA String THÀNH Uri?
+        imageUri: Uri?,
         description: String
     ) {
         viewModelScope.launch {
@@ -82,7 +84,7 @@ class PostViewModel(
                 val uploadResult = repository.uploadImage(imageUri)
 
                 if (uploadResult is AuthResult.Success) {
-                    imageUrl = uploadResult.data // <-- LẤY LINK XỊN KKK
+                    imageUrl = uploadResult.data
                 } else {
                     // Up ảnh lỗi -> Báo lỗi KKK
                     _createPostState.value = AuthResult.Error("Lỗi up ảnh: ${(uploadResult as AuthResult.Error).message}")
@@ -106,9 +108,8 @@ class PostViewModel(
                 petGender = petGender,
                 location = location,
                 weightKg = weightKg,
-                imageUrl = imageUrl, // <-- LINK XỊN (hoặc rỗng)
+                imageUrl = imageUrl,
                 description = description
-                // Mấy cái likes, commentCount nó tự = 0
             )
 
             // 4. Quăng cho Repository (để lưu vô Firestore)
@@ -118,12 +119,14 @@ class PostViewModel(
             _createPostState.value = result
         }
     }
+
     // ham tim, like'
     fun toggleLike(postId: String, userId: String){
         viewModelScope.launch {
             repository.toggleLike(postId, userId)
         }
     }
+
     // ham comment
     fun fetchComments(postId: String) {
         if (postId.isBlank()) return
@@ -133,6 +136,7 @@ class PostViewModel(
             }
         }
     }
+
     /**
      * Hàm này M sẽ gọi khi M bấm nút "Gửi" cmt
      */
@@ -170,6 +174,7 @@ class PostViewModel(
             _addCommentState.value = result
         }
     }
+
     fun fetchPostDetails(postId: String) {
         if (postId.isBlank()) return
         viewModelScope.launch {
@@ -178,12 +183,14 @@ class PostViewModel(
             }
         }
     }
+
     fun clearAddCommentState() {
         _addCommentState.value = null
     }
 
     // Hàm này để M reset cái state (sau khi M báo lỗi/thành công)
-    fun clearCreatePostState() {
+    // 💡 TÊN HÀM NÀY PHẢI KHỚP VỚI LỆNH GỌI TRONG CreatePostScreen.kt
+    fun clearCreatePostState() { // <-- Tên hiện tại trong VM
         _createPostState.value = null
     }
 }
