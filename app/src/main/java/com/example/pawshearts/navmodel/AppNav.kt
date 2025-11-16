@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -26,27 +27,25 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.activities.*
 import com.example.pawshearts.adopt.*
+import com.example.pawshearts.adopt.components.AdoptCommentScreen
 import com.example.pawshearts.adopt.components.AdoptScreen
 import com.example.pawshearts.auth.*
 import com.example.pawshearts.donate.*
+import com.example.pawshearts.messages.ui.screens.ChatScreen
+import com.example.pawshearts.messages.ui.screens.MessagesScreen
+import com.example.pawshearts.notification.NotificationScreen
 import com.example.pawshearts.post.*
 import com.example.pawshearts.profile.ProfileScreen
 import com.example.pawshearts.settings.*
-import com.example.pawshearts.SplashScreen
-import com.example.pawshearts.notification.NotificationScreen
-import com.example.pawshearts.ui.theme.LightBackground
 import com.example.pawshearts.ui.theme.Theme
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.example.pawshearts.messages.ui.screens.MessagesScreen
-import com.example.pawshearts.messages.ui.screens.ChatScreen
-import com.example.pawshearts.adopt.AdoptCommentScreen
-// IMPORT CẦN THIẾT cho logic Bình luận
 
-// Cấu trúc mới: AppRoot là hàm cha chứa tất cả ٩(^‿^)۶
+
 @Composable
 fun AppRoot() {
     val context = LocalContext.current.applicationContext
@@ -55,35 +54,32 @@ fun AppRoot() {
     )
     val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
-    // Áp dụng theme cho toàn bộ ứng dụng
     Theme(darkTheme = isDarkMode) {
-        // Gọi phần nội dung chính, bây giờ nó nằm gọn bên trong AppRoot
         AppContent(themeViewModel = themeViewModel)
     }
 }
+fun NavHostController.goPetDetail(id: String) {
+    navigate(Routes.petDetail(id))
+}
 
-// Composable này và các hàm con của nó bây giờ nằm BÊN TRONG AppRoot
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppContent(themeViewModel: SettingViewModel) {
-    val nav = rememberNavController() // <-- "Bản đồ" được tạo ở đây
+    val nav = rememberNavController()
     val context = LocalContext.current.applicationContext as Application
 
-//    // Khởi tạo tất cả ViewModel ở đây
-
-
+    // Logic hiển thị BottomBar đã được sửa lại
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-    val showBottomBar = currentRoute !in listOf(Routes.LOGIN_SCREEN, Routes.REGISTER_SCREEN, Routes.SPLASH_SCREEN)
-    // THÊM ĐIỀU KIỆN NÈ M KKK :D
-    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN &&
-            currentRoute != Routes.REGISTER_SCREEN &&
-            currentRoute != Routes.SPLASH_SCREEN&&
-            currentRoute != Routes.CHAT
+    val showBottomBar = currentRoute !in listOf(
+        Routes.SPLASH_SCREEN,
+        Routes.LOGIN_SCREEN,
+        Routes.REGISTER_SCREEN,
+        Routes.CHAT // Không hiện bottom bar ở màn Chat
+    )
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                // Bây giờ BottomBar có thể thấy `nav` vì chúng ở cùng một "nhà" (─‿‿─)
                 BottomBar(nav = nav)
             }
         },
@@ -94,71 +90,53 @@ private fun AppContent(themeViewModel: SettingViewModel) {
             startDestination = Routes.SPLASH_SCREEN,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // === CÁC MÀN HÌNH CỦA APP ===
+            // === CÁC MÀN HÌNH KHÔNG CẦN VM PHỨC TẠP ===
             composable(Routes.SPLASH_SCREEN) { SplashScreen(navController = nav) }
             composable(Routes.LOGIN_SCREEN) { AuthRootScreen(navController = nav) }
             composable(Routes.HOME) { HomeScreen(nav) }
-            // ... (Tất cả các composable khác của mày giữ nguyên y hệt) ...
             composable(Routes.DONATE) { DonateScreen(nav) }
             composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
-
             composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
+
+            // === CÁC MÀN HÌNH TỰ KHỞI TẠO VIEWMODEL RIÊNG ===
+
             composable(Routes.MY_POSTS_SCREEN) {
                 val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
                 val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-                MyPostsScreen(
-                    nav = nav,
-                    authViewModel = authViewModel,
-                    postViewModel = postViewModel
-                )
+                MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
             }
 
             composable(Routes.ADOPT) {
                 val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
                 val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-
-                AdoptScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel
-                )
+                AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
             }
+
             composable(Routes.MY_ADOPT_POSTS_SCREEN) {
                 val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
                 val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-
-
-                MyAdoptPostsScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel,
-                )
+                MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
             }
+
             composable(Routes.CREATE_ADOPT_POST_SCREEN) {
                 val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                CreateAdoptPostScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel
-                )
+                CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
             }
 
+            // SỬA LẠI KHỐI NÀY
             composable(Routes.ACTIVITIES_LIST_SCREEN) {
                 val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
                 val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-                ActivitiesScreen(
-                    nav = nav,
-                    authViewModel = authViewModel,
-                    activityViewModel = activityViewModel
-                )
+                ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
             }
+
+            // SỬA LẠI KHỐI NÀY
             composable(Routes.CREATE_ACTIVITY_SCREEN) {
                 val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-                CreateActivityScreen(
-                    nav = nav,
-                    activityViewModel = activityViewModel
-                )
+                CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
             }
+
+            // --- CÁC MÀN HÌNH CÓ THAM SỐ (ARGUMENTS) ---
 
             composable(
                 route = Routes.PET_DETAIL,
@@ -176,74 +154,15 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 CommentScreen(postId = postId, onBack = { nav.popBackStack() })
             }
 
-            // MÀN HÌNH PROFILE
-            composable(Routes.PROFILE) {
-                val context = LocalContext.current.applicationContext as Application
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-                val scope = rememberCoroutineScope()
-                val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle(null)
-
-                if (firestoreProfile != null) {
-                    ProfileScreen(
-                        nav = nav,
-                        userData = firestoreProfile!!,
-                        outSignOut = {
-
-                            scope.launch {
-                                nav.navigate(Routes.LOGIN_SCREEN) {
-                                    popUpTo(nav.graph.findStartDestination().id){
-                                        inclusive = true
-                                    }
-                                    launchSingleTop = true
-                                }
-                                delay(50L)
-                                authViewModel.logout()
-                            }
-
-                        },
-                        authViewModel = authViewModel,
-                        postViewModel = postViewModel,
-                        onSettingsClick = {nav.navigate(Routes.SETTINGS_SCREEN)}
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
-            // MÀN HÌNH CÀI ĐẶT MỚI
-            composable(Routes.SETTINGS_SCREEN) {
-                SettingsScreen(
-                    nav = nav,
-                    themeViewModel = themeViewModel
-                )
-            }
-            composable (Routes.NOTIFICATION_SCREEN ) {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                if (userId != null){
-                    NotificationScreen( userId = userId)
-                }else{
-                    // chua dang nhap thi chuyen ve phan dang nhap
-                    nav.navigate(Routes.LOGIN_SCREEN){
-                        popUpTo(nav.graph.id){
-                            inclusive = true
-                        }
-                    }
-                }
-
-            // MÀN HÌNH BÌNH LUẬN ADOPT
+            // SỬA LẠI KHỐI NÀY
             composable(
                 route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
                 arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
-
-                // ĐÃ SỬA: Dùng AdoptViewModel vì nó chứa logic comment
+                // TỰ KHỞI TẠO VM Ở ĐÂY
+                val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
                 AdoptCommentScreen(
                     adoptPostId = adoptPostId,
                     adoptViewModel = adoptViewModel,
@@ -252,61 +171,85 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 )
             }
 
-            // ACTIVITIES_LIST_SCREEN: Dùng lại VM đã tạo ở ngoài
-            composable(Routes.ACTIVITIES_LIST_SCREEN) {
-                ActivitiesScreen(
-                    nav = nav,
-                    authViewModel = authViewModel,
-                    activityViewModel = activityViewModel
-                )
+            // --- CÁC MÀN HÌNH ĐẶC BIỆT ---
+
+            composable(Routes.PROFILE) {
+                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+                val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
+
+                // Lấy trạng thái đăng nhập từ Firebase trước
+                val firebaseUser = authViewModel.currentUser
+
+                if (firebaseUser == null) {
+                    // Nếu chắc chắn đã logout, chuyển về màn hình Login
+                    LaunchedEffect(Unit) {
+                        nav.navigate(Routes.LOGIN_SCREEN) {
+                            popUpTo(nav.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                } else {
+                    // Nếu đã đăng nhập, thì mới bắt đầu tải profile từ Firestore
+                    val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
+
+                    if (firestoreProfile != null) {
+                        // Nếu đã tải xong profile, hiển thị màn hình
+                        ProfileScreen(
+                            nav = nav,
+                            userData = firestoreProfile!!,
+                            authViewModel = authViewModel,
+                            postViewModel = postViewModel,
+                            onSettingsClick = { nav.navigate(Routes.SETTINGS_SCREEN) }
+                        )
+                    } else {
+                        // Nếu chưa tải xong profile, hiển thị vòng tròn loading
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
             }
 
-            // CREATE_ACTIVITY_SCREEN: Dùng lại ActivityVM đã tạo ở ngoài
-            composable(Routes.CREATE_ACTIVITY_SCREEN) {
-                CreateActivityScreen(
-                    nav = nav,
-                    activityViewModel = activityViewModel
-                )
+
+            composable(Routes.SETTINGS_SCREEN) {
+                SettingsScreen(nav = nav, themeViewModel = themeViewModel)
             }
 
-            // ====== MÀN DANH SÁCH TIN NHẮN ======
+            composable(Routes.NOTIFICATION_SCREEN) {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    NotificationScreen(userId = userId)
+                } else {
+                    nav.navigate(Routes.LOGIN_SCREEN) {
+                        popUpTo(nav.graph.id) { inclusive = true }
+                    }
+                }
+            }
+
             composable(Routes.MESSAGES) {
                 MessagesScreen(
                     onBackClick = { nav.popBackStack() },
-                    onThreadClick = { threadId ->
-                        nav.navigate(Routes.chat(threadId))
-                    }
+                    onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }
                 )
             }
 
-            // ====== MÀN CHAT CHI TIẾT ======
             composable(
                 route = Routes.CHAT,
                 arguments = listOf(navArgument("threadId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
-
-                ChatScreen(
-                    threadId = threadId,
-                    onBackClick = { nav.popBackStack() }
-                )
+                ChatScreen(threadId = threadId, onBackClick = { nav.popBackStack() })
             }
-
         }
     }
 }
 
+// Hàm BottomBar giữ nguyên, không cần sửa
 @Composable
 private fun BottomBar(nav: NavHostController) {
-    // ... code của BottomBar giữ nguyên y hệt, nó đã đúng rồi ...
-    val items = listOf(
-        NavItem.Home,
-        NavItem.Donate,
-        NavItem.Adopt,
-        NavItem.Profile
-    )
+    val items = listOf(NavItem.Home, NavItem.Donate, NavItem.Adopt, NavItem.Profile)
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -319,7 +262,6 @@ private fun BottomBar(nav: NavHostController) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
-
         ) {
             items.forEach { item ->
                 val selected = currentRoute == item.route
@@ -377,7 +319,4 @@ private fun BottomBar(nav: NavHostController) {
             }
         }
     }
-}
-fun NavHostController.goPetDetail(petId: String) {
-    this.navigate("${Routes.PET_DETAIL_SCREEN_BASE}/$petId")
 }

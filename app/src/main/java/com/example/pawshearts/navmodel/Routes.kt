@@ -1,5 +1,7 @@
 package com.example.pawshearts.navmodel
 
+import androidx.navigation.NavController
+
 object Routes {
     const val HOME = "home"
     const val DONATE = "donate"
@@ -10,7 +12,6 @@ object Routes {
     const val REGISTER_SCREEN = "register"
     const val SPLASH_SCREEN = "splash_screen"
 
-    const val NOTIFICATION_SCREEN ="notifications"
 
     const val PET_DETAIL_SCREEN = "pet_detail_screen"
     const val PET_DETAIL = "pet/{id}"
@@ -38,4 +39,5 @@ object Routes {
     const val MESSAGES = "messages"
     const val CHAT = "chat/{threadId}"
     fun chat(threadId: String) = "chat/$threadId"
+
 }

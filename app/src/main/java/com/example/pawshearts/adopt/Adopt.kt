@@ -22,6 +22,6 @@ data class Adopt(
     val likeCount: Int = 0,
 
     @ServerTimestamp
-    val timestamp: Date? = null // Giờ đăng
+    val createdAt: Date? = null // Giờ đăng
 
 )

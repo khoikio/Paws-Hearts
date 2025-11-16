@@ -57,15 +57,12 @@ fun SplashScreen(navController: NavHostController) {
         // Logo của mày
         Text(
             "Paws & Hearts",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.primary // Chữ màu cam cho nó nổi
         )
     }
 }
-            text = "Paws & Hearts",
-            style = MaterialTheme.typography.displayLarge,
-            color = Color(0xFFEA5600)
-        )
-    }
-
-}
+//            text = "Paws & Hearts",
+//            style = MaterialTheme.typography.displayLarge,
+//            color = Color(0xFFEA5600)
+//

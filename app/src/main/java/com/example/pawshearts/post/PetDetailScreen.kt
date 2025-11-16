@@ -1,4 +1,4 @@
-package com.example.pawshearts.post // M check package M
+package com.example.pawshearts.post
 
 import android.app.Application
 import androidx.compose.foundation.layout.*

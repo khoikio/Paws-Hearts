@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
@@ -43,7 +44,6 @@ import com.example.pawshearts.post.PostViewModel
 fun ProfileScreen(
     nav: NavHostController,
     userData: UserData,
-    outSignOut: () -> Unit,
     authViewModel: AuthViewModel,
     postViewModel: PostViewModel,
     onSettingsClick: () -> Unit
@@ -97,7 +97,8 @@ fun ProfileScreen(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)                    .clickable { imagePicker.launch("image/*") },
+                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .clickable { imagePicker.launch("image/*") },
                 contentScale = ContentScale.Crop
             )
 
@@ -137,7 +138,8 @@ fun ProfileScreen(
                         onClick = { showEditDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.primary)                    ) {
+                        border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.primary)
+                    ) {
                         Text("Chỉnh sửa thông tin", color = MaterialTheme.colorScheme.onBackground)
                     }
                 }
@@ -153,7 +155,7 @@ fun ProfileScreen(
             // NÚT ĐĂNG XUẤT
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = outSignOut,
+                onClick = { authViewModel.logout() }, // CHỈ GỌI LOGOUT
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
@@ -216,4 +218,3 @@ private fun FunctionButton(text: String, onClick: () -> Unit, modifier: Modifier
         Text(text, color = Color.White)
     }
 }
-

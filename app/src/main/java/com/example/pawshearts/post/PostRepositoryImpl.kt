@@ -168,7 +168,7 @@ class PostRepositoryImpl(
                             message = "đã thích bài viết của bạn.",
                             postId = postId,
                             isRead = false,
-                            createdAt = java.util.Date()
+                            createdAt = Date()
                         )
 
                         transaction.set(notificationRef, newNotification)
@@ -239,7 +239,7 @@ class PostRepositoryImpl(
                     message = "đã bình luận về bài viết của bạn.",
                     postId = comment.postId,
                     isRead = false,
-                    createdAt = java.util.Date()
+                    createdAt = Date()
                 )
                 batch.set(notificationRef, newNotification)
             }

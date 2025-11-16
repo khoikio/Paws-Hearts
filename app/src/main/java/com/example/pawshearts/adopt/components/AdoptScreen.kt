@@ -23,7 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // <== CẦN IMPORT NÀY CHO TEXT SIZE
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -33,8 +33,7 @@ import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.navmodel.Routes
 import android.content.Intent
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
+import com.example.pawshearts.ui.theme.DarkBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +75,7 @@ fun AdoptScreen(
                 Modifier.height(100.dp),
                 // KHÔNG DÙNG contentWindowInsets
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.background, // SỬA Ở ĐÂY
                     titleContentColor = OrangeColor
                 )
             )
@@ -87,7 +86,8 @@ fun AdoptScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background),            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                .background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // ... (Phần còn lại của LazyColumn giữ nguyên)
@@ -152,7 +152,7 @@ fun CreatePostButton(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(

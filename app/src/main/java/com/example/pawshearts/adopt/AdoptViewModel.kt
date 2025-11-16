@@ -162,7 +162,7 @@ class AdoptViewModel(
                     petLocation = petLocation,
                     description = description,
                     imageUrl = imageUrl,
-                    timestamp = null
+                    createdAt = null
                 )
 
                 // 5. QUĂNG CHO REPO KKK (GỌI HÀM MỚI createAdoptPostWithId)

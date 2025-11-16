@@ -1,6 +1,6 @@
 // File mới: package com.example.pawshearts.adopt
 
-package com.example.pawshearts.adopt
+package com.example.pawshearts.adopt.components
 
 import android.app.Application
 import androidx.compose.foundation.background
@@ -26,11 +26,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.pawshearts.R
+import com.example.pawshearts.adopt.AdoptComment
+import com.example.pawshearts.adopt.AdoptViewModel
+import com.example.pawshearts.adopt.AdoptViewModelFactory
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
 import com.example.pawshearts.post.formatTimestamp // <== M CẦN ĐẢM BẢO HÀM NÀY PUBLIC
-import com.example.pawshearts.adopt.AdoptViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,12 +44,6 @@ fun AdoptCommentScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current.applicationContext as Application
-    // === TẠO VIEWMODEL MỚI CHO CMT CỦA ADOPT ===
-    val adoptViewModel: AdoptViewModel = viewModel(
-        factory = AdoptViewModelFactory(context)
-    )
-    // TÁI SỬ DỤNG AUTH VIEWMODEL
-    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
     // 2. LẤY DATA (List cmt và info của M)
     val comments by adoptViewModel.comments.collectAsStateWithLifecycle()
@@ -168,7 +164,7 @@ private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
                 // CẦN ĐẢM BẢO HÀM formatTimestamp TỒN TẠI VÀ CÓ THỂ IMPORT
                 // Hiện tại tôi giữ nguyên, bạn cần đảm bảo nó có trong package post hoặc utility
                 val timeText = if (comment.createdAt != null) {
-                    com.example.pawshearts.post.formatTimestamp(comment.createdAt)
+                    com.example.pawshearts.post.formatTimestamp(comment.createdAt.toDate())
                 } else {
                     "Đang tải..." // Hoặc chuỗi bạn muốn hiển thị khi timestamp rỗng
                 }

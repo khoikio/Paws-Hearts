@@ -40,7 +40,7 @@ fun PostAdopt(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = onEditClick
+        onClick = { onEditClick(post) } // SỬA LỖI Ở ĐÂY
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
 
