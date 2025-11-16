@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler // Tí T với M mở link Momo KKK
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -33,8 +34,10 @@ fun DonateScreen(nav: NavHostController) {
             TopAppBar(
                 title = {
                     Text(
-                        "Quyên Góp & Hoạt Động", // T SỬA LẠI TÊN XỊN KKK
-                        fontWeight = FontWeight.Bold
+                        "Quyên Góp & Hoạt Động ", // T SỬA LẠI TÊN XỊN KKK
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -56,7 +59,7 @@ fun DonateScreen(nav: NavHostController) {
 
             // TÊN APP M
             Text(
-                "Paw & Heart 💖",
+                text = "🐾 Paw & Heart 💖",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFE65100)

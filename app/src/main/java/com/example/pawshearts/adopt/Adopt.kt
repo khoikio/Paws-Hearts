@@ -19,6 +19,7 @@ data class Adopt(
     val petLocation: String = "", // Khu vực
     val description: String = "", // Mô tả
     val imageUrl: String? = null, // Ảnh Pet
+    val likeCount: Int = 0,
 
     @ServerTimestamp
     val timestamp: Date? = null // Giờ đăng

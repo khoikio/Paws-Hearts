@@ -12,7 +12,9 @@ object Routes {
 
     const val NOTIFICATION_SCREEN ="notifications"
 
+    const val PET_DETAIL_SCREEN = "pet_detail_screen"
     const val PET_DETAIL = "pet/{id}"
+
     fun petDetail(id: String) = "pet/$id"
 
     const val COMMENT_SCREEN = "comment_screen"
@@ -23,6 +25,8 @@ object Routes {
 
     const val MY_ADOPT_POSTS_SCREEN = "my-adopt-posts"
     const val CREATE_ADOPT_POST_SCREEN = "create-adopt-post"
+
+    const val ADOPT_COMMENT_SCREEN = "adopt_comment_screen"
 
     const val DONATE_BANK_SCREEN = "donate-bank-info"
 
