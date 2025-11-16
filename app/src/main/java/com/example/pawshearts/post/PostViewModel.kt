@@ -19,8 +19,8 @@ import kotlinx.coroutines.launch
 class PostViewModel(
     private val repository: PostRepository,
     private val notificationRepository: NotificationRepository,// tạo thông báo khi c bài post mưới cho user thấy
-    private val currentUserId: String
-) : ViewModel() {
+    private val currentUserId: String // cái này để check và gửi thông báo ở
+) : ViewModel() {// nì là implement
 
     // 1. State để báo cho UI biết là "Đang đăng..." hay "Lỗi"
     private val _createPostState = MutableStateFlow<AuthResult<Unit>?>(null)
