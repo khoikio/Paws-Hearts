@@ -103,15 +103,14 @@ fun CreateAdoptPostScreen(
                         Text(
                             "ĐĂNG",
                             fontWeight = FontWeight.Bold,
-                            color = if (showLoading) Color.Gray else Color(0xFFE65100)
-                        )
+                            color = if (showLoading) Color.Gray else MaterialTheme.colorScheme.primary                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0),
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black,
-                    actionIconContentColor = Color(0xFFE65100)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // <-- Sửa ở đây
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant, // <-- Sửa ở đây
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant, // <-- Sửa ở đây
+                    actionIconContentColor = MaterialTheme.colorScheme.primary // <-- Sửa ở đây
                 )
             )
         }
@@ -132,10 +131,10 @@ fun CreateAdoptPostScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFAFAFA))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(
                         1.dp,
-                        Color(0xFFEEEEEE),
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), // <-- Sửa ở đây
                         RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center

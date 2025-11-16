@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import com.google.firebase.auth.FirebaseAuthException // <-- M PHẢI CÓ CÁI NÀY
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.storage.FirebaseStorage
 
 /**
@@ -47,6 +48,11 @@ class AuthRepositoryImpl(
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
                 if (user != null) {
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(fullName.trim()) // <-- Lấy fullName
+                        .build()
+                    user.updateProfile(profileUpdates).await()
+                    Log.d("AuthRepo", "Đã cập nhật displayName cho Auth Profile thành công!")
                     val newUser = UserData(
                         userId = user.uid,
                         username = fullName,
@@ -222,25 +228,42 @@ class AuthRepositoryImpl(
 
     override suspend fun updateUserPersonalInfo(phone: String, address: String) {
         val userId = auth.currentUser?.uid ?: return
-        val updates = mapOf(
-            "phone" to phone,
-            "address" to address
-        )
-        firestore.collection("users").document(userId)
-            .update(updates)
-            .await()
+        withContext(Dispatchers.IO) { // Chạy trên luồng IO
+            try {
+                val updates = mapOf(
+                    "phone" to phone,
+                    "address" to address
+                )
+                // 1. Cập nhật lên Firestore
+                firestore.collection("users").document(userId).update(updates).await()
+
+                // 2. ĐỒNG BỘ LẠI VỀ ROOM NGAY LẬP TỨC
+                syncProfileToLocal(userId)
+                Log.d("AuthRepo", "Đã cập nhật và đồng bộ SĐT, Địa chỉ.")
+            } catch (e: Exception) {
+                Log.e("AuthRepo", "Lỗi khi cập nhật thông tin cá nhân", e)
+            }
+        }
     }
 
     override suspend fun updateProfile(newName: String, newEmail: String) {
         val userId = auth.currentUser?.uid ?: return
-        val updates = mapOf(
-            "username" to newName,
-            "email" to newEmail
-        )
-        // Tạm bỏ qua updateEmail trên Auth (phức tạp)
-        firestore.collection("users").document(userId)
-            .update(updates)
-            .await()
+        withContext(Dispatchers.IO) {
+            try {
+                val updates = mapOf(
+                    "username" to newName,
+                    "email" to newEmail
+                )
+                // 1. Cập nhật lên Firestore
+                firestore.collection("users").document(userId).update(updates).await()
+
+                // 2. ĐỒNG BỘ LẠI VỀ ROOM NGAY LẬP TỨC
+                syncProfileToLocal(userId)
+                Log.d("AuthRepo", "Đã cập nhật và đồng bộ Tên, Email.")
+            } catch (e: Exception) {
+                Log.e("AuthRepo", "Lỗi khi cập nhật profile", e)
+            }
+        }
     }
 }
 private fun FirebaseAuth.authStateChanges(): Flow<FirebaseUser?> {

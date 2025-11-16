@@ -32,6 +32,8 @@ object Routes {
 
     const val ACTIVITIES_LIST_SCREEN = "activities_list"
     const val CREATE_ACTIVITY_SCREEN = "create_activity"
+    const val SETTINGS_SCREEN = "settings_screen"
+    const val NOTIFICATION_SCREEN = "notification_screen"
 
     const val MESSAGES = "messages"
     const val CHAT = "chat/{threadId}"

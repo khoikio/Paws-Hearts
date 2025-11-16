@@ -6,17 +6,31 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.pawshearts.data.model.UserData
+import com.example.pawshearts.notification.NotificationDao
+import com.example.pawshearts.notification.Notification
+import androidx.room.TypeConverters
+import com.example.pawshearts.data.local.DateConverter
 
 /**
  * Lớp Database chính của ứng dụng.
  * @Database: Khai báo đây là một database của Room, chứa các bảng được định nghĩa trong `entities`.
  * `version`: Phiên bản của database. Khi bạn thay đổi cấu trúc bảng, bạn cần tăng version này.
  */
-@Database(entities = [UserData::class], version = 3, exportSchema = false) // Version đã được tăng, rất tốt!
+@Database(
+    entities = [
+        UserData::class,
+        Notification::class   // thêm dòng này
+    ],
+    version = 4, // tăng version lên
+    exportSchema = false
+)
+@TypeConverters(DateConverter::class)
 abstract class PawsHeartsDatabase : RoomDatabase() {
 
     // Cung cấp một hàm để các thành phần khác có thể lấy được DAO.
     abstract fun userDao(): UserDao
+    abstract fun notificationDao(): NotificationDao
+
 
     // Companion object để tạo ra một instance duy nhất của database (Singleton pattern).
     companion object {

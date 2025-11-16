@@ -3,16 +3,17 @@ package com.example.pawshearts.post
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.firebase.Timestamp
+import java.util.Date
 
 @Entity(tableName = "posts")
 data class Post(
     @PrimaryKey
     val id: String = "", // ID của bài post
     val userId: String = "", // ID của thằng đăng bài :D
-    val username: String? = null, // Tên thằng đăng
-    val userAvatarUrl: String? = null, // Avatar thằng đăng
+    val userName: String = "",
+    val userAvatarUrl: String? = null,
 
-    val createdAt: Timestamp = Timestamp.Companion.now(), // Thời gian đăng bài
+    val createdAt: Date? = null,
 
 
     val petName: String = "",

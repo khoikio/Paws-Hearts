@@ -1,15 +1,18 @@
 package com.example.pawshearts.activities
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,7 +65,7 @@ fun CreateActivityScreen(
                 title = { Text("Tạo Hoạt động Mới (Admin)") },
                 navigationIcon = {
                     IconButton(onClick = { nav.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
                 actions = {
@@ -86,81 +89,99 @@ fun CreateActivityScreen(
                         Text(
                             "TẠO",
                             fontWeight = FontWeight.Bold,
-                            color = if (showLoading || title.isBlank()) Color.Gray else Color(0xFFE65100)
+                            // DÙNG MÀU TỪ THEME
+                            color = if (showLoading || title.isBlank()) Color.Gray else MaterialTheme.colorScheme.primary
                         )
                     }
                 },
+                // DÙNG MÀU TỪ THEME
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0),
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black,
-                    actionIconContentColor = Color(0xFFE65100)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    actionIconContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
     ) { paddingValues ->
 
-        // 4. CÁI FORM KKK
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Text("Thông tin Hoạt động:", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 10.dp))
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            // 4. CÁI FORM KKK
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    "Thông tin Hoạt động:",
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-            FormTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = "Tiêu đề Hoạt động",
-            )
-            FormTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = "Mô tả chi tiết",
-                modifier = Modifier.height(120.dp),
-                singleLine = false
-            )
-            FormTextField(
-                value = date,
-                onValueChange = { date = it },
-                label = "Ngày & Thời gian",
-            )
-            FormTextField(
-                value = location,
-                onValueChange = { location = it },
-                label = "Địa điểm",
-            )
-            FormTextField(
-                value = contactLink,
-                onValueChange = { contactLink = it },
-                label = "Link Đăng ký/Liên hệ",
-                keyboardType = KeyboardType.Uri
-            )
-        }
+                FormTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = "Tiêu đề Hoạt động",
+                )
+                FormTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = "Mô tả chi tiết",
+                    modifier = Modifier.height(120.dp),
+                    singleLine = false
+                )
+                FormTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = "Ngày & Thời gian",
+                )
+                FormTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = "Địa điểm",
+                )
+                FormTextField(
+                    value = contactLink,
+                    onValueChange = { contactLink = it },
+                    label = "Link Đăng ký/Liên hệ",
+                    keyboardType = KeyboardType.Uri
+                )
+            }
 
-        // M SỬ DỤNG LẠI CÁI LOADING VÀ DIALOG T VỚI M CODE LÚC NÃY KKK
-        if (showLoading) {
-            CircularProgressIndicator(color = Color(0xFFE65100), modifier = Modifier.fillMaxSize().wrapContentSize(
-                Alignment.Center))
-        }
-
-        if (showErrorDialog != null) {
-            AlertDialog(
-                onDismissRequest = { showErrorDialog = null },
-                icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red) },
-                title = { Text("Lỗi vcl M ơi :@") },
-                text = { Text(showErrorDialog ?: "Lỗi đéo biết KKK") },
-                confirmButton = {
-                    TextButton(onClick = { showErrorDialog = null }) { Text("OK M") }
+            // M SỬ DỤNG LẠI CÁI LOADING VÀ DIALOG T VỚI M CODE LÚC NÃY KKK
+            if (showLoading) {
+                // Thêm một lớp nền mờ để không bấm được bên dưới
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(enabled = false, onClick = {}),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // DÙNG MÀU TỪ THEME
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            )
+            }
+
+            if (showErrorDialog != null) {
+                AlertDialog(
+                    onDismissRequest = { showErrorDialog = null },
+                    // DÙNG MÀU TỪ THEME
+                    icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    title = { Text("Lỗi vcl M ơi :@") },
+                    text = { Text(showErrorDialog ?: "Lỗi đéo biết KKK") },
+                    confirmButton = {
+                        TextButton(onClick = { showErrorDialog = null }) { Text("OK M") }
+                    }
+                )
+            }
         }
     }
 }
 
-// T VỚI M PHẢI TẠO LẠI CÁI TEXTFIELD NÀY VÌ NÓ KHÔNG PHẢI COMPONENTS CHUNG
 @Composable
 fun FormTextField(
     value: String,
@@ -179,9 +200,11 @@ fun FormTextField(
             .padding(bottom = 10.dp),
         singleLine = singleLine,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        // DÙNG MÀU TỪ THEME
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFFE65100),
-            focusedLabelColor = Color(0xFFE65100)
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.primary
         )
     )
 }

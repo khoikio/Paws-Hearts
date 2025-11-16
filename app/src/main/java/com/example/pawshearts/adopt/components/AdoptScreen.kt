@@ -87,8 +87,7 @@ fun AdoptScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5F5F5)), // Màu nền xám lợt
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                .background(MaterialTheme.colorScheme.background),            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // ... (Phần còn lại của LazyColumn giữ nguyên)
@@ -153,7 +152,7 @@ fun CreatePostButton(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -180,13 +179,13 @@ fun CreatePostButton(
                     .weight(1f)
                     .height(38.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFF0F2F5))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     "Bạn muốn tìm chủ cho bé nào?",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold
                 )
             }

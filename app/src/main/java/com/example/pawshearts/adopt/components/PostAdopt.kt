@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.adopt.Adopt
@@ -34,11 +35,12 @@ fun PostAdopt(
     onShareClick: (Adopt) -> Unit // Hành động bấm nút Chia sẻ
 ) {
     Card(
-        onClick = { onEditClick(post) },
-        shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
+        // (1) Nền Card bây giờ sẽ nghe theo Theme
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        onClick = onEditClick
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
 
@@ -53,8 +55,7 @@ fun PostAdopt(
                 contentDescription = post.petName,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .height(180.dp),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(10.dp))

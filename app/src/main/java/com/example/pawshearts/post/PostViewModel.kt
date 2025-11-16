@@ -1,14 +1,9 @@
 package com.example.pawshearts.post
 
-
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.post.Comment
-import com.example.pawshearts.post.Post
-import com.example.pawshearts.post.PostRepository
-import com.google.firebase.Timestamp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -97,9 +92,9 @@ class PostViewModel(
             val newPost = Post(
                 id = "",
                 userId = userId,
-                username = username,
-                userAvatarUrl = userAvatarUrl,
-                createdAt = Timestamp.now(),
+                userName = username ?: "", // Sửa lại cho khớp
+                userAvatarUrl = userAvatarUrl, // Sửa lại cho khớp
+                createdAt = null, // Để null cho Firebase tự điền
                 petName = petName,
                 petBreed = petBreed,
                 petAge = petAge,
@@ -133,9 +128,10 @@ class PostViewModel(
             }
         }
     }
-    /**
-     * Hàm này M sẽ gọi khi M bấm nút "Gửi" cmt
-     */
+
+    // ==========================================================
+    // HÀM NÀY ĐÃ ĐƯỢC SỬA LẠI HOÀN CHỈNH
+    // ==========================================================
     fun addComment(
         postId: String,
         userId: String,
@@ -146,21 +142,21 @@ class PostViewModel(
         viewModelScope.launch {
             // 1. Check xem M gõ chữ chưa KKK
             if (text.isBlank()) {
-                _addCommentState.value = AuthResult.Error("M chưa gõ cmt :v")
+                _addCommentState.value = AuthResult.Error("bạn chưa có comment")
                 return@launch
             }
 
             // 2. Báo là "Đang gửi..."
             _addCommentState.value = AuthResult.Loading
 
-            // 3. Tạo object Comment
+            // 3. Tạo object Comment (ĐÃ SỬA LẠI CHO ĐÚNG)
             val newComment = Comment(
                 postId = postId,
                 userId = userId,
-                username = username,
-                userAvatarUrl = userAvatarUrl,
+                username = username,      // <-- SỬA LẠI THÀNH "authorName"
+                userAvatarUrl = userAvatarUrl, // <-- SỬA LẠI THÀNH "authorAvatarUrl"
                 text = text,
-                createdAt = Timestamp.now()
+                createdAt = null // Để null cho Firebase tự điền
             )
 
             // 4. Quăng cho Repository
@@ -170,6 +166,8 @@ class PostViewModel(
             _addCommentState.value = result
         }
     }
+    // ==========================================================
+
     fun fetchPostDetails(postId: String) {
         if (postId.isBlank()) return
         viewModelScope.launch {
