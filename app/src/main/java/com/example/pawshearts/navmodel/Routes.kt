@@ -10,8 +10,8 @@ object Routes {
     const val REGISTER_SCREEN = "register"
 
     // Detail: truyền postId
-    const val PET_DETAIL = "pet/{id}"
-    fun petDetail(id: String) = "pet/$id"
+    const val PET_DETAIL_SCREEN_BASE = "pet_detail"
+    const val PET_DETAIL = "$PET_DETAIL_SCREEN_BASE/{id}"
     const val COMMENT_SCREEN = "comment_screen"
     fun comment(postId: String) = "$COMMENT_SCREEN/$postId"
     const val SPLASH_SCREEN = "splash_screen"
@@ -22,4 +22,6 @@ object Routes {
     const val DONATE_BANK_SCREEN = "donate-bank-info"
     const val ACTIVITIES_LIST_SCREEN = "activities_list"
     const val CREATE_ACTIVITY_SCREEN = "create_activity"
+    const val SETTINGS_SCREEN = "settings_screen"
+    const val NOTIFICATION_SCREEN = "notification_screen"
 }

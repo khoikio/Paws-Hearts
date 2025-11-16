@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.adopt.Adopt
@@ -19,53 +20,57 @@ import com.example.pawshearts.adopt.Adopt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostAdopt(
-    post: Adopt,
-    onEditClick: (Adopt) -> Unit
+    post: Adopt, // Giả sử mày có data class AdoptPost
+    onEditClick: () -> Unit
 ) {
     Card(
-        onClick = { onEditClick(post) },
-        shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
+        // (1) Nền Card bây giờ sẽ nghe theo Theme
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        onClick = onEditClick
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-
-            // T VỚI M XÀI 'imageUrl' XỊN M UP LÊN Á KKK
-            val painter = if (post.imageUrl != null)
-                rememberAsyncImagePainter(post.imageUrl)
-            else
-                painterResource(id = R.drawable.avatardefault)
-
-            Image(
-                painter = painter,
-                contentDescription = post.petName,
+        Column {
+            // Phần hiển thị ảnh
+            AsyncImage(
+                model = post.imageUrl,
+                contentDescription = "Ảnh thú cưng",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .height(180.dp),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
-            // SỬA MẤY CÁI FIELD NÀY CHO NÓ XỊN KKK
-            Text(
-                post.petName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Giống: ${post.petBreed} - ${post.petAge} tháng", // <-- M HIỆN VẦY XỊN VCL KKK
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                post.description, // <-- 'description' XỊN KKK
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2 // M cho nó 2 dòng thôi
-            )
+            // Phần thông tin bên dưới
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Tên thú cưng
+                Text(
+                    text = post.petName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    // (2) Màu chữ chính trên Card
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                // Các thông tin khác
+                Text(
+                    text = "Giống: ${post.petBreed} • Giới tính: ${post.petGender}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    // (3) Màu chữ phụ trên Card
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Tuổi: ${post.petAge} tháng • Cân nặng: ${post.petWeight} kg",
+                    style = MaterialTheme.typography.bodyMedium,
+                    // (4) Màu chữ phụ trên Card
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

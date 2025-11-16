@@ -47,9 +47,9 @@ fun ActivitiesScreen(
             TopAppBar(
                 title = { Text("Danh sách Hoạt động") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0),
-                    titleContentColor = Color(0xFFE65100),
-                    navigationIconContentColor = Color(0xFFE65100)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary
                 ),
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
@@ -70,7 +70,7 @@ fun ActivitiesScreen(
                     onClick = { nav.navigate(Routes.CREATE_ACTIVITY_SCREEN) },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.Filled.Add, "Tạo hoạt động mới", tint = Color.White)
+                    Icon(Icons.Filled.Add, "Tạo hoạt động mới", tint =  MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -79,9 +79,9 @@ fun ActivitiesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFFFFBF5))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Tăng khoảng cách cho đẹp
+            verticalArrangement = Arrangement.spacedBy(16.dp) // Tăng khoảng cách
         ) {
             if (activities.isEmpty()) {
                 item {
@@ -128,7 +128,7 @@ fun ActivityCard(
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color(0xFFE65100)
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 )
                 Spacer(Modifier.height(4.dp))

@@ -26,14 +26,16 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = true
+            // Bật R8 cho bản chính thức (khi up lên Google Play)isMinifyEnabled = true
+            // Áp dụng file quy tắc của mày
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
         getByName("debug") {
-            // TẮT R8 KHI DEBUG ĐỂ TRÁNH CRASH VÀ BUILD NHANH HƠN
+            // Tắt R8 khi debug để build cho nhanh và tránh lỗi vặt
+            // Khi nào mày muốn test bản release, hãy bật cái này lên true
             isMinifyEnabled = false
         }
     }

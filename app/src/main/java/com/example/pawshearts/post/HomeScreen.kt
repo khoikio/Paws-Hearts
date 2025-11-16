@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,8 +28,8 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
-import com.example.pawshearts.navmodel.goPetDetail
 import com.example.pawshearts.navmodel.Routes
+import com.example.pawshearts.navmodel.goPetDetail
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,20 +40,15 @@ fun HomeScreen(nav: NavHostController) {
 
     val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
     val currentUserId = authViewModel.currentUser?.uid ?: ""
-
-    // LẤY PROFILE CỦA USER ĐỂ HIỂN THỊ AVATAR
     val currentUserProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         postViewModel.fetchAllPosts()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-        // Top App Bar
+    // (1) Nền chính bây giờ sẽ nghe theo Theme
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // === Top App Bar (Phần trên cùng) ===
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,56 +57,58 @@ fun HomeScreen(nav: NavHostController) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { /*TODO*/ }) {
-                Icon(Icons.Filled.Message, contentDescription = null, tint = Color(0xFFEA5600))
+                // Icon bây giờ sẽ dùng màu primary của Theme
+                Icon(Icons.Filled.Message, contentDescription = "Tin nhắn", tint = MaterialTheme.colorScheme.primary)
             }
             Text(
                 text = "Paws & Hearts",
-                color = Color(0xFFEA5600),
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.headlineMedium
             )
-            IconButton(onClick = { /*TODO*/ }) {
-                Icon(Icons.Filled.Notifications, contentDescription = null, tint = Color(0xFFEA5600))
+            IconButton(onClick = {nav.navigate(Routes.NOTIFICATION_SCREEN)}) {
+                Icon(Icons.Filled.Notifications, contentDescription = "Thông báo", tint = MaterialTheme.colorScheme.primary)
             }
         }
 
-        // Thanh tìm kiếm
+        // (2) Thanh tìm kiếm bây giờ sẽ nghe theo Theme
         TextField(
             value = "",
             onValueChange = {},
             placeholder = { Text("Search") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Tìm kiếm") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(Color(0xFFFDEEE2), shape = MaterialTheme.shapes.medium),
+                .padding(horizontal = 16.dp),
+            shape = MaterialTheme.shapes.extraLarge, // Bo tròn hơn cho đẹp
             colors = TextFieldDefaults.colors(
-                unfocusedContainerColor = Color(0xFFFDEEE2),
-                focusedContainerColor = Color(0xFFFDEEE2),
+                // Lấy màu nền surfaceVariant từ Theme (màu nền phụ)
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent
             )
         )
 
-        // ******** BẮT ĐẦU THANH TẠO BÀI ĐĂNG MỚI ********
+        // (3) Thanh "Bạn đang nghĩ gì?" bây giờ sẽ nghe theo Theme
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
-                // Bấm vào thì chuyển đến màn hình tạo bài đăng
                 .clickable { nav.navigate(Routes.CREATE_POST_SCREEN) },
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(2.dp)
+            // Lấy màu surface từ Theme (màu của các bề mặt)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Avatar của người dùng
                 AsyncImage(
-                    model = currentUserProfile?.profilePictureUrl ?: "https://i.pravatar.cc/150", // Ảnh mặc định
+                    model = currentUserProfile?.profilePictureUrl ?: "https://i.pravatar.cc/150",
                     contentDescription = "User Avatar",
                     modifier = Modifier
                         .size(40.dp)
@@ -118,28 +116,20 @@ fun HomeScreen(nav: NavHostController) {
                         .border(1.dp, Color.LightGray, CircleShape),
                     contentScale = ContentScale.Crop
                 )
-
-                // Thanh nhập nội dung bài đăng
                 Text(
                     text = "Bạn đang nghĩ gì?",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray,
+                    // Lấy màu chữ phụ từ theme
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Start
                 )
             }
         }
-        // ******** KẾT THÚC THANH TẠO BÀI ĐĂNG MỚI ********
-
 
         // Danh sách các bài đăng
         if (allPosts.isEmpty()) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(Modifier.fillMaxSize().padding(top = 24.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
@@ -148,6 +138,7 @@ fun HomeScreen(nav: NavHostController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(allPosts) { post ->
+                    // PostCard cũng sẽ tự động đổi màu nếu bên trong nó dùng màu từ Theme
                     PostCard(
                         post = post,
                         currentUserId = currentUserId,
@@ -157,9 +148,7 @@ fun HomeScreen(nav: NavHostController) {
                                 postViewModel.toggleLike(post.id, currentUserId)
                             }
                         },
-                        onCommentClick = {
-                            nav.navigate(Routes.comment(post.id))
-                        },
+                        onCommentClick = { nav.navigate(Routes.comment(post.id)) },
                         onShareClick = { /*TODO*/ }
                     )
                 }

@@ -1,44 +1,42 @@
 package com.example.pawshearts.profile
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.data.model.UserData
-import com.example.pawshearts.post.PostViewModel
-import com.example.pawshearts.post.PostViewModelFactory
-import androidx.compose.runtime.getValue
 import com.example.pawshearts.navmodel.Routes
+import com.example.pawshearts.post.PostViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,301 +45,175 @@ fun ProfileScreen(
     userData: UserData,
     outSignOut: () -> Unit,
     authViewModel: AuthViewModel,
-    postViewModel: PostViewModel
-
+    postViewModel: PostViewModel,
+    onSettingsClick: () -> Unit
 ) {
-
-    val user = authViewModel.currentUser
-    val userName = userData.username ?: user?.displayName ?: "UserName"
-    val userEmail = userData.email ?: user?.email ?: "NameEmail@gmail.com"
+    // --- STATE VÀ SETUP ---
+    val userName = userData.username ?: "Chưa cập nhật"
+    val userEmail = userData.email ?: "Chưa có email"
     val avatarUriString = userData.profilePictureUrl
     val address = userData.address ?: ""
     val phone = userData.phone ?: ""
 
-    // (T GIỮ MẤY CÁI STATE CẦN THIẾT)
     var showEditDialog by remember { mutableStateOf(false) }
-    var showEditPersonalDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current.applicationContext as Application
+
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) {
-            authViewModel.updateAvatar(uri) // <-- GIỜ NÓ GỌI HÀM XỊN RỒI
-        }
+        uri?.let { authViewModel.updateAvatar(it) }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState()) // M GIỮ CÁI NÀY
-    ) {
-        ProfileTopBar()
-
-        // ====== THÔNG TIN NGƯỜI DÙNG ======
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Ảnh đại diện + nút thay ảnh
-                Box(
-                    modifier = Modifier.align(Alignment.Center),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
-                    Image(
-                        painter = if (avatarUriString != null)
-                            rememberAsyncImagePainter(avatarUriString)
-                        else painterResource(id = R.drawable.avatardefault),
-                        contentDescription = "Avatar",
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color(0xFFE65100), CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    // NÚT MỞ LẠI (HẾT LỖI 'imagePicker')
-                    IconButton(
-                        onClick = { imagePicker.launch("image/*") },
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(Color.White, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Đổi ảnh đại diện",
-                            tint = Color(0xFFE65100)
-                        )
+    // --- GIAO DIỆN ---
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Hồ sơ") },
+                actions = {
+                    IconButton(onClick = { onSettingsClick() }) {
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Cài đặt")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        // DÙNG MỘT COLUMN DUY NHẤT LÀM GỐC VÀ ÁP DỤNG PADDING
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues) // <-- ÁP DỤNG PADDING Ở ĐÂY
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
-                // ✏️ Nút chỉnh sửa hồ sơ ở góc phải trên
-                IconButton(
-                    onClick = { showEditDialog = true },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(30.dp)
-                        .background(Color(0xFFFFF3E0), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Chỉnh sửa hồ sơ",
-                        tint = Color(0xFFE65100)
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // AVATAR CÓ THỂ CLICK
+            Image(
+                painter = if (avatarUriString != null) rememberAsyncImagePainter(avatarUriString) else painterResource(id = R.drawable.avatardefault),
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)                    .clickable { imagePicker.launch("image/*") },
+                contentScale = ContentScale.Crop
+            )
 
-// Dùng Row để chứa Tên và Tag Admin nằm cạnh nhau
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // TÊN VÀ TAG ADMIN
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp) // Khoảng cách giữa các item trong Row
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Text hiển thị tên, giữ nguyên như cũ
-                Text(
-                    text = userName,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
-                )
-
-                // KIỂM TRA VÀ HIỂN THỊ TAG ADMIN
-                // Dùng 'userData' mà màn hình đã nhận vào để kiểm tra
+                Text(text = userName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 if (userData.isAdmin) {
-                    // Dùng Card để tạo cái nền màu cam cho đẹp
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE65100)) // Màu cam đậm
-                    ) {
-                        // Text "Admin" bên trong Card
-                        Text(
-                            text = "Admin",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontSize = 12.sp
-                        )
+                    Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary) ){
+                        Text("Admin", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 12.sp)
                     }
                 }
             }
+            Text(text = userEmail, style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
 
-// Text hiển thị email, giữ nguyên như cũ
-            Text(
-                text = userEmail,
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-        }
-
-
-        // ====== THÔNG TIN CÁ NHÂN ======
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
+            // THÔNG TIN CÁ NHÂN VÀ NÚT SỬA
+            Spacer(modifier = Modifier.height(24.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
                 Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
+                    modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
+                    Text("Thông tin cá nhân", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                    InfoRow(icon = Icons.Default.Phone, text = "SĐT: ${if (phone.isBlank()) "..." else phone}")
+                    InfoRow(icon = Icons.Default.LocationOn, text = "Địa chỉ: ${if (address.isBlank()) "..." else address}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showEditDialog = true },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Thông tin cá nhân", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                        IconButton(
-                            onClick = { showEditPersonalDialog = true },
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(Color(0xFFFFF3E0), shape = CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Chỉnh sửa",
-                                tint = Color(0xFFE65100)
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Email: $userEmail")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("SĐT: ${if (phone.isBlank()) "..." else phone}")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Địa chỉ: ${if (address.isBlank()) "..." else address}")
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.primary)                    ) {
+                        Text("Chỉnh sửa thông tin", color = MaterialTheme.colorScheme.onBackground)
                     }
                 }
             }
-        }
 
-        // ====== NÚT ĐĂNG XUẤT ======
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = { outSignOut() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-        ) {
-            Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+            // CÁC NÚT CHỨC NĂNG
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FunctionButton(text = "Bài đăng", onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
+                FunctionButton(text = "Nhận nuôi", onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
+            }
 
-
-        // ====== MẤY CÁI HỘP THOẠI (DIALOG) CHỈNH SỬA ======
-        if (showEditDialog) {
-            var newName by remember { mutableStateOf(userName) }
-            var newEmail by remember { mutableStateOf(userEmail) }
-            AlertDialog(
-                onDismissRequest = { showEditDialog = false },
-                title = { Text("✏️ Chỉnh sửa hồ sơ") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Tên người dùng") }, singleLine = true)
-                        OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email") }, singleLine = true)
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        authViewModel.updateProfile(newName, newEmail)
-                        showEditDialog = false
-                    }) { Text("Lưu") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showEditDialog = false }) { Text("Hủy") }
-                }
-            )
-        }
-        if (showEditPersonalDialog) {
-            var newEmail by remember { mutableStateOf(userEmail) }
-            var newPhone by remember { mutableStateOf(phone) }
-            var newAddress by remember { mutableStateOf(address) }
-            AlertDialog(
-                onDismissRequest = { showEditPersonalDialog = false },
-                title = { Text("📋 Chỉnh sửa thông tin cá nhân") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email (Tạm thời ko sửa đc)") }, readOnly = true)
-                        OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, label = { Text("Số điện thoại") })
-                        OutlinedTextField(value = newAddress, onValueChange = { newAddress = it }, label = { Text("Địa chỉ") })
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        authViewModel.updateUserPersonalInfo(newPhone, newAddress)
-                        showEditPersonalDialog = false
-                    }) { Text("Lưu") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showEditPersonalDialog = false }) { Text("Hủy") }
-                }
-            )
-        }
-
-        // ====== NÚT CHUYỂN TAB vào các bài đăng ======
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
+            // NÚT ĐĂNG XUẤT
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = {nav.navigate(Routes.MY_POSTS_SCREEN) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE65100)
-                ),
-                modifier = Modifier.weight(1f)
+                onClick = outSignOut,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
-                Text(
-                    "Bài đăng",
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
             }
-            Spacer(modifier = Modifier.width(4.dp))
-            Button(
-                onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE65100)
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    "Nhận nuôi",
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+
+            Spacer(modifier = Modifier.height(16.dp)) // Đệm dưới cùng
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
+    // HỘP THOẠI (DIALOG) CHỈNH SỬA
+    if (showEditDialog) {
+        var newName by remember { mutableStateOf(userName) }
+        var newPhone by remember { mutableStateOf(phone) }
+        var newAddress by remember { mutableStateOf(address) }
 
-
-
-        // ====== TAB 2: NHẬN NUÔI ======
-
-
-        Spacer(modifier = Modifier.height(50.dp)) // Thêm tí đệm ở đít
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Chỉnh sửa thông tin") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Tên hiển thị") })
+                    OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, label = { Text("Số điện thoại") })
+                    OutlinedTextField(value = newAddress, onValueChange = { newAddress = it }, label = { Text("Địa chỉ") })
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    authViewModel.updateProfile(newName, userData.email ?: "")
+                    authViewModel.updateUserPersonalInfo(newPhone, newAddress)
+                    showEditDialog = false
+                }) { Text("Lưu") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Hủy") }
+            }
+        )
     }
 }
+
+// Composable phụ để code gọn hơn
+@Composable
+private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint =  MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(text)
+    }
+}
+
+// Composable phụ cho các nút chức năng
+@Composable
+private fun FunctionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor =  MaterialTheme.colorScheme.primary),
+        modifier = modifier.height(48.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(text, color = Color.White)
+    }
+}
+

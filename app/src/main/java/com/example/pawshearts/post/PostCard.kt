@@ -24,24 +24,26 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.pawshearts.R
 import com.google.firebase.Timestamp
+import java.util.Date
 import java.util.concurrent.TimeUnit // <-- T XÀI CÁI NÀY
 
-// 1. SỬA HÀM CHÍNH (THÊM 4 THAM SỐ T DẶN M)
 @Composable
 fun PostCard(
     post: Post,
-    currentUserId: String, // <-- THÊM (Để T biết M like chưa)
+    currentUserId: String,
     onClick: () -> Unit,
-    onLikeClick: () -> Unit, // <-- THÊM
-    onCommentClick: () -> Unit, // <-- THÊM (Cho M bấm)
-    onShareClick: () -> Unit // <-- THÊM (Cho M bấm)
+    onLikeClick: () -> Unit,
+    onCommentClick: () -> Unit,
+    onShareClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -126,7 +128,7 @@ fun UserInfoRow(post: Post) { // <-- Sửa tham số
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = post.userAvatarUrl ?: R.drawable.avatardefault, // Dùng data xịn
+                model = post.userId ?: R.drawable.avatardefault, // Dùng data xịn
                 contentDescription = "User Avatar",
                 modifier = Modifier
                     .size(40.dp)
@@ -137,7 +139,7 @@ fun UserInfoRow(post: Post) { // <-- Sửa tham số
             Spacer(modifier = Modifier.width(8.dp))
 
             Column {
-                Text(text = post.username ?: "Người dùng PawsHearts", style = MaterialTheme.typography.titleSmall) // Dùng data xịn
+                Text(text = post.userName ?: "Người dùng PawsHearts", style = MaterialTheme.typography.titleSmall) // Dùng data xịn
                 Text(text = formatTimestamp(post.createdAt), color = Color.Gray, style = MaterialTheme.typography.bodySmall) // Dùng data xịn
             }
         }
@@ -214,9 +216,11 @@ private fun InteractionButton(
 
 // 5. HÀM TIMESTAMP (M PHẢI 'public' NÓ LÊN)
 @Composable
-fun formatTimestamp(timestamp: Timestamp): String { // <-- T XÓA 'private' ĐI
+fun formatTimestamp(timestamp: Date?): String { // <-- Sửa ở đây
+    if (timestamp == null) return "Vừa xong"
+
     val now = System.currentTimeMillis()
-    val diff = now - timestamp.toDate().time // Lấy (ms)
+    val diff = now - timestamp.time // Dùng .time thay vì .toDate().time
 
     return when {
         diff < TimeUnit.MINUTES.toMillis(1) -> "Vừa xong"

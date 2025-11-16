@@ -27,6 +27,7 @@ import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,7 +154,7 @@ private fun CommentRow(comment: Comment) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = formatTimestamp(comment.createdAt), // T xài lại hàm cũ
+                    text = formatTimeAgo(comment.createdAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
@@ -214,5 +215,20 @@ private fun BottomCommentBar(
                 }
             }
         }
+    }
+}
+fun formatTimeAgo(date: Date?): String {
+    if (date == null) return ""
+
+    val diff = Date().time - date.time
+    val minutes = diff / 60000
+    val hours = minutes / 60
+    val days = hours / 24
+
+    return when {
+        minutes < 1 -> "Vừa xong"
+        minutes < 60 -> "$minutes phút trước"
+        hours < 24 -> "$hours giờ trước"
+        else -> "$days ngày trước"
     }
 }

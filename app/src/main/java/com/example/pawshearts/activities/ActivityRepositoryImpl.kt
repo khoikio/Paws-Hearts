@@ -20,7 +20,7 @@ class ActivityRepositoryImpl(
     // === 1. TẠO HÀM LẤY TẤT CẢ ACTIVITIES (NGHE REAL-TIME) KKK ===
     override fun getAllActivitiesFlow(): Flow<List<Activity>> {
         return callbackFlow {
-            Log.d("ActivityRepoImpl", "Bắt đầu 'nghe' (listen) TẤT CẢ hoạt động KKK")
+            Log.d("ActivityRepoImpl", "Bắt đầu 'nghe' (listen) TẤT CẢ hoạt động")
 
             val listener = firestore.collection("activities")
                 .orderBy("timestamp", Query.Direction.DESCENDING)

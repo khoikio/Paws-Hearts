@@ -1,21 +1,16 @@
 package com.example.pawshearts
 
-
 import android.app.Application
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.pawshearts.auth.AuthViewModel
@@ -28,29 +23,40 @@ fun SplashScreen(navController: NavHostController) {
     val context = LocalContext.current.applicationContext as Application
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
-    // Lắng nghe trạng thái đăng nhập
-    val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
+    // (1) Dùng LaunchedEffect chỉ chạy MỘT LẦN DUY NHẤT khi màn hình được tạo
+    LaunchedEffect(key1 = true) {
+        // (2) Thêm một độ trễ nhỏ để user thấy logo (cái này hay, giữ lại)
+        delay(2000) // Tăng lên 2s cho chắc ăn KKK
 
-    // Dùng LaunchedEffect để kiểm tra 1 lần duy nhất
-    LaunchedEffect(key1 = isLoggedIn) {
-        // Thêm một độ trễ nhỏ để user thấy logo
-        delay(1500)
+        // (3) Lấy giá trị CUỐI CÙNG của trạng thái đăng nhập
+        val isLoggedIn = authViewModel.isUserLoggedIn.value
 
-        // Sau khi kiểm tra xong, điều hướng và xóa Splash khỏi back stack
+        // (4) Dựa vào giá trị cuối cùng đó để ra quyết định
         if (isLoggedIn) {
+            // Nếu đã đăng nhập, đi thẳng vào HOME
             navController.navigate(Routes.HOME) {
                 popUpTo(Routes.SPLASH_SCREEN) { inclusive = true }
             }
         } else {
+            // Nếu chưa, đi đến màn hình LOGIN
             navController.navigate(Routes.LOGIN_SCREEN) {
                 popUpTo(Routes.SPLASH_SCREEN) { inclusive = true }
             }
         }
     }
 
-    // Giao diện của Splash Screen
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // Giao diện của Splash Screen (Đã được "nối điện lưới")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background), // Dùng màu nền của Theme
+        contentAlignment = Alignment.Center
+    ) {
         // Logo của mày
-        Text("Paws & Hearts", style = MaterialTheme.typography.headlineLarge)
+        Text(
+            "Paws & Hearts",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary // Chữ màu cam cho nó nổi
+        )
     }
 }

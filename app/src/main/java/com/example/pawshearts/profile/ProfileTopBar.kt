@@ -38,14 +38,14 @@ fun ProfileTopBar(
                     Text(
                         text = "Hồ sơ",
                         fontSize = 18.sp,
-                        color = Color.Gray,
+                        color = DarkOrange,
                         textAlign = TextAlign.Center
                     )
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.White,
-                titleContentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground
             )
         )
 

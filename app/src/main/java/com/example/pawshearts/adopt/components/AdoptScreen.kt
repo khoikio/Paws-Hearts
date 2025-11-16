@@ -22,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R // M check M có R.drawable.avatardefault
@@ -39,10 +40,8 @@ fun AdoptScreen(
     authViewModel: AuthViewModel
 ) {
     // 1. LẤY LIST TẤT CẢ TỪ NÃO KKK
-    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsState()
-
-    // 2. LẤY AVATAR CỦA M ĐỂ LÀM NÚT FB KKK
-    val userProfile by authViewModel.userProfile.collectAsState()
+    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val userProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
     val avatarUrl = userProfile?.profilePictureUrl
 
     Scaffold(
@@ -50,20 +49,18 @@ fun AdoptScreen(
             TopAppBar(
                 title = { Text("Tìm chủ (Tất cả)") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0),
-                    titleContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
     ) { paddingValues ->
 
-        // T VỚI M XÀI LazyColumn (Giống HomeScreen)
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5F5F5)), // Màu nền xám lợt
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                .background(MaterialTheme.colorScheme.background),            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
@@ -113,7 +110,7 @@ fun CreatePostButton(
             .fillMaxWidth()
             .clickable(onClick = onClick), // M bấm đâu cũng lụm KKK
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -142,23 +139,17 @@ fun CreatePostButton(
                     .weight(1f)
                     .height(38.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFF0F2F5))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     "Bạn muốn tìm chủ cho bé nào?",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold
                 )
             }
-            // T THÊM CÁI ICON ẢNH CHO M KKK
-//            Icon(
-//                painter = painterResource(id = R.drawable.cat1), // M TỰ THÊM ICON NÀY VÔ KKK
-//                contentDescription = "Ảnh",
-//                tint = Color.Green,
-//                modifier = Modifier.size(28.dp)
-//            )
+
         }
     }
 }
