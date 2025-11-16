@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -45,7 +46,7 @@ fun DonateScreen(nav: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Paw & Heart 💖",
+                text = "🐾 Paw & Heart 💖",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = primaryColor

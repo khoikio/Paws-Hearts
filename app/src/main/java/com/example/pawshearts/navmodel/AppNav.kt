@@ -41,6 +41,10 @@ import com.example.pawshearts.ui.theme.Theme
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.pawshearts.messages.ui.screens.MessagesScreen
+import com.example.pawshearts.messages.ui.screens.ChatScreen
+import com.example.pawshearts.adopt.AdoptCommentScreen
+// IMPORT CẦN THIẾT cho logic Bình luận
 
 // Cấu trúc mới: AppRoot là hàm cha chứa tất cả ٩(^‿^)۶
 @Composable
@@ -70,6 +74,11 @@ private fun AppContent(themeViewModel: SettingViewModel) {
 
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
     val showBottomBar = currentRoute !in listOf(Routes.LOGIN_SCREEN, Routes.REGISTER_SCREEN, Routes.SPLASH_SCREEN)
+    // THÊM ĐIỀU KIỆN NÈ M KKK :D
+    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN &&
+            currentRoute != Routes.REGISTER_SCREEN &&
+            currentRoute != Routes.SPLASH_SCREEN&&
+            currentRoute != Routes.CHAT
 
     Scaffold(
         bottomBar = {
@@ -123,7 +132,7 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 MyAdoptPostsScreen(
                     nav = nav,
                     adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
                 )
             }
             composable(Routes.CREATE_ADOPT_POST_SCREEN) {
@@ -227,7 +236,62 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     }
                 }
 
+            // MÀN HÌNH BÌNH LUẬN ADOPT
+            composable(
+                route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
+                arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
+
+                // ĐÃ SỬA: Dùng AdoptViewModel vì nó chứa logic comment
+                AdoptCommentScreen(
+                    adoptPostId = adoptPostId,
+                    adoptViewModel = adoptViewModel,
+                    authViewModel = authViewModel,
+                    onBack = { nav.popBackStack() }
+                )
             }
+
+            // ACTIVITIES_LIST_SCREEN: Dùng lại VM đã tạo ở ngoài
+            composable(Routes.ACTIVITIES_LIST_SCREEN) {
+                ActivitiesScreen(
+                    nav = nav,
+                    authViewModel = authViewModel,
+                    activityViewModel = activityViewModel
+                )
+            }
+
+            // CREATE_ACTIVITY_SCREEN: Dùng lại ActivityVM đã tạo ở ngoài
+            composable(Routes.CREATE_ACTIVITY_SCREEN) {
+                CreateActivityScreen(
+                    nav = nav,
+                    activityViewModel = activityViewModel
+                )
+            }
+
+            // ====== MÀN DANH SÁCH TIN NHẮN ======
+            composable(Routes.MESSAGES) {
+                MessagesScreen(
+                    onBackClick = { nav.popBackStack() },
+                    onThreadClick = { threadId ->
+                        nav.navigate(Routes.chat(threadId))
+                    }
+                )
+            }
+
+            // ====== MÀN CHAT CHI TIẾT ======
+            composable(
+                route = Routes.CHAT,
+                arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
+
+                ChatScreen(
+                    threadId = threadId,
+                    onBackClick = { nav.popBackStack() }
+                )
+            }
+
         }
     }
 }

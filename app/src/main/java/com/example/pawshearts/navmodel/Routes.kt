@@ -8,20 +8,34 @@ object Routes {
 
     const val LOGIN_SCREEN = "login"
     const val REGISTER_SCREEN = "register"
+    const val SPLASH_SCREEN = "splash_screen"
 
-    // Detail: truyền postId
-    const val PET_DETAIL_SCREEN_BASE = "pet_detail"
-    const val PET_DETAIL = "$PET_DETAIL_SCREEN_BASE/{id}"
+    const val NOTIFICATION_SCREEN ="notifications"
+
+    const val PET_DETAIL_SCREEN = "pet_detail_screen"
+    const val PET_DETAIL = "pet/{id}"
+
+    fun petDetail(id: String) = "pet/$id"
+
     const val COMMENT_SCREEN = "comment_screen"
     fun comment(postId: String) = "$COMMENT_SCREEN/$postId"
-    const val SPLASH_SCREEN = "splash_screen"
+
     const val CREATE_POST_SCREEN = "create_post_screen"
-    const val MY_POSTS_SCREEN = "my-posts" // taps hiện các bài đăng
-    const val MY_ADOPT_POSTS_SCREEN = "my-adopt-posts"  // (TRANG LIST NHẬN NUÔI)
-    const val CREATE_ADOPT_POST_SCREEN = "create-adopt-post" //(TRANG TẠO BÀI NHẬN NUÔI)
+    const val MY_POSTS_SCREEN = "my-posts"
+
+    const val MY_ADOPT_POSTS_SCREEN = "my-adopt-posts"
+    const val CREATE_ADOPT_POST_SCREEN = "create-adopt-post"
+
+    const val ADOPT_COMMENT_SCREEN = "adopt_comment_screen"
+
     const val DONATE_BANK_SCREEN = "donate-bank-info"
+
     const val ACTIVITIES_LIST_SCREEN = "activities_list"
     const val CREATE_ACTIVITY_SCREEN = "create_activity"
     const val SETTINGS_SCREEN = "settings_screen"
     const val NOTIFICATION_SCREEN = "notification_screen"
+
+    const val MESSAGES = "messages"
+    const val CHAT = "chat/{threadId}"
+    fun chat(threadId: String) = "chat/$threadId"
 }

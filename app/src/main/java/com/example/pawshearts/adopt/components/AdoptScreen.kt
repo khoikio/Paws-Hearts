@@ -1,6 +1,5 @@
 package com.example.pawshearts.adopt.components
 
-// === M IMPORT 1 ĐỐNG NÀY VÔ KKK ===
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,38 +18,66 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.sp // <== CẦN IMPORT NÀY CHO TEXT SIZE
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.example.pawshearts.R // M check M có R.drawable.avatardefault
+import com.example.pawshearts.R
 import com.example.pawshearts.adopt.AdoptViewModel
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.navmodel.Routes
+import android.content.Intent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-// ===================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdoptScreen(
     nav: NavHostController,
     adoptViewModel: AdoptViewModel,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
 ) {
-    // 1. LẤY LIST TẤT CẢ TỪ NÃO KKK
-    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsStateWithLifecycle(initialValue = emptyList())
-    val userProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
+    // ... (Các dòng lấy state giữ nguyên)
+    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsState()
+    val userProfile by authViewModel.userProfile.collectAsState()
     val avatarUrl = userProfile?.profilePictureUrl
+    val likedPostIds by adoptViewModel.likedPostIds.collectAsState()
+    val currentUserId = userProfile?.userId ?: ""
+    val context = LocalContext.current
+
+    // Màu cam chủ đạo
+    val OrangeColor = Color(0xFFE65100)
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            adoptViewModel.fetchLikedPosts(currentUserId)
+        }
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Tìm chủ (Tất cả)") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Các Bé Cần Chủ Mới Nhận Nuôi",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center, // 1. Ở giữa
+                        fontWeight = FontWeight.ExtraBold, // 2. In đậm hơn
+                        fontSize = 24.sp,
+                        color = OrangeColor // 3. Màu cam
+                    )
+                },
+                Modifier.height(100.dp),
+                // KHÔNG DÙNG contentWindowInsets
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    containerColor = Color.White,
+                    titleContentColor = OrangeColor
                 )
             )
         }
@@ -63,34 +90,49 @@ fun AdoptScreen(
                 .background(MaterialTheme.colorScheme.background),            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // === CÁI NÚT FB M ĐÒI NÈ M ƠI KKK ===
+            // ... (Phần còn lại của LazyColumn giữ nguyên)
             item {
                 CreatePostButton(
-                    avatarUrl = avatarUrl, // Avatar xịn
+                    avatarUrl = avatarUrl,
                     onClick = {
-                        nav.navigate(Routes.CREATE_ADOPT_POST_SCREEN) // Bấm vô nhảy qua trang Tạo
+                        nav.navigate(Routes.CREATE_ADOPT_POST_SCREEN)
                     }
                 )
             }
-            // ===================================
 
-            // === CÁI LIST BÀI KKK ===
             if (allAdoptPosts.isEmpty()) {
                 item {
                     Text(
                         "Chưa có bé nào tìm chủ KKK :v",
-                        modifier = Modifier.padding(vertical = 24.dp),
+                        modifier = Modifier.padding(vertical = 24.dp).fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                         color = Color.Gray
                     )
                 }
             } else {
                 items(allAdoptPosts) { adoptPost ->
-                    // M XÀI LẠI CÁI PostAdopt Card M code KKK
+
                     PostAdopt(
                         post = adoptPost,
                         onEditClick = {
-                            // Mốt T với M code M bấm vô nó nhảy qua PetDetail KKK
+                            nav.navigate("${Routes.PET_DETAIL_SCREEN}/${adoptPost.id}")
+                        },
+                        onCommentClick = { postId ->
+                            nav.navigate("${Routes.ADOPT_COMMENT_SCREEN}/${postId}")
+                        },
+                        isLiked = likedPostIds.contains(adoptPost.id),
+                        onLikeClick = { postId ->
+                            adoptViewModel.toggleLike(postId)
+                        },
+                        onShareClick = { postToShare ->
+                            val shareIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT,
+                                    "Bé ${postToShare.petName} đang tìm chủ! Giống: ${postToShare.petBreed}. Chi tiết tại [LINK APP CỦA M]"
+                                )
+                                type = "text/plain"
+                            }
+                            ContextCompat.startActivity(context, Intent.createChooser(shareIntent, "Chia sẻ bài viết này"), null)
                         }
                     )
                 }
@@ -99,7 +141,7 @@ fun AdoptScreen(
     }
 }
 
-// === CÁI NÚT FB M GỬI T NÈ KKK ===
+// === CÁI NÚT FB M GỬI T NÈ KKK (GIỮ NGUYÊN) ===
 @Composable
 fun CreatePostButton(
     avatarUrl: String?,
@@ -108,7 +150,7 @@ fun CreatePostButton(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick), // M bấm đâu cũng lụm KKK
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -120,7 +162,6 @@ fun CreatePostButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // AVATAR M
             Image(
                 painter = if (avatarUrl != null)
                     rememberAsyncImagePainter(avatarUrl)
@@ -133,7 +174,6 @@ fun CreatePostButton(
                     .border(1.dp, Color.Gray, CircleShape),
                 contentScale = ContentScale.Crop
             )
-            // CÁI Ô XÁM M BẤM
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -149,7 +189,6 @@ fun CreatePostButton(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-
         }
     }
 }

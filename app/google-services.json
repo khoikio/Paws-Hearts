@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "771564365435-t29afdgim0fl84ss7lljq6nja8s2htnl.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.pawshearts",
-            "certificate_hash": "15e2014073f5b48c4b885738495810c94dad8eda"
-          }
-        },
-        {
           "client_id": "771564365435-q9k9bpkseqg49eqr1u4u3n3cuu6rci3i.apps.googleusercontent.com",
           "client_type": 3
         }

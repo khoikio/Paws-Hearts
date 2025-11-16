@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -17,7 +19,7 @@ import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
 import com.example.pawshearts.navmodel.Routes
 import kotlinx.coroutines.delay
-
+import com.example.pawshearts.ui.theme.AppTypography
 @Composable
 fun SplashScreen(navController: NavHostController) {
     val context = LocalContext.current.applicationContext as Application
@@ -59,4 +61,11 @@ fun SplashScreen(navController: NavHostController) {
             color = MaterialTheme.colorScheme.primary // Chữ màu cam cho nó nổi
         )
     }
+}
+            text = "Paws & Hearts",
+            style = MaterialTheme.typography.displayLarge,
+            color = Color(0xFFEA5600)
+        )
+    }
+
 }
