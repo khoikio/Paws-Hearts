@@ -69,6 +69,8 @@ import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.ui.theme.LightBackground
 import com.example.pawshearts.messages.ui.screens.MessagesScreen
 import com.example.pawshearts.messages.ui.screens.ChatScreen
+import com.example.pawshearts.adopt.AdoptCommentScreen
+// IMPORT CẦN THIẾT cho logic Bình luận
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,7 +136,7 @@ fun AppRoot() {
                 AdoptScreen(
                     nav = nav,
                     adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
                 )
             }
 
@@ -225,6 +227,22 @@ fun AppRoot() {
                 )
             }
 
+            // MÀN HÌNH BÌNH LUẬN ADOPT
+            composable(
+                route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
+                arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
+
+                // ĐÃ SỬA: Dùng AdoptViewModel vì nó chứa logic comment
+                AdoptCommentScreen(
+                    adoptPostId = adoptPostId,
+                    adoptViewModel = adoptViewModel,
+                    authViewModel = authViewModel,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
             // ACTIVITIES_LIST_SCREEN: Dùng lại VM đã tạo ở ngoài
             composable(Routes.ACTIVITIES_LIST_SCREEN) {
                 ActivitiesScreen(
@@ -252,7 +270,7 @@ fun AppRoot() {
                 )
             }
 
-// ====== MÀN CHAT CHI TIẾT ======
+            // ====== MÀN CHAT CHI TIẾT ======
             composable(
                 route = Routes.CHAT,
                 arguments = listOf(navArgument("threadId") { type = NavType.StringType })
