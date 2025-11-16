@@ -6,9 +6,7 @@ plugins {
     alias(libs.plugins.protobuf)      // DataStore Proto (chỉ nếu dùng catalog)
     id("com.google.gms.google-services") // Firebase
 
-    // XÓA các plugin trùng hoặc không cần, KHÔNG cần thêm lại android.application/kotlin.android bên dưới nữa!
-    // id("com.android.application")    // Bỏ vì đã có ở alias(libs.plugins.android.application)
-    // id("org.jetbrains.kotlin.android") // Bỏ vì đã có ở alias(libs.plugins.kotlin.android)
+
 }
 
 android {
@@ -26,8 +24,7 @@ android {
 
     buildTypes {
         getByName("release") {
-            // Bật R8 cho bản chính thức (khi up lên Google Play)isMinifyEnabled = true
-            // Áp dụng file quy tắc của mày
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
