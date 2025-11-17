@@ -44,15 +44,7 @@ class PostRepositoryImpl(
                 createdAt = Timestamp.now()
             )
 
-            val batch = firestore.batch()
-            batch.set(newPostRef, finalPost)
-
-            // TẠM THỜI TẮT NOTI KHI TẠO POST
-            /*
-            ...
-            */
-
-            batch.commit().await()
+            firestore.collection("posts").document(newPostRef.id).set(finalPost).await()
             AuthResult.Success(Unit)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Lỗi không xác định")
@@ -94,6 +86,7 @@ class PostRepositoryImpl(
         }
     }
 
+    // SỬA LẠI HOÀN TOÀN HÀM NÀY
     override suspend fun toggleLike(postId: String, userId: String) {
         val postRef = firestore.collection("posts").document(postId)
         val currentUser = FirebaseAuth.getInstance().currentUser ?: return
@@ -103,14 +96,26 @@ class PostRepositoryImpl(
             val currentLikes = postSnapshot.get("likes") as? List<String> ?: emptyList()
             
             if (currentLikes.contains(userId)) {
+                // --- BỎ LIKE ---
+                // Chỉ update đúng 1 trường 'likes'
                 postRef.update("likes", FieldValue.arrayRemove(userId)).await()
             } else {
+                // --- THÊM LIKE ---
+                // Chỉ update đúng 1 trường 'likes'
                 postRef.update("likes", FieldValue.arrayUnion(userId)).await()
 
-                // TẠM THỜI TẮT NOTI KHI LIKE
-                /*
-                ...
-                */
+                // TẠO YÊU CẦU THÔNG BÁO (chạy sau khi update thành công)
+                val postAuthorId = postSnapshot.getString("userId")
+                if (postAuthorId != null && postAuthorId != userId) {
+                    val pendingNoti = hashMapOf(
+                        "senderId" to currentUser.uid,
+                        "receiverId" to postAuthorId,
+                        "type" to "LIKE",
+                        "postId" to postId,
+                        "timestamp" to FieldValue.serverTimestamp()
+                    )
+                    firestore.collection("pending_notifications").add(pendingNoti).await()
+                }
             }
         } catch (e: Exception) {
             Log.e("PostRepoImpl", "Lỗi toggleLike", e)
@@ -135,7 +140,6 @@ class PostRepositoryImpl(
         }
     }
 
-    // SỬA LẠI HÀM NÀY ĐỂ DEBUG
     override suspend fun addComment(comment: Comment): AuthResult<Unit> {
         return try {
             val currentUser = FirebaseAuth.getInstance().currentUser ?: return AuthResult.Error("Bạn chưa đăng nhập")
@@ -150,14 +154,27 @@ class PostRepositoryImpl(
                 createdAt = Timestamp.now()
             )
 
-            // Chạy riêng lẻ để debug
-            Log.d("ADD_COMMENT_DEBUG", "Bước 1: Chuẩn bị tạo comment...")
-            commentRef.set(finalComment).await()
-            Log.d("ADD_COMMENT_DEBUG", "Bước 1 THÀNH CÔNG: Đã tạo comment document.")
+            val postSnapshot = postRef.get().await()
+            val postAuthorId = postSnapshot.getString("userId")
 
-            Log.d("ADD_COMMENT_DEBUG", "Bước 2: Chuẩn bị update commentCount...")
-            postRef.update("commentCount", FieldValue.increment(1)).await()
-            Log.d("ADD_COMMENT_DEBUG", "Bước 2 THÀNH CÔNG: Đã update commentCount.")
+            // Dùng batch chỉ để ghi comment và update commentCount
+            firestore.batch().apply {
+                set(commentRef, finalComment)
+                update(postRef, "commentCount", FieldValue.increment(1))
+            }.commit().await()
+
+            // Tạo pending notification sau khi batch thành công
+            if (postAuthorId != null && postAuthorId != currentUser.uid) {
+                val pendingNoti = hashMapOf(
+                    "senderId" to currentUser.uid,
+                    "receiverId" to postAuthorId,
+                    "type" to "COMMENT",
+                    "postId" to comment.postId,
+                    "commentText" to finalComment.text,
+                    "timestamp" to FieldValue.serverTimestamp()
+                )
+                firestore.collection("pending_notifications").add(pendingNoti).await()
+            }
 
             AuthResult.Success(Unit)
         } catch (e: Exception) {
