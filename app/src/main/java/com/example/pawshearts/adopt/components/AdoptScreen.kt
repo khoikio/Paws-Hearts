@@ -1,5 +1,7 @@
 package com.example.pawshearts.adopt.components
 
+import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,9 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,15 +25,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.adopt.AdoptViewModel
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.navmodel.Routes
-import android.content.Intent
-import androidx.compose.runtime.LaunchedEffect
-import com.example.pawshearts.ui.theme.DarkBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,15 +40,15 @@ fun AdoptScreen(
     adoptViewModel: AdoptViewModel,
     authViewModel: AuthViewModel,
 ) {
-    // ... (Các dòng lấy state giữ nguyên)
-    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsState()
-    val userProfile by authViewModel.userProfile.collectAsState()
+    Log.d("ADOPT_DEBUG", "Bắt đầu vẽ AdoptScreen Composable")
+
+    val allAdoptPosts by adoptViewModel.allAdoptPosts.collectAsStateWithLifecycle()
+    val userProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
     val avatarUrl = userProfile?.profilePictureUrl
-    val likedPostIds by adoptViewModel.likedPostIds.collectAsState()
+    val likedPostIds by adoptViewModel.likedPostIds.collectAsStateWithLifecycle()
     val currentUserId = userProfile?.userId ?: ""
     val context = LocalContext.current
 
-    // Màu cam chủ đạo
     val OrangeColor = Color(0xFFE65100)
 
     LaunchedEffect(currentUserId) {
@@ -59,6 +57,8 @@ fun AdoptScreen(
         }
     }
 
+    Log.d("ADOPT_DEBUG", "AdoptScreen Composable đã lấy xong state, chuẩn bị vẽ Scaffold")
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -66,22 +66,20 @@ fun AdoptScreen(
                     Text(
                         "Các Bé Cần Chủ Mới Nhận Nuôi",
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center, // 1. Ở giữa
-                        fontWeight = FontWeight.ExtraBold, // 2. In đậm hơn
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.ExtraBold,
                         fontSize = 24.sp,
-                        color = OrangeColor // 3. Màu cam
+                        color = OrangeColor
                     )
                 },
-                Modifier.height(100.dp),
-                // KHÔNG DÙNG contentWindowInsets
+                modifier = Modifier.height(100.dp),
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background, // SỬA Ở ĐÂY
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = OrangeColor
                 )
             )
         }
     ) { paddingValues ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -90,7 +88,6 @@ fun AdoptScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ... (Phần còn lại của LazyColumn giữ nguyên)
             item {
                 CreatePostButton(
                     avatarUrl = avatarUrl,
@@ -103,7 +100,7 @@ fun AdoptScreen(
             if (allAdoptPosts.isEmpty()) {
                 item {
                     Text(
-                        "Chưa có bé nào tìm chủ KKK :v",
+                        "Chưa có bé nào tìm chủ",
                         modifier = Modifier.padding(vertical = 24.dp).fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = Color.Gray
@@ -111,7 +108,6 @@ fun AdoptScreen(
                 }
             } else {
                 items(allAdoptPosts) { adoptPost ->
-
                     PostAdopt(
                         post = adoptPost,
                         onEditClick = {
@@ -128,20 +124,20 @@ fun AdoptScreen(
                             val shareIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_TEXT,
-                                    "Bé ${postToShare.petName} đang tìm chủ! Giống: ${postToShare.petBreed}. Chi tiết tại [LINK APP CỦA M]"
+                                    "Bé ${postToShare.petName} đang tìm chủ! Chi tiết tại app."
                                 )
                                 type = "text/plain"
                             }
-                            ContextCompat.startActivity(context, Intent.createChooser(shareIntent, "Chia sẻ bài viết này"), null)
+                            ContextCompat.startActivity(context, Intent.createChooser(shareIntent, "Chia sẻ"), null)
                         }
                     )
                 }
             }
         }
     }
+    Log.d("ADOPT_DEBUG", "Vẽ xong AdoptScreen Composable")
 }
 
-// === CÁI NÚT FB M GỬI T NÈ KKK (GIỮ NGUYÊN) ===
 @Composable
 fun CreatePostButton(
     avatarUrl: String?,
@@ -152,7 +148,7 @@ fun CreatePostButton(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(

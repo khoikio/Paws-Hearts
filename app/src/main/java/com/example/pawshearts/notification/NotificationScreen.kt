@@ -10,41 +10,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.pawshearts.data.local.PawsHeartsDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.pawshearts.ui.theme.Theme  // nếu theme của m tên khác thì sửa lại
+import com.example.pawshearts.ui.theme.Theme
+import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     userId: String
 ) {
-    val context = LocalContext.current
-
-    // Lấy db + dao từ Room
-    val db = remember { PawsHeartsDatabase.getDatabase(context) }
-    val dao = remember { db.notificationDao() }
-
-    // Tạo repo 1 lần
     val repo = remember {
         NotificationRepository(
-            dao = dao,
             remote = NotificationFirebaseStore(FirebaseFirestore.getInstance())
         )
     }
 
-    // Tạo ông quản gia
     val viewModel: NotificationViewModel = viewModel(
         factory = NotificationViewModelFactory(repo)
     )
 
-    // Gọi load dữ liệu khi có userId
     LaunchedEffect(userId) {
         viewModel.loadNotifications(userId)
     }
@@ -59,9 +48,6 @@ fun NotificationScreen(
     )
 }
 
-// ────────────────────────
-//  PHẦN UI LIST + NÚT XÓA HẾT
-// ────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationUI(
@@ -119,7 +105,7 @@ fun NotificationItem(
     onRead: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val bgColor = if (!notification.isRead)  MaterialTheme.colorScheme.onPrimary else Color.White
+    val bgColor = if (!notification.isRead)  MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent
 
     Row(
         modifier = Modifier
@@ -127,7 +113,6 @@ fun NotificationItem(
             .background(bgColor)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        // Avatar
         AsyncImage(
             model = notification.actorAvatarUrl,
             contentDescription = null,
@@ -141,13 +126,8 @@ fun NotificationItem(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = notification.actorName ?: "Người dùng",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = notification.message,
-                style = MaterialTheme.typography.bodyMedium
+                text = "${notification.actorName ?: "Ai đó"} ${notification.message}",
+                style = MaterialTheme.typography.bodyLarge
             )
         }
 
@@ -155,44 +135,29 @@ fun NotificationItem(
             Icon(Icons.Default.Close, contentDescription = "Xóa")
         }
     }
-
-    // Khi user bấm (m sau này có thể wrap Row bằng .clickable để gọi onRead)
-    LaunchedEffect(notification.id, notification.isRead) {
-        // chỗ này hiện tại chưa dùng click, nên tạm để trống
-        // nếu m muốn: khi click item thì gọi onRead()
-    }
 }
 
-
-@Preview(
-    showBackground = true,
-    showSystemUi = true,
-    name = "Notification – Light"
-)
+@Preview(showBackground = true)
 @Composable
 fun NotificationPreviewLight() {
     val fakeList = listOf(
         Notification(
             id = "1",
             userId = "user1",
-            actorId = "u2",
             actorName = "Kio",
-            actorAvatarUrl = null,
             type = "like",
-            message = "Kio đã thích bài viết của bạn 🧡",
-            postId = "post1",
-            isRead = false
+            message = "đã thích bài viết của bạn 🧡",
+            isRead = false,
+            createdAt = Timestamp.now()
         ),
         Notification(
             id = "2",
             userId = "user1",
-            actorId = "u3",
             actorName = "Mun",
-            actorAvatarUrl = null,
             type = "comment",
-            message = "Mun đã bình luận: \"Dễ thương quá!\"",
-            postId = "post2",
-            isRead = true
+            message = "đã bình luận: \"Dễ thương quá!\"",
+            isRead = true,
+            createdAt = Timestamp.now()
         )
     )
 
@@ -205,45 +170,3 @@ fun NotificationPreviewLight() {
         )
     }
 }
-
-//@Preview(
-//    showBackground = true,
-//    showSystemUi = true,
-//    name = "Notification – Dark"
-//)
-//@Composable
-//fun NotificationPreviewDark() {
-//    val fakeList = listOf(
-//        Notification(
-//            id = "1",
-//            userId = "user1",
-//            actorId = "u2",
-//            actorName = "Kio",
-//            actorAvatarUrl = null,
-//            type = "like",
-//            message = "Kio đã thích bài viết của bạn 🧡",
-//            postId = "post1",
-//            isRead = false
-//        ),
-//        Notification(
-//            id = "2",
-//            userId = "user1",
-//            actorId = "u3",
-//            actorName = "Mun",
-//            actorAvatarUrl = null,
-//            type = "system",
-//            message = "Chào mừng bạn đến với Paws & Hearts!",
-//            postId = null,
-//            isRead = true
-//        )
-//    )
-//
-//    Theme(darkTheme = true) {
-//        NotificationUI(
-//            notifications = fakeList,
-//            onRead = {},
-//            onDelete = {},
-//            onClearAll = {}
-//        )
-//    }
-//}

@@ -1,6 +1,7 @@
 package com.example.pawshearts.post
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,10 +50,12 @@ fun String.removeAccents(): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
-    // --- KHỞI TẠO VIEWMODEL VÀ STATE ---
+    // --- KHỞI TẠO viewmodel và state ---
     val context = LocalContext.current.applicationContext as Application
     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    // coroutine scope for possible UI feedback (not used here, we log instead)
+    val coroutineScope = rememberCoroutineScope()
 
     val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
     val currentUserId = authViewModel.currentUser?.uid ?: ""
@@ -210,7 +213,13 @@ fun HomeScreen(nav: NavHostController) {
                                 postViewModel.toggleLike(post.id, currentUserId)
                             }
                         },
-                        onCommentClick = { nav.navigate(Routes.comment(post.id)) },
+                        onCommentClick = {
+                            if (post.id.isNotBlank()) {
+                                nav.navigate(Routes.comment(post.id))
+                            } else {
+                                Log.e("HomeScreen", "Attempted to open comments for post with blank id: $post")
+                            }
+                        },
                         onShareClick = { /*TODO*/ }
                     )
                 }

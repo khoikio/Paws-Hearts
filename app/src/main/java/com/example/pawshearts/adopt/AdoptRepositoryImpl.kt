@@ -2,13 +2,13 @@ package com.example.pawshearts.adopt
 
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import com.example.pawshearts.adopt.Adopt
 import com.google.firebase.firestore.FieldValue
 
 class AdoptRepositoryImpl(
@@ -16,104 +16,75 @@ class AdoptRepositoryImpl(
 ) : AdoptRepository {
     private val ADOPT_COMMENTS_COLLECTION = "adopt_comments"
     private val USER_LIKES_COLLECTION = "user_likes"
-    private val ADOPTS_COLLECTION = "adopts"
+    private val ADOPTS_COLLECTION = "adopt_posts"
 
     override fun getMyAdoptPostsFlow(userId: String): Flow<List<Adopt>> {
         return callbackFlow {
             if (userId.isBlank()) {
-                Log.w("AdoptRepoImpl", "User ID rỗng, đéo fetch my adopts KKK")
                 trySend(emptyList())
                 close()
                 return@callbackFlow
             }
 
-            Log.d("AdoptRepoImpl", "Bắt đầu 'nghe' (listen) bài nhận nuôi của $userId")
-            val listener = firestore.collection("adopts")
+            val listener = firestore.collection(ADOPTS_COLLECTION)
                 .whereEqualTo("userId", userId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e("AdoptRepoImpl", "Lỗi nghe MyAdopts KKK", error)
+                        Log.e("AdoptRepoImpl", "Lỗi nghe MyAdopts", error)
                         close(error)
                         return@addSnapshotListener
                     }
-
                     if (snapshot != null) {
-                        val myAdoptPosts = snapshot.toObjects(Adopt::class.java)
-                        Log.d("AdoptRepoImpl", "Nghe thấy ${myAdoptPosts.size} bài KKK. Gửi về VM...")
-                        trySend(myAdoptPosts)
+                        trySend(snapshot.toObjects(Adopt::class.java))
                     } else {
-                        Log.d("AdoptRepoImpl", "Snapshot rỗng, chắc đéo có bài nào :v")
                         trySend(emptyList())
                     }
                 }
-
-            awaitClose {
-                Log.d("AdoptRepoImpl", "Hủy 'nghe' MyAdopts KKK")
-                listener.remove()
-            }
+            awaitClose { listener.remove() }
         }
     }
 
     override fun getAllAdoptPostsFlow(): Flow<List<Adopt>> {
         return callbackFlow {
-            Log.d("AdoptRepoImpl", "Bắt đầu 'nghe' (listen) TẤT CẢ bài nhận nuôi KKK")
-
-            val listener = firestore.collection("adopts")
-                .orderBy("timestamp", Query.Direction.DESCENDING)
+            val listener = firestore.collection(ADOPTS_COLLECTION)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e("AdoptRepoImpl", "Lỗi nghe TẤT CẢ Adopts KKK", error)
+                        Log.e("AdoptRepoImpl", "Lỗi nghe AllAdopts", error)
                         close(error)
                         return@addSnapshotListener
                     }
-
                     if (snapshot != null) {
-                        val allAdoptPosts = snapshot.toObjects(Adopt::class.java)
-                        Log.d("AdoptRepoImpl", "Nghe thấy ${allAdoptPosts.size} bài KKK. Gửi về VM...")
-                        trySend(allAdoptPosts)
+                        trySend(snapshot.toObjects(Adopt::class.java))
                     } else {
                         trySend(emptyList())
                     }
                 }
-
-            awaitClose {
-                Log.d("AdoptRepoImpl", "Hủy 'nghe' TẤT CẢ Adopts KKK")
-                listener.remove()
-            }
+            awaitClose { listener.remove() }
         }
     }
 
-    // =========================================================================
-    // === PHẦN SỬA: TẠO BÀI ĐĂNG VỚI ID ĐÃ ĐƯỢC CHỈ ĐỊNH TRƯỚC ===
-
     override fun getNewAdoptPostId(): String {
-        // Trả về ID document mới mà không cần lưu
         return firestore.collection(ADOPTS_COLLECTION).document().id
     }
 
     override suspend fun createAdoptPostWithId(id: String, adoptPost: Adopt): AuthResult<Unit> {
         return try {
-            // Dùng set() với ID đã tạo sẵn (đảm bảo ID document = ID trong object)
-            firestore.collection(ADOPTS_COLLECTION).document(id).set(adoptPost).await()
-            Log.d("AdoptRepoImpl", "Đăng bài nhận nuôi THÀNH CÔNG (Dùng ID đã tạo) KKK :D")
+            val finalPost = adoptPost.copy(createdAt = Timestamp.now())
+            firestore.collection(ADOPTS_COLLECTION).document(id).set(finalPost).await()
             AuthResult.Success(Unit)
         } catch (e: Exception) {
-            Log.e("AdoptRepoImpl", "Đăng bài nhận nuôi THẤT BẠI KKK :@", e)
-            AuthResult.Error(e.message ?: "Lỗi đéo biết KKK :v")
+            Log.e("AdoptRepoImpl", "Lỗi createAdoptPostWithId", e)
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 
-    // BỎ HÀM CŨ: Hàm này không còn được dùng, bạn có thể xóa nó sau khi kiểm tra.
     override suspend fun createAdoptPost(adoptPost: Adopt): AuthResult<Unit> {
-        // Tạm thời trả về lỗi để đảm bảo AdoptViewModel sử dụng hàm createAdoptPostWithId mới
-        return AuthResult.Error("Phải dùng createAdoptPostWithId.")
+        return AuthResult.Error("Hàm không dùng nữa.")
     }
 
-    // =========================================================================
-
-
+    // SỬA LẠI HÀM NÀY CHO AN TOÀN
     override fun getLikedPostsByUser(userId: String): Flow<Set<String>> {
         return callbackFlow {
             if (userId.isBlank()) {
@@ -126,16 +97,18 @@ class AdoptRepositoryImpl(
 
             val listener = docRef.addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e("AdoptRepoImpl", "Lỗi nghe trạng thái Tim", error)
-                    close(error)
+                    // Nếu có lỗi (VD: PERMISSION_DENIED), log lỗi và gửi về list rỗng
+                    Log.w("AdoptRepoImpl", "Lỗi nghe trạng thái Tim, có thể do document chưa tồn tại. Lỗi: ${error.message}")
+                    trySend(emptySet()) 
+                    // KHÔNG close() flow ở đây để nó có thể thử lại
                     return@addSnapshotListener
                 }
 
                 if (snapshot != null && snapshot.exists()) {
-                    @Suppress("UNCHECKED_CAST")
                     val likedList = snapshot.get("likedPostIds") as? List<String> ?: emptyList()
                     trySend(likedList.toSet())
                 } else {
+                    // Nếu document chưa tồn tại, gửi về list rỗng
                     trySend(emptySet())
                 }
             }
@@ -146,79 +119,72 @@ class AdoptRepositoryImpl(
         }
     }
 
-    // === HÀM THÊM/GỠ TIM (ĐÃ SỬA LỖI BATCH) ===
+
     override suspend fun toggleLike(adoptPostId: String, userId: String): AuthResult<Unit> {
         return try {
             val userDocRef = firestore.collection(USER_LIKES_COLLECTION).document(userId)
             val postDocRef = firestore.collection(ADOPTS_COLLECTION).document(adoptPostId)
 
             val snapshot = userDocRef.get().await()
-            @Suppress("UNCHECKED_CAST")
             val likedList = snapshot.get("likedPostIds") as? List<String> ?: emptyList()
             val isCurrentlyLiked = likedList.contains(adoptPostId)
-            val userDocExists = snapshot.exists()
 
             firestore.runBatch { batch ->
-
                 val incrementValue = if (isCurrentlyLiked) -1L else 1L
-                val postUpdateMap = mapOf("likeCount" to FieldValue.increment(incrementValue))
+                batch.update(postDocRef, "likeCount", FieldValue.increment(incrementValue))
 
-                val likeMap = if (isCurrentlyLiked) {
-                    mapOf("likedPostIds" to FieldValue.arrayRemove(adoptPostId))
+                if (isCurrentlyLiked) {
+                    batch.update(userDocRef, "likedPostIds", FieldValue.arrayRemove(adoptPostId))
                 } else {
-                    mapOf("likedPostIds" to FieldValue.arrayUnion(adoptPostId))
+                    if (snapshot.exists()) {
+                        batch.update(userDocRef, "likedPostIds", FieldValue.arrayUnion(adoptPostId))
+                    } else {
+                        batch.set(userDocRef, mapOf("likedPostIds" to listOf(adoptPostId)))
+                    }
                 }
-
-                if (!userDocExists) {
-                    batch.set(userDocRef, likeMap) // SET nếu là lần đầu tiên
-                } else {
-                    batch.update(userDocRef, likeMap) // UPDATE nếu đã tồn tại
-                }
-
-                batch.update(postDocRef, postUpdateMap)
             }.await()
-
-            Log.d("AdoptRepoImpl", "Toggle Tim cho bài $adoptPostId THÀNH CÔNG")
             AuthResult.Success(Unit)
         } catch (e: Exception) {
-            Log.e("AdoptRepoImpl", "Toggle Tim cho bài $adoptPostId THẤT BẠI", e)
-            AuthResult.Error(e.message ?: "Lỗi đéo biết KKK :v")
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 
     override fun getCommentsForAdoptPost(adoptPostId: String): Flow<List<AdoptComment>> {
         return callbackFlow {
-            val listener = firestore.collection(ADOPT_COMMENTS_COLLECTION)
-                .whereEqualTo("adoptPostId", adoptPostId)
+            val listener = firestore.collection(ADOPTS_COLLECTION)
+                .document(adoptPostId)
+                .collection("comments")
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
-                        Log.e("AdoptCommentRepo", "Lỗi nghe bình luận cho $adoptPostId", error)
                         close(error)
                         return@addSnapshotListener
                     }
-
                     if (snapshot != null) {
-                        val comments = snapshot.toObjects(AdoptComment::class.java)
-                        trySend(comments)
+                        trySend(snapshot.toObjects(AdoptComment::class.java))
                     } else {
                         trySend(emptyList())
                     }
                 }
-
-            awaitClose {
-                listener.remove()
-            }
+            awaitClose { listener.remove() }
         }
     }
 
     override suspend fun addComment(comment: AdoptComment): AuthResult<Unit> {
         return try {
-            firestore.collection(ADOPT_COMMENTS_COLLECTION).add(comment).await()
+            val commentCollectionRef = firestore.collection(ADOPTS_COLLECTION)
+                .document(comment.adoptPostId)
+                .collection("comments")
+
+            val newCommentRef = commentCollectionRef.document()
+            val finalComment = comment.copy(
+                id = newCommentRef.id,
+                createdAt = Timestamp.now()
+            )
+            newCommentRef.set(finalComment).await()
             AuthResult.Success(Unit)
         } catch (e: Exception) {
-            Log.e("AdoptCommentRepo", "Thêm bình luận thất bại", e)
-            AuthResult.Error(e.message ?: "Lỗi không xác định khi thêm bình luận.")
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 }

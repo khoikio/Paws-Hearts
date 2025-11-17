@@ -30,7 +30,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
@@ -48,7 +47,6 @@ fun ProfileScreen(
     postViewModel: PostViewModel,
     onSettingsClick: () -> Unit
 ) {
-    // --- STATE VÀ SETUP ---
     val userName = userData.username ?: "Chưa cập nhật"
     val userEmail = userData.email ?: "Chưa có email"
     val avatarUriString = userData.profilePictureUrl
@@ -63,7 +61,6 @@ fun ProfileScreen(
         uri?.let { authViewModel.updateAvatar(it) }
     }
 
-    // --- GIAO DIỆN ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,11 +75,10 @@ fun ProfileScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        // DÙNG MỘT COLUMN DUY NHẤT LÀM GỐC VÀ ÁP DỤNG PADDING
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // <-- ÁP DỤNG PADDING Ở ĐÂY
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -90,7 +86,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // AVATAR CÓ THỂ CLICK
             Image(
                 painter = if (avatarUriString != null) rememberAsyncImagePainter(avatarUriString) else painterResource(id = R.drawable.avatardefault),
                 contentDescription = "Avatar",
@@ -104,7 +99,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // TÊN VÀ TAG ADMIN
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -118,7 +112,6 @@ fun ProfileScreen(
             }
             Text(text = userEmail, style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
 
-            // THÔNG TIN CÁ NHÂN VÀ NÚT SỬA
             Spacer(modifier = Modifier.height(24.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -145,28 +138,27 @@ fun ProfileScreen(
                 }
             }
 
-            // CÁC NÚT CHỨC NĂNG
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FunctionButton(text = "Bài đăng", onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
                 FunctionButton(text = "Nhận nuôi", onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
             }
 
-            // NÚT ĐĂNG XUẤT
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { authViewModel.logout() }, // CHỈ GỌI LOGOUT
+                onClick = {
+                    authViewModel.logoutAndNavigate(nav) // <-- GỌI HÀM MỚI
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
                 Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
             }
 
-            Spacer(modifier = Modifier.height(16.dp)) // Đệm dưới cùng
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
-    // HỘP THOẠI (DIALOG) CHỈNH SỬA
     if (showEditDialog) {
         var newName by remember { mutableStateOf(userName) }
         var newPhone by remember { mutableStateOf(phone) }
@@ -196,7 +188,6 @@ fun ProfileScreen(
     }
 }
 
-// Composable phụ để code gọn hơn
 @Composable
 private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -206,7 +197,6 @@ private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text:
     }
 }
 
-// Composable phụ cho các nút chức năng
 @Composable
 private fun FunctionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(

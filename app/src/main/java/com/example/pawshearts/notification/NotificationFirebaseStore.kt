@@ -1,45 +1,63 @@
 package com.example.pawshearts.notification
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-// lưu trên internet (Firebase)
 class NotificationFirebaseStore(
     private val firestore: FirebaseFirestore
 ) {
-    private val COLLECTION_NAME = "notifications"
+    private val collection = firestore.collection("notifications")
 
-    // lấy thông báo từ Firebase cho 1 user
-    suspend fun fetchNotificationsForUser(userId: String): List<Notification> {
-        return try {
-            val snapshot = firestore.collection(COLLECTION_NAME)
+    // Cung cấp một Flow để ViewModel lắng nghe thay đổi real-time
+    fun getNotificationsFlowForUser(userId: String): Flow<List<Notification>> {
+        return callbackFlow {
+            val listenerRegistration = collection
                 .whereEqualTo("userId", userId)
-                .get()
-                .await()
-
-            snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Notification::class.java)?.copy(
-                    id = doc.id // id = document id trên Firestore
-                )
-            }
-        } catch (e: Exception) {
-            // nếu lỗi → trả list rỗng
-            emptyList()
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        val notifications = snapshot.toObjects(Notification::class.java)
+                        trySend(notifications)
+                    }
+                }
+            awaitClose { listenerRegistration.remove() }
         }
     }
 
-    // (option) sync trạng thái đã đọc lên Firebase
-    suspend fun markAsReadRemote(notificationId: String) {
-        // TODO: nếu muốn lưu isRead lên Firebase thì implement
+    suspend fun markAsReadRemote(id: String) {
+        try {
+            collection.document(id).update("read", true).await()
+        } catch (e: Exception) {
+            // Xử lý lỗi
+        }
     }
 
-    // (option) xóa 1 thông báo trên Firebase
-    suspend fun deleteRemote(notificationId: String) {
-        // TODO: nếu muốn xóa trên cloud luôn thì thêm vào
+    suspend fun deleteRemote(id: String) {
+        try {
+            collection.document(id).delete().await()
+        } catch (e: Exception) {
+            // Xử lý lỗi
+        }
     }
 
-    // (option) xóa tất cả thông báo của 1 user trên Firebase
     suspend fun deleteAllForUserRemote(userId: String) {
-        // TODO: nếu còn thời gian thì làm
+        try {
+            val querySnapshot = collection.whereEqualTo("userId", userId).get().await()
+            firestore.runBatch { batch ->
+                querySnapshot.documents.forEach { doc ->
+                    batch.delete(doc.reference)
+                }
+            }.await()
+        } catch (e: Exception) {
+            // Xử lý lỗi
+        }
     }
 }

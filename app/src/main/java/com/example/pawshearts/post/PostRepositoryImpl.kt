@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.notification.Notification
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -16,9 +17,6 @@ import kotlinx.coroutines.tasks.await
 import java.lang.Exception
 import java.util.Date
 
-/**
- * Thằng này chịu trách nhiệm nói chuyện với Firestore collection "posts".
- */
 class PostRepositoryImpl(
     private val firestore: FirebaseFirestore
 ) : PostRepository {
@@ -37,262 +35,159 @@ class PostRepositoryImpl(
             val userName = currentUser.displayName ?: "Ai đó"
 
             val newPostRef = firestore.collection("posts").document()
-            val finalPost = post.copy(id = newPostRef.id, userId = authorId, userName =userName, userAvatarUrl = currentUser.photoUrl?.toString())
+            
+            val finalPost = post.copy(
+                id = newPostRef.id,
+                userId = authorId,
+                userName = userName,
+                userAvatarUrl = currentUser.photoUrl?.toString(),
+                createdAt = Timestamp.now()
+            )
 
             val batch = firestore.batch()
             batch.set(newPostRef, finalPost)
 
-            val authorDoc = firestore.collection("users").document(authorId).get().await()
-            val followers = authorDoc.get("followers") as? List<String> ?: emptyList()
-
-            followers.forEach { followerId ->
-                if (followerId != authorId) {
-                    val notificationRef = firestore.collection("notifications").document()
-                    val newNotification = Notification(
-                        id = notificationRef.id,
-                        userId = followerId,
-                        actorId = authorId,
-                        actorName = userName,
-                        actorAvatarUrl = currentUser.photoUrl?.toString(),
-                        type = NotificationTypes.NEW_POST, // DÙNG TÊN MỚI
-                        message = "đã đăng một bài viết mới.",
-                        postId = newPostRef.id,
-                        isRead = false,
-                        createdAt = Date()
-                    )
-                    batch.set(notificationRef, newNotification)
-                }
-            }
+            // TẠM THỜI TẮT NOTI KHI TẠO POST
+            /*
+            ...
+            */
 
             batch.commit().await()
             AuthResult.Success(Unit)
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Lỗi cmnr")
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 
-    // them ham getPostsByUserId (bai viet cua User)
     override fun getPostsByUserId(userId: String): Flow<List<Post>> {
         return callbackFlow {
-            // Mở 1 kênh lắng nghe
             val listener = firestore.collection("posts")
-                .whereEqualTo("userId", userId) // <-- Chỉ lấy bài của M
-                .orderBy("createdAt", Query.Direction.DESCENDING) // <-- THÊM LẠI DÒNG NÀY
+                .whereEqualTo("userId", userId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e("PostRepoImpl", "Lỗi nghe post", error)
-                        close(error) // Báo lỗi & đóng Flow
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null) {
-                        // Chuyển data Firebase sang List<Post>
-                        val postList = snapshot.toObjects(Post::class.java)
-                        trySend(postList) // Gửi cái list mới về cho ViewModel
-                        Log.d("PostRepoImpl", "Tìm thấy ${postList.size} bài đăng của user $userId")
-                    }
-                }
-
-            // Khi ViewModel bị hủy, tự gỡ listener (tiết kiệm pin)
-            awaitClose {
-                listener.remove()
-            }
-        }
-    }
-    // lay tat ca bai viet
-    override fun fetchAllPostsFlow(): Flow<List<Post>> {
-        return callbackFlow {
-            val listener = firestore.collection("posts")
-                .orderBy("createdAt", Query.Direction.DESCENDING) // <-- THÊM LẠI DÒNG NÀY
-                .addSnapshotListener { snapshot, error ->
-
-                    if (error != null) {
-                        Log.e("PostRepoImpl", "Lỗi nghe TẤT CẢ post", error)
                         close(error)
                         return@addSnapshotListener
                     }
-
                     if (snapshot != null) {
-                        val postList = snapshot.toObjects(Post::class.java)
-                        trySend(postList) // Gửi list (TẤT CẢ) về ViewModel
-                        Log.d("PostRepoImpl", "Tìm thấy ${postList.size} BÀI TẤT CẢ")
+                        trySend(snapshot.toObjects(Post::class.java))
                     }
                 }
+            awaitClose { listener.remove() }
+        }
+    }
 
-            awaitClose {
-                listener.remove()
-            }
+    override fun fetchAllPostsFlow(): Flow<List<Post>> {
+        return callbackFlow {
+            val listener = firestore.collection("posts")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        trySend(snapshot.toObjects(Post::class.java))
+                    }
+                }
+            awaitClose { listener.remove() }
         }
     }
 
     override suspend fun toggleLike(postId: String, userId: String) {
         val postRef = firestore.collection("posts").document(postId)
-
-        val auth = FirebaseAuth.getInstance()
-        val currentUser = auth.currentUser ?: return
-
-        val currentUserId = currentUser.uid
-        val userDisplayName = currentUser.displayName ?: "Một người dùng"
-        val userAvatar = currentUser.photoUrl?.toString()
+        val currentUser = FirebaseAuth.getInstance().currentUser ?: return
 
         try {
-            firestore.runTransaction { transaction ->
-                val snapshot = transaction.get(postRef)
+            val postSnapshot = postRef.get().await()
+            val currentLikes = postSnapshot.get("likes") as? List<String> ?: emptyList()
+            
+            if (currentLikes.contains(userId)) {
+                postRef.update("likes", FieldValue.arrayRemove(userId)).await()
+            } else {
+                postRef.update("likes", FieldValue.arrayUnion(userId)).await()
 
-                // danh sách user đã like hiện tại
-                val currentLikes = snapshot.get("likes") as? List<String> ?: emptyList()
-
-                // id của chủ bài viết
-                val postAuthorId = snapshot.getString("userId")
-
-                if (currentLikes.contains(userId)) {
-                    // ĐÃ LIKE -> BỎ LIKE (không tạo thông báo)
-                    transaction.update(postRef, "likes", FieldValue.arrayRemove(userId))
-                } else {
-                    // CHƯA LIKE -> THÊM LIKE
-                    transaction.update(postRef, "likes", FieldValue.arrayUnion(userId))
-
-                    // Tạo thông báo cho CHỦ BÀI VIẾT (không tự thông báo cho chính mình)
-                    if (postAuthorId != null && postAuthorId != userId) {
-                        val notificationRef =
-                            firestore.collection("notifications").document() // tự tạo id
-
-                        val newNotification = Notification( // Bây giờ nó sẽ dùng đúng data class
-                            id = notificationRef.id,
-                            userId = postAuthorId,
-                            actorId = currentUserId,
-                            actorName = userDisplayName,
-                            actorAvatarUrl = userAvatar,
-                            type = NotificationTypes.LIKE,
-                            message = "đã thích bài viết của bạn.",
-                            postId = postId,
-                            isRead = false,
-                            createdAt = Date()
-                        )
-
-                        transaction.set(notificationRef, newNotification)
-                    }
-                }
-
-                null
-            }.await()
+                // TẠM THỜI TẮT NOTI KHI LIKE
+                /*
+                ...
+                */
+            }
         } catch (e: Exception) {
-            Log.e("PostRepoImpl", "Lỗi toggleLike: ${e.message}", e)
+            Log.e("PostRepoImpl", "Lỗi toggleLike", e)
         }
     }
-    // HÀM LẤY CMT VỀ
+
     override fun getCommentsFlow(postId: String): Flow<List<Comment>> {
         return callbackFlow {
             val listener = firestore.collection("posts").document(postId)
-                .collection("comments") // <-- LẤY TRONG NÀY
+                .collection("comments")
                 .orderBy("createdAt", Query.Direction.ASCENDING)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e("PostRepoImpl", "Lỗi nghe Comment", error)
                         close(error)
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
-                        val commentList = snapshot.toObjects(Comment::class.java)
-                        trySend(commentList) // Gửi list cmt về ViewModel
-                        Log.d("PostRepoImpl", "Tìm thấy ${commentList.size} cmt của post $postId")
+                        trySend(snapshot.toObjects(Comment::class.java))
                     }
                 }
-
             awaitClose { listener.remove() }
         }
     }
-    private val storage = FirebaseStorage.getInstance()
-    // HÀM ĐĂNG CMT LÊN
+
+    // SỬA LẠI HÀM NÀY ĐỂ DEBUG
     override suspend fun addComment(comment: Comment): AuthResult<Unit> {
         return try {
-            val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-            val currentUser = auth.currentUser ?: return  AuthResult.Error("Bạn chưa đăng nhập")
-            val userDisplayName =currentUser.displayName ?: "Một người dùng"
-            val userAvatar = currentUser.photoUrl?.toString()
-            val batch = firestore.batch()
+            val currentUser = FirebaseAuth.getInstance().currentUser ?: return AuthResult.Error("Bạn chưa đăng nhập")
             val postRef = firestore.collection("posts").document(comment.postId)
-
             val commentRef = postRef.collection("comments").document()
-            val postSnapshot = postRef.get().await()
-            val postAuthorId = postSnapshot.getString("userId")
-            //1 Thêm cmt mới
-            batch.set(commentRef, comment.copy(id = commentRef.id))
 
-            // 2 Cập nhật lại 'commentCount'
-            batch.update(postRef, "commentCount", FieldValue.increment(1))
+            val finalComment = comment.copy(
+                id = commentRef.id,
+                userId = currentUser.uid,
+                username = currentUser.displayName,
+                userAvatarUrl = currentUser.photoUrl?.toString(),
+                createdAt = Timestamp.now()
+            )
 
-            // 3 tao thong bao
-            if (postAuthorId != null && postAuthorId != currentUser.uid) {
-                val notificationRef = firestore.collection("notifications").document()
-                val currentUserId = currentUser.uid
+            // Chạy riêng lẻ để debug
+            Log.d("ADD_COMMENT_DEBUG", "Bước 1: Chuẩn bị tạo comment...")
+            commentRef.set(finalComment).await()
+            Log.d("ADD_COMMENT_DEBUG", "Bước 1 THÀNH CÔNG: Đã tạo comment document.")
 
-                val newNotification = Notification( // Bây giờ nó sẽ dùng đúng data class
-                    id = notificationRef.id,
-                    userId = postAuthorId,
-                    actorId = currentUserId,
-                    actorName = userDisplayName,
-                    actorAvatarUrl = userAvatar,
-                    type = NotificationTypes.COMMENT, // DÙNG TÊN MỚI
-                    message = "đã bình luận về bài viết của bạn.",
-                    postId = comment.postId,
-                    isRead = false,
-                    createdAt = Date()
-                )
-                batch.set(notificationRef, newNotification)
-            }
-
-            batch.commit().await()
+            Log.d("ADD_COMMENT_DEBUG", "Bước 2: Chuẩn bị update commentCount...")
+            postRef.update("commentCount", FieldValue.increment(1)).await()
+            Log.d("ADD_COMMENT_DEBUG", "Bước 2 THÀNH CÔNG: Đã update commentCount.")
 
             AuthResult.Success(Unit)
         } catch (e: Exception) {
             Log.e("PostRepoImpl", "Lỗi addComment", e)
-            AuthResult.Error(e.message ?: "Lỗi cmnr")
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
+
     override suspend fun uploadImage(uri: Uri): AuthResult<String> {
         return try {
             val fileName = "posts/${uri.lastPathSegment}_${System.currentTimeMillis()}"
-            // 2. Lấy vị trí up
-            val imageRef = storage.reference.child(fileName)
-
-            // 3. ĐẨY FILE LÊN (putFile)
+            val imageRef = FirebaseStorage.getInstance().reference.child(fileName)
             imageRef.putFile(uri).await()
-
-            // 4. LẤY LẠI CÁI LINK WEB (http://...)
             val downloadUrl = imageRef.downloadUrl.await()
-
-            Log.d("PostRepoImpl", "Up ảnh thành công: $downloadUrl")
-            AuthResult.Success(downloadUrl.toString()) // <-- Trả link xịn
-
+            AuthResult.Success(downloadUrl.toString())
         } catch (e: Exception) {
-            Log.e("PostRepoImpl", "Lỗi up ảnh", e)
-            AuthResult.Error(e.message ?: "Lỗi cmnr")
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
+
     override fun getPostById(postId: String): Flow<Post?> {
-        // T trả về 1 'callbackFlow' cho nó real-time
         return callbackFlow {
-            // Mở 1 kênh lắng nghe
             val listener = firestore.collection("posts").document(postId)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e("PostRepoImpl", "Lỗi nghe 1 Post", error)
                         close(error)
                         return@addSnapshotListener
                     }
-                    if (snapshot != null && snapshot.exists()) {
-                        val post = snapshot.toObject(Post::class.java)
-                        trySend(post)
-                    } else {
-                        trySend(null)
-                    }
+                    trySend(snapshot?.toObject(Post::class.java))
                 }
-
-            // Khi ViewModel bị hủy, tự gỡ listener
             awaitClose { listener.remove() }
         }
     }

@@ -3,8 +3,7 @@ package com.example.pawshearts.notification
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.firebase.firestore.ServerTimestamp
-import java.util.Date
+import com.google.firebase.Timestamp
 
 @Entity(tableName = "notification")
 data class Notification(
@@ -17,5 +16,5 @@ data class Notification(
     val message: String = "",              // nội dung hiển thị
     val postId: String? = null,            // id bài viết liên quan
     val isRead: Boolean = false,           // đã đọc chưa
-    @ServerTimestamp val createdAt: Date? = null // thời gian tạo (Firebase tự fill)
+    val createdAt: Timestamp? = null // <-- SỬA DỨT ĐIỂM Ở ĐÂY
 )

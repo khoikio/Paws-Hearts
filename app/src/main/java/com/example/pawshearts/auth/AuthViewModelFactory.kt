@@ -4,36 +4,34 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pawshearts.data.local.PawsHeartsDatabase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 
-/**
- * Đây là một "nhà máy" sản xuất ra AuthViewModel.
- * Lý do cần nó: AuthViewModel cần một AuthRepository để hoạt động,
- * và chúng ta không thể tạo nó theo cách thông thường.
- * Factory này sẽ chịu trách nhiệm tạo ra tất cả các dependency cần thiết.
- */
 class AuthViewModelFactory(
-    private val application: Application // Cần Application Context để tạo Database
+    private val application: Application
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        // Kiểm tra xem hệ thống có đang yêu cầu tạo một AuthViewModel không
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-
-            // Bước 1: Tạo ra các "nguyên liệu" từ tầng Data
-            val database = PawsHeartsDatabase.getDatabase(application)
-            val userDao = database.userDao()
+            // --- Chuẩn bị đầy đủ 4 linh kiện ---
+            val auth = FirebaseAuth.getInstance()
             val firestore = FirebaseFirestore.getInstance()
+            val storage = FirebaseStorage.getInstance()
+            val userDao = PawsHeartsDatabase.getDatabase(application).userDao()
 
-            // Bước 2: Tạo ra Repository với các nguyên liệu đó
-            val repository = AuthRepositoryImpl(userDao, firestore)
+            // --- Lắp ráp Repository cho đúng ---
+            val repository = AuthRepositoryImpl(
+                auth = auth, // Linh kiện 1
+                firestore = firestore, // Linh kiện 2
+                userDao = userDao, // Linh kiện 3
+                storage = storage // Linh kiện 4
+            )
 
-            // Bước 3: Tạo ra AuthViewModel với Repository
+            // --- Tạo ViewModel với Repository xịn ---
             return AuthViewModel(repository) as T
         }
-
-        // Nếu hệ thống yêu cầu một ViewModel khác mà Factory này không biết, hãy báo lỗi
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

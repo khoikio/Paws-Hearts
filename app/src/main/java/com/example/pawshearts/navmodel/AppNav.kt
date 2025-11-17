@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +38,6 @@ import com.example.pawshearts.post.*
 import com.example.pawshearts.profile.ProfileScreen
 import com.example.pawshearts.settings.*
 import com.example.pawshearts.ui.theme.Theme
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-
 
 @Composable
 fun AppRoot() {
@@ -52,12 +45,13 @@ fun AppRoot() {
     val themeViewModel: SettingViewModel = viewModel(
         factory = SettingViewModelFactory(SettingsRepository(context))
     )
-    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
 
     Theme(darkTheme = isDarkMode) {
         AppContent(themeViewModel = themeViewModel)
     }
 }
+
 fun NavHostController.goPetDetail(id: String) {
     navigate(Routes.petDetail(id))
 }
@@ -67,14 +61,25 @@ fun NavHostController.goPetDetail(id: String) {
 private fun AppContent(themeViewModel: SettingViewModel) {
     val nav = rememberNavController()
     val context = LocalContext.current.applicationContext as Application
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
-    // Logic hiển thị BottomBar đã được sửa lại
+    // --- LOGIC TỰ ĐỘNG ĐIỀU HƯỚNG ---
+    LaunchedEffect(isLoggedIn) {
+        val currentRoute = nav.currentBackStackEntry?.destination?.route
+        if (isLoggedIn && (currentRoute == Routes.LOGIN_SCREEN || currentRoute == Routes.REGISTER_SCREEN)) {
+            nav.navigate(Routes.HOME) {
+                popUpTo(nav.graph.id) { inclusive = true }
+            }
+        }
+    }
+
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-    val showBottomBar = currentRoute !in listOf(
+    val showBottomBar = isLoggedIn && currentRoute !in listOf(
         Routes.SPLASH_SCREEN,
         Routes.LOGIN_SCREEN,
         Routes.REGISTER_SCREEN,
-        Routes.CHAT // Không hiện bottom bar ở màn Chat
+        Routes.CHAT
     )
 
     Scaffold(
@@ -90,111 +95,97 @@ private fun AppContent(themeViewModel: SettingViewModel) {
             startDestination = Routes.SPLASH_SCREEN,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // === CÁC MÀN HÌNH KHÔNG CẦN VM PHỨC TẠP ===
             composable(Routes.SPLASH_SCREEN) { SplashScreen(navController = nav) }
             composable(Routes.LOGIN_SCREEN) { AuthRootScreen(navController = nav) }
-            composable(Routes.HOME) { HomeScreen(nav) }
-            composable(Routes.DONATE) { DonateScreen(nav) }
-            composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
-            composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
 
-            // === CÁC MÀN HÌNH TỰ KHỞI TẠO VIEWMODEL RIÊNG ===
+            if (isLoggedIn) {
+                val currentUser = authViewModel.currentUser
+                
+                composable(Routes.HOME) { HomeScreen(nav) }
+                composable(Routes.DONATE) { DonateScreen(nav) }
+                composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
+                composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
 
-            composable(Routes.MY_POSTS_SCREEN) {
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-                MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
-            }
+                composable(Routes.MY_POSTS_SCREEN) {
+                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
+                    MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
+                }
 
-            composable(Routes.ADOPT) {
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
-            }
+                composable(Routes.ADOPT) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+                }
 
-            composable(Routes.MY_ADOPT_POSTS_SCREEN) {
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
-            }
+                composable(Routes.MY_ADOPT_POSTS_SCREEN) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+                }
 
-            composable(Routes.CREATE_ADOPT_POST_SCREEN) {
-                val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
-            }
+                composable(Routes.CREATE_ADOPT_POST_SCREEN) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
+                }
 
-            // SỬA LẠI KHỐI NÀY
-            composable(Routes.ACTIVITIES_LIST_SCREEN) {
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-                ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
-            }
+                composable(Routes.ACTIVITIES_LIST_SCREEN) {
+                    val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+                    ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
+                }
 
-            // SỬA LẠI KHỐI NÀY
-            composable(Routes.CREATE_ACTIVITY_SCREEN) {
-                val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-                CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
-            }
+                composable(Routes.CREATE_ACTIVITY_SCREEN) {
+                    val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+                    CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
+                }
 
-            // --- CÁC MÀN HÌNH CÓ THAM SỐ (ARGUMENTS) ---
+                composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
+                
+                composable(Routes.NOTIFICATION_SCREEN) { 
+                    if(currentUser != null) NotificationScreen(userId = currentUser.uid) 
+                }
+                
+                composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
 
-            composable(
-                route = Routes.PET_DETAIL,
-                arguments = listOf(navArgument("id") { type = NavType.StringType })
-            ) { backStack ->
-                val petId = backStack.arguments?.getString("id") ?: ""
-                PetDetailScreen(id = petId, onBack = { nav.popBackStack() })
-            }
+                composable(
+                    route = Routes.PET_DETAIL,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType })
+                ) { backStack ->
+                    val petId = backStack.arguments?.getString("id") ?: ""
+                    PetDetailScreen(id = petId, onBack = { nav.popBackStack() })
+                }
 
-            composable(
-                route = "${Routes.COMMENT_SCREEN}/{postId}",
-                arguments = listOf(navArgument("postId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString("postId") ?: ""
-                CommentScreen(postId = postId, onBack = { nav.popBackStack() })
-            }
+                composable(
+                    route = "comment_screen/{postId}",
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                    CommentScreen(postId = postId, onBack = { nav.popBackStack() })
+                }
 
-            // SỬA LẠI KHỐI NÀY
-            composable(
-                route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
-                arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
-                // TỰ KHỞI TẠO VM Ở ĐÂY
-                val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                AdoptCommentScreen(
-                    adoptPostId = adoptPostId,
-                    adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel,
-                    onBack = { nav.popBackStack() }
-                )
-            }
+                composable(
+                    route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
+                    arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    AdoptCommentScreen(
+                        adoptPostId = adoptPostId,
+                        adoptViewModel = adoptViewModel,
+                        authViewModel = authViewModel,
+                        onBack = { nav.popBackStack() }
+                    )
+                }
 
-            // --- CÁC MÀN HÌNH ĐẶC BIỆT ---
+                composable(
+                    route = Routes.CHAT,
+                    arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
+                    ChatScreen(threadId = threadId, onBackClick = { nav.popBackStack() })
+                }
 
-            composable(Routes.PROFILE) {
-                val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-                val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-
-                // Lấy trạng thái đăng nhập từ Firebase trước
-                val firebaseUser = authViewModel.currentUser
-
-                if (firebaseUser == null) {
-                    // Nếu chắc chắn đã logout, chuyển về màn hình Login
-                    LaunchedEffect(Unit) {
-                        nav.navigate(Routes.LOGIN_SCREEN) {
-                            popUpTo(nav.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                        }
-                    }
-                } else {
-                    // Nếu đã đăng nhập, thì mới bắt đầu tải profile từ Firestore
+                composable(Routes.PROFILE) {
+                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
                     val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
-
                     if (firestoreProfile != null) {
-                        // Nếu đã tải xong profile, hiển thị màn hình
                         ProfileScreen(
                             nav = nav,
                             userData = firestoreProfile!!,
@@ -203,49 +194,16 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                             onSettingsClick = { nav.navigate(Routes.SETTINGS_SCREEN) }
                         )
                     } else {
-                        // Nếu chưa tải xong profile, hiển thị vòng tròn loading
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
                 }
             }
-
-
-            composable(Routes.SETTINGS_SCREEN) {
-                SettingsScreen(nav = nav, themeViewModel = themeViewModel)
-            }
-
-            composable(Routes.NOTIFICATION_SCREEN) {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                if (userId != null) {
-                    NotificationScreen(userId = userId)
-                } else {
-                    nav.navigate(Routes.LOGIN_SCREEN) {
-                        popUpTo(nav.graph.id) { inclusive = true }
-                    }
-                }
-            }
-
-            composable(Routes.MESSAGES) {
-                MessagesScreen(
-                    onBackClick = { nav.popBackStack() },
-                    onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }
-                )
-            }
-
-            composable(
-                route = Routes.CHAT,
-                arguments = listOf(navArgument("threadId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
-                ChatScreen(threadId = threadId, onBackClick = { nav.popBackStack() })
-            }
         }
     }
 }
 
-// Hàm BottomBar giữ nguyên, không cần sửa
 @Composable
 private fun BottomBar(nav: NavHostController) {
     val items = listOf(NavItem.Home, NavItem.Donate, NavItem.Adopt, NavItem.Profile)

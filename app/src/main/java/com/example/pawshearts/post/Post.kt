@@ -3,7 +3,6 @@ package com.example.pawshearts.post
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.firebase.Timestamp
-import java.util.Date
 
 @Entity(tableName = "posts")
 data class Post(
@@ -13,7 +12,7 @@ data class Post(
     val userName: String = "",
     val userAvatarUrl: String? = null,
 
-    val createdAt: Date? = null,
+    val createdAt: Timestamp? = null, // <-- SỬA LẠI DỨT ĐIỂM Ở ĐÂY
 
 
     val petName: String = "",

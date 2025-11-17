@@ -13,5 +13,5 @@ data class Comment(
     val userAvatarUrl: String? = null,
 
     val text: String = "", // <-- Nội dung cmt
-    val createdAt: Date? = null
+    val createdAt: Timestamp? = null // <-- SỬA Ở ĐÂY: Đổi thành Timestamp
 )

@@ -18,7 +18,6 @@ import android.app.Application
 class AdoptViewModel(
     private val repository: AdoptRepository
 ) : ViewModel(){
-    // TẠM THỜI TẠO CÁI LIST RỖNG
     private val _myAdoptPosts = MutableStateFlow<List<Adopt>>(emptyList())
     val myAdoptPosts: StateFlow<List<Adopt>> = _myAdoptPosts
     private val _allAdoptPosts = MutableStateFlow<List<Adopt>>(emptyList())
@@ -34,23 +33,25 @@ class AdoptViewModel(
     val addCommentState: StateFlow<AuthResult<Unit>?> = _addCommentState
 
     init {
+        Log.d("ADOPT_DEBUG", "AdoptViewModel bắt đầu khởi tạo (init)")
         fetchAllAdoptPosts()
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         if (userId.isNotEmpty()) {
             fetchLikedPosts(userId)
         }
+        Log.d("ADOPT_DEBUG", "AdoptViewModel khởi tạo xong!")
     }
 
-    // === HÀM TẢI TẤT CẢ KKK (Giữ nguyên) ===
     private fun fetchAllAdoptPosts() {
+        Log.d("ADOPT_DEBUG", "Bắt đầu gọi fetchAllAdoptPosts")
         viewModelScope.launch {
             repository.getAllAdoptPostsFlow().collect { posts ->
                 _allAdoptPosts.value = posts
+                Log.d("ADOPT_DEBUG", "Đã nhận được ${posts.size} bài đăng nhận nuôi")
             }
         }
     }
 
-    // fetchMyAdoptPosts (Giữ nguyên)
     fun fetchMyAdoptPosts(userId: String) {
         if (userId.isBlank()) {
             _myAdoptPosts.value = emptyList()
@@ -63,7 +64,6 @@ class AdoptViewModel(
         }
     }
 
-    // fetchComments (Giữ nguyên)
     fun fetchComments(adoptPostId: String) {
         viewModelScope.launch {
             try {
@@ -76,7 +76,6 @@ class AdoptViewModel(
         }
     }
 
-    // addComment (Giữ nguyên)
     fun addComment(
         adoptPostId: String,
         userId: String,
@@ -101,13 +100,10 @@ class AdoptViewModel(
         }
     }
 
-    // clearAddCommentState (Giữ nguyên)
     fun clearAddCommentState() {
         _addCommentState.value = null
     }
 
-
-    // === 🛠️ HÀM TẠO BÀI ĐĂNG (ĐÃ CẬP NHẬT LOGIC ID) ===
     fun createAdoptPost(
         petName: String,
         petBreed: String,
@@ -116,9 +112,8 @@ class AdoptViewModel(
         petGender: String,
         petLocation: String,
         description: String,
-        imageUri: Uri? // Ảnh M chọn
+        imageUri: Uri?
     ) {
-        // 1. LẤY INFO USER
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
             _postResult.value = AuthResult.Error("M đéo login KKK :@")
@@ -128,29 +123,22 @@ class AdoptViewModel(
         val userName = currentUser.displayName ?: "User đéo tên"
         val userAvatarUrl = currentUser.photoUrl?.toString()
 
-        // 2. BÁO LÀ "ĐANG ĐĂNG..."
         _postResult.value = AuthResult.Loading
 
         viewModelScope.launch {
             try {
-                // === BƯỚC MỚI 1: TẠO ID TRƯỚC VÀ DÙNG NÓ ===
                 val newPostId = repository.getNewAdoptPostId()
-
                 var imageUrl: String? = null
 
-                // 3. NẾU M CÓ CHỌN ẢNH -> T VỚI M UP ẢNH LÊN STORAGE
                 if (imageUri != null) {
-                    // Dùng ID bài đăng làm tên file (UUID không còn cần thiết)
                     val storageRef = FirebaseStorage.getInstance()
                         .getReference("adopt_images/${newPostId}")
                     imageUrl = storageRef.putFile(imageUri).await()
                         .storage.downloadUrl.await().toString()
-                    Log.d("AdoptVM", "Up ảnh xịn: $imageUrl")
                 }
 
-                // 4. TẠO CÁI "KHUÔN" (OBJECT) - GÁN ID ĐÃ TẠO
                 val newAdoptPost = Adopt(
-                    id = newPostId, // <== GÁN ID CHÍNH XÁC VÀO OBJECT
+                    id = newPostId,
                     userId = userId,
                     userName = userName,
                     userAvatarUrl = userAvatarUrl,
@@ -165,7 +153,6 @@ class AdoptViewModel(
                     createdAt = null
                 )
 
-                // 5. QUĂNG CHO REPO KKK (GỌI HÀM MỚI createAdoptPostWithId)
                 val result = repository.createAdoptPostWithId(newPostId, newAdoptPost)
                 _postResult.value = result
 
@@ -176,35 +163,26 @@ class AdoptViewModel(
         }
     }
 
-
-    // resetPostResult (Giữ nguyên)
     fun resetPostResult() {
         _postResult.value = null
     }
 
-    // fetchLikedPosts (Giữ nguyên)
     fun fetchLikedPosts(userId: String) {
         viewModelScope.launch {
             repository.getLikedPostsByUser(userId).collectLatest { likedIds ->
                 _likedPostIds.value = likedIds
-                Log.d("AdoptVM", "Cập nhật ${likedIds.size} bài đã Tim KKK")
             }
         }
     }
 
-    // toggleLike (Giữ nguyên)
     fun toggleLike(adoptPostId: String) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
-            Log.w("AdoptVM", "User chưa đăng nhập, đéo Tim được KKK")
             return
         }
 
         viewModelScope.launch {
-            val result = repository.toggleLike(adoptPostId, userId)
-            if (result is AuthResult.Error) {
-                Log.e("AdoptVM", "Toggle like thất bại", Exception(result.message))
-            }
+            repository.toggleLike(adoptPostId, userId)
         }
     }
 }
