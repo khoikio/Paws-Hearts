@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +37,8 @@ import com.example.pawshearts.messages.ui.screens.MessagesScreen
 import com.example.pawshearts.notification.NotificationScreen
 import com.example.pawshearts.post.*
 import com.example.pawshearts.profile.ProfileScreen
+import com.example.pawshearts.profile.ProfileViewModel
+import com.example.pawshearts.profile.ProfileViewModelFactory
 import com.example.pawshearts.settings.*
 import com.example.pawshearts.ui.theme.Theme
 
@@ -64,7 +67,6 @@ private fun AppContent(themeViewModel: SettingViewModel) {
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
     val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
-    // --- LOGIC TỰ ĐỘNG ĐIỀU HƯỚNG ---
     LaunchedEffect(isLoggedIn) {
         val currentRoute = nav.currentBackStackEntry?.destination?.route
         if (isLoggedIn && (currentRoute == Routes.LOGIN_SCREEN || currentRoute == Routes.REGISTER_SCREEN)) {
@@ -103,45 +105,61 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 
                 composable(Routes.HOME) { HomeScreen(nav) }
                 composable(Routes.DONATE) { DonateScreen(nav) }
-                composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
-                composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
-
-                composable(Routes.MY_POSTS_SCREEN) {
-                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-                    MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
-                }
-
+                
                 composable(Routes.ADOPT) {
                     val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
                     AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
                 }
+                
+                composable(Routes.PROFILE) {
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(currentUser!!.uid, context))
+                    ProfileScreen(
+                        nav = nav,
+                        authViewModel = authViewModel,
+                        profileViewModel = profileViewModel
+                    )
+                }
 
+                composable(
+                    route = Routes.userProfile("{userId}"),
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(userId, context))
+                     ProfileScreen(
+                        nav = nav,
+                        authViewModel = authViewModel,
+                        profileViewModel = profileViewModel
+                    )
+                }
+
+                // CÁC MÀN HÌNH KHÁC
+                composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
+                composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
+                composable(Routes.MY_POSTS_SCREEN) {
+                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
+                    MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
+                }
                 composable(Routes.MY_ADOPT_POSTS_SCREEN) {
                     val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
                     MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
                 }
-
                 composable(Routes.CREATE_ADOPT_POST_SCREEN) {
                     val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
                     CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
                 }
-
                 composable(Routes.ACTIVITIES_LIST_SCREEN) {
                     val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
                     ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
                 }
-
                 composable(Routes.CREATE_ACTIVITY_SCREEN) {
                     val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
                     CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
                 }
-
                 composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
-                
                 composable(Routes.NOTIFICATION_SCREEN) { 
                     if(currentUser != null) NotificationScreen(userId = currentUser.uid) 
                 }
-                
                 composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
 
                 composable(
@@ -165,11 +183,9 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
-                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    // SỬA LẠI CHỖ NÀY CHO ĐÚNG
                     AdoptCommentScreen(
                         adoptPostId = adoptPostId,
-                        adoptViewModel = adoptViewModel,
-                        authViewModel = authViewModel,
                         onBack = { nav.popBackStack() }
                     )
                 }
@@ -180,24 +196,6 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 ) { backStackEntry ->
                     val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
                     ChatScreen(threadId = threadId, onBackClick = { nav.popBackStack() })
-                }
-
-                composable(Routes.PROFILE) {
-                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-                    val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
-                    if (firestoreProfile != null) {
-                        ProfileScreen(
-                            nav = nav,
-                            userData = firestoreProfile!!,
-                            authViewModel = authViewModel,
-                            postViewModel = postViewModel,
-                            onSettingsClick = { nav.navigate(Routes.SETTINGS_SCREEN) }
-                        )
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
                 }
             }
         }

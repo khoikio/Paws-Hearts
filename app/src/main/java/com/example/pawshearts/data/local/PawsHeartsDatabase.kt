@@ -9,17 +9,15 @@ import com.example.pawshearts.data.model.UserData
 
 @Database(
     entities = [
-        UserData::class // CHỈ GIỮ LẠI USERDATA
+        UserData::class
     ],
-    version = 7, // Tăng version lên để xóa bảng cũ
+    version = 9,
     exportSchema = false
 )
-// KHÔNG CẦN CONVERTER NỮA VÌ USERDATA KHÔNG DÙNG KIỂU DỮ LIỆU PHỨC TẠP
-@TypeConverters(DateConverter::class) 
+@TypeConverters(DateConverter::class, ListStringConverter::class)
 abstract class PawsHeartsDatabase : RoomDatabase() {
 
     abstract fun userDao(): UserDao
-    // KHÔNG CẦN NOTIFICATIONDAO NỮA
 
     companion object {
         @Volatile

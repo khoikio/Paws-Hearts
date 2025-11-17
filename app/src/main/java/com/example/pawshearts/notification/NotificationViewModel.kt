@@ -2,47 +2,34 @@ package com.example.pawshearts.notification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class NotificationViewModel(
     private val repository: NotificationRepository
 ) : ViewModel() {
 
-    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
-    val notifications: StateFlow<List<Notification>> = _notifications
+    fun getNotifications(userId: String): StateFlow<List<Notification>> {
+        return repository.getNotifications(userId)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+    }
 
-    private var currentUserId: String? = null
-
-    fun loadNotifications(userId: String) {
-        if (userId == currentUserId) return // Tránh load lại không cần thiết
-        currentUserId = userId
-        
+    fun deleteNotification(notificationId: String) {
         viewModelScope.launch {
-            repository.getNotifications(userId).collect { notificationList ->
-                _notifications.value = notificationList
-            }
+            repository.deleteNotification(notificationId)
         }
     }
 
-    fun markAsRead(id: String) {
+    // THÊM HÀM MỚI
+    fun clearAllNotifications(userId: String) {
         viewModelScope.launch {
-            repository.markAsRead(id)
-        }
-    }
-
-    fun deleteNotification(id: String) {
-        viewModelScope.launch {
-            repository.deleteById(id)
-        }
-    }
-
-    fun clearAll() {
-        currentUserId?.let { userId ->
-            viewModelScope.launch {
-                repository.deleteAllForUser(userId)
-            }
+            repository.clearAllNotifications(userId)
         }
     }
 }

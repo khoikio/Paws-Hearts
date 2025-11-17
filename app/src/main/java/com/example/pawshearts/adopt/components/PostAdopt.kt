@@ -1,13 +1,17 @@
 package com.example.pawshearts.adopt.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder // <== ICON TIM TRỐNG
-import androidx.compose.material.icons.filled.Share // <== ICON CHIA SẺ
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,130 +22,128 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.adopt.Adopt
+import com.example.pawshearts.navmodel.Routes
+import java.text.SimpleDateFormat
+import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostAdopt(
     post: Adopt,
-    onEditClick: (Adopt) -> Unit,
+    nav: NavHostController,
+    isLiked: Boolean,
+    onEditClick: () -> Unit,
     onCommentClick: (String) -> Unit,
-    // === THÊM THAM SỐ MỚI NÈ M ƠI KKK ===
-    isLiked: Boolean, // Trạng thái đã tim hay chưa
-    onLikeClick: (String) -> Unit, // Hành động bấm nút Tim
-    onShareClick: (Adopt) -> Unit // Hành động bấm nút Chia sẻ
+    onLikeClick: (String) -> Unit,
+    onShareClick: (Adopt) -> Unit
 ) {
+    val OrangeColor = Color(0xFFE65100)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        // (1) Nền Card bây giờ sẽ nghe theo Theme
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEditClick),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = { onEditClick(post) } // SỬA LỖI Ở ĐÂY
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-
-            // Hình ảnh và thông tin Pet (Giữ nguyên)
-            val painter = if (post.imageUrl != null)
-                rememberAsyncImagePainter(post.imageUrl)
-            else
-                painterResource(id = R.drawable.avatardefault)
-
-            Image(
-                painter = painter,
-                contentDescription = post.petName,
+        Column {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                post.petName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Giống: ${post.petBreed} - ${post.petAge} tháng",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                post.description,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2
-            )
-
-            // --- PHẦN ACTIONS (TIM, CMT, CHIA SẺ) ---
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround // Chia đều 3 nút
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. NÚT TIM (LIKE) - ĐÃ SỬA
-                TextButton(
-                    onClick = { onLikeClick(post.id) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Gray),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Tim",
-                        tint = if (isLiked) Color(0xFFE65100) else Color.Gray, // Tim cam khi đã like
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-
-                    // HIỂN THỊ SỐ LƯỢNG TIM THAY VÌ CHỮ "Tim"
-                    val likeCount = post.likeCount // <== Lấy số đếm từ đối tượng Adopt
-
+                Image(
+                    painter = if (post.userAvatarUrl != null) rememberAsyncImagePainter(post.userAvatarUrl) else painterResource(id = R.drawable.avatardefault),
+                    contentDescription = "Avatar",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.Gray, CircleShape)
+                        .clickable {
+                            if (post.userId.isNotEmpty()) {
+                                nav.navigate(Routes.userProfile(post.userId))
+                            }
+                        },
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        // Nếu số lượng > 0 thì hiện số, ngược lại thì hiện chữ "Tim"
-                        text = if (likeCount > 0) likeCount.toString() else "Tim",
-                        color = if (isLiked || likeCount > 0) Color(0xFFE65100) else Color.Gray, // Màu cam nếu đã Like hoặc có Tim
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        text = post.userName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                }
-
-                // 2. NÚT BÌNH LUẬN (COMMENT)
-                TextButton(
-                    onClick = { onCommentClick(post.id) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Gray),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        Icons.Default.Comment,
-                        contentDescription = "Bình luận",
-                        modifier = Modifier.size(20.dp)
+                    Text(
+                        text = post.createdAt?.let {
+                            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                            sdf.format(Date(it.seconds * 1000))
+                        } ?: "Vừa xong",
+                        fontSize = 12.sp,
+                        color = Color.Gray
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text("Bình luận")
-                }
-
-                // 3. NÚT CHIA SẺ (SHARE)
-                TextButton(
-                    onClick = { onShareClick(post) }, // Truyền cả object post nếu cần
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Gray),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Chia sẻ",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text("Chia sẻ")
                 }
             }
-            // ----------------------------------------
+
+            if (post.imageUrl != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(post.imageUrl),
+                    contentDescription = "Pet Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(
+                    text = post.petName,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    color = OrangeColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = post.description, maxLines = 2, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { onLikeClick(post.id) }) {
+                    Icon(
+                        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = "Like",
+                        tint = if (isLiked) Color.Red else Color.Gray
+                    )
+                }
+                IconButton(onClick = { onCommentClick(post.id) }) {
+                    Icon(
+                        imageVector = Icons.Default.Comment,
+                        contentDescription = "Comment",
+                        tint = Color.Gray
+                    )
+                }
+                IconButton(onClick = { onShareClick(post) }) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.Gray
+                    )
+                }
+            }
         }
     }
 }

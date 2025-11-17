@@ -3,7 +3,6 @@ package com.example.pawshearts.post
 import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
-import com.example.pawshearts.notification.Notification
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -20,6 +19,9 @@ import java.util.Date
 class PostRepositoryImpl(
     private val firestore: FirebaseFirestore
 ) : PostRepository {
+
+    // ... (các hàm khác giữ nguyên) ...
+
     object NotificationTypes {
         const val LIKE = "LIKE"
         const val COMMENT = "COMMENT"
@@ -32,7 +34,10 @@ class PostRepositoryImpl(
             val auth = FirebaseAuth.getInstance()
             val currentUser = auth.currentUser ?: return AuthResult.Error("Bạn chưa đăng nhập")
             val authorId = currentUser.uid
-            val userName = currentUser.displayName ?: "Ai đó"
+
+            val userDoc = firestore.collection("users").document(authorId).get().await()
+            val userName = userDoc.getString("username") ?: "Ai đó"
+            val userAvatarUrl = userDoc.getString("profilePictureUrl") ?: currentUser.photoUrl?.toString()
 
             val newPostRef = firestore.collection("posts").document()
             
@@ -40,7 +45,7 @@ class PostRepositoryImpl(
                 id = newPostRef.id,
                 userId = authorId,
                 userName = userName,
-                userAvatarUrl = currentUser.photoUrl?.toString(),
+                userAvatarUrl = userAvatarUrl,
                 createdAt = Timestamp.now()
             )
 
@@ -86,7 +91,7 @@ class PostRepositoryImpl(
         }
     }
 
-    // SỬA LẠI HOÀN TOÀN HÀM NÀY
+    // BẢN SỬA CUỐI CÙNG - AN TOÀN TUYỆT ĐỐI
     override suspend fun toggleLike(postId: String, userId: String) {
         val postRef = firestore.collection("posts").document(postId)
         val currentUser = FirebaseAuth.getInstance().currentUser ?: return
@@ -96,15 +101,14 @@ class PostRepositoryImpl(
             val currentLikes = postSnapshot.get("likes") as? List<String> ?: emptyList()
             
             if (currentLikes.contains(userId)) {
-                // --- BỎ LIKE ---
-                // Chỉ update đúng 1 trường 'likes'
+                // CHỈ UPDATE ĐÚNG MỘT TRƯỜNG "likes"
                 postRef.update("likes", FieldValue.arrayRemove(userId)).await()
+                Log.d("PostRepoImpl", "User $userId unliked post $postId")
             } else {
-                // --- THÊM LIKE ---
-                // Chỉ update đúng 1 trường 'likes'
+                // CHỈ UPDATE ĐÚNG MỘT TRƯỜNG "likes"
                 postRef.update("likes", FieldValue.arrayUnion(userId)).await()
+                Log.d("PostRepoImpl", "User $userId liked post $postId")
 
-                // TẠO YÊU CẦU THÔNG BÁO (chạy sau khi update thành công)
                 val postAuthorId = postSnapshot.getString("userId")
                 if (postAuthorId != null && postAuthorId != userId) {
                     val pendingNoti = hashMapOf(
@@ -118,7 +122,7 @@ class PostRepositoryImpl(
                 }
             }
         } catch (e: Exception) {
-            Log.e("PostRepoImpl", "Lỗi toggleLike", e)
+            Log.e("PostRepoImpl", "Lỗi toggleLike trên post $postId bởi user $userId", e)
         }
     }
 
@@ -153,17 +157,15 @@ class PostRepositoryImpl(
                 userAvatarUrl = currentUser.photoUrl?.toString(),
                 createdAt = Timestamp.now()
             )
-
+            
             val postSnapshot = postRef.get().await()
             val postAuthorId = postSnapshot.getString("userId")
 
-            // Dùng batch chỉ để ghi comment và update commentCount
             firestore.batch().apply {
                 set(commentRef, finalComment)
                 update(postRef, "commentCount", FieldValue.increment(1))
             }.commit().await()
 
-            // Tạo pending notification sau khi batch thành công
             if (postAuthorId != null && postAuthorId != currentUser.uid) {
                 val pendingNoti = hashMapOf(
                     "senderId" to currentUser.uid,

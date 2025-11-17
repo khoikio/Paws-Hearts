@@ -10,7 +10,8 @@ interface AuthRepository {
     val currentUserStateFlow: Flow<FirebaseUser?>
     val isUserLoggedInFlow: Flow<Boolean>
 
-    suspend fun refreshUserProfile()
+    suspend fun refreshUserProfile() // Dùng cho user đang đăng nhập
+    suspend fun fetchAndCacheUserProfile(userId: String) // Dùng cho bất kỳ user nào
     fun getUserProfileFlow(userId: String): Flow<UserData?>
     suspend fun logout()
     suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<Unit>
@@ -19,4 +20,5 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String): AuthResult<FirebaseUser>
     suspend fun registerWithEmail(email: String, pass: String, fullName: String): AuthResult<FirebaseUser>
     suspend fun loginWithEmail(email: String, pass: String): AuthResult<FirebaseUser>
+    suspend fun toggleFollow(targetUserId: String): AuthResult<Unit>
 }

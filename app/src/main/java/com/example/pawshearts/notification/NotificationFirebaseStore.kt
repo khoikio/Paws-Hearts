@@ -6,58 +6,52 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.lang.Exception
 
 class NotificationFirebaseStore(
     private val firestore: FirebaseFirestore
-) {
-    private val collection = firestore.collection("notifications")
+) : NotificationRepository {
 
-    // Cung cấp một Flow để ViewModel lắng nghe thay đổi real-time
-    fun getNotificationsFlowForUser(userId: String): Flow<List<Notification>> {
-        return callbackFlow {
-            val listenerRegistration = collection
+    override fun getNotifications(userId: String): Flow<List<Notification>> = callbackFlow {
+        val listener = firestore.collection("notifications")
+            .whereEqualTo("userId", userId)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                snapshot?.let {
+                    trySend(it.toObjects(Notification::class.java))
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun deleteNotification(notificationId: String) {
+        try {
+            firestore.collection("notifications").document(notificationId).delete().await()
+        } catch (e: Exception) {
+            // Log lỗi nếu cần
+        }
+    }
+
+    // THÊM HÀM MỚI
+    override suspend fun clearAllNotifications(userId: String) {
+        try {
+            val querySnapshot = firestore.collection("notifications")
                 .whereEqualTo("userId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        close(error)
-                        return@addSnapshotListener
-                    }
-                    if (snapshot != null) {
-                        val notifications = snapshot.toObjects(Notification::class.java)
-                        trySend(notifications)
-                    }
-                }
-            awaitClose { listenerRegistration.remove() }
-        }
-    }
+                .get()
+                .await()
 
-    suspend fun markAsReadRemote(id: String) {
-        try {
-            collection.document(id).update("read", true).await()
+            // Dùng batch write để xóa nhiều document cùng lúc cho hiệu quả
+            val batch = firestore.batch()
+            for (document in querySnapshot.documents) {
+                batch.delete(document.reference)
+            }
+            batch.commit().await()
         } catch (e: Exception) {
-            // Xử lý lỗi
-        }
-    }
-
-    suspend fun deleteRemote(id: String) {
-        try {
-            collection.document(id).delete().await()
-        } catch (e: Exception) {
-            // Xử lý lỗi
-        }
-    }
-
-    suspend fun deleteAllForUserRemote(userId: String) {
-        try {
-            val querySnapshot = collection.whereEqualTo("userId", userId).get().await()
-            firestore.runBatch { batch ->
-                querySnapshot.documents.forEach { doc ->
-                    batch.delete(doc.reference)
-                }
-            }.await()
-        } catch (e: Exception) {
-            // Xử lý lỗi
+            // Log lỗi nếu cần
         }
     }
 }

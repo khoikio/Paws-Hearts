@@ -2,21 +2,23 @@ package com.example.pawshearts.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.PropertyName
 
-/**
- * Lớp này định nghĩa cấu trúc dữ liệu cho một Người Dùng (User).
- * @Entity(tableName = "user_profile"): Đánh dấu đây là một bảng trong Room DB tên là "user_profile".
- * @PrimaryKey: Đánh dấu `userId` là khóa chính, không được trùng lặp.
- */
 @Entity(tableName = "user_profile")
 data class UserData(
-    @PrimaryKey
-    val userId: String = "",
+    @PrimaryKey val userId: String = "",
     val username: String? = null,
-    val profilePictureUrl: String? = null,
     val email: String? = null,
+    val profilePictureUrl: String? = null,
     val phone: String? = null,
     val address: String? = null,
-    val role: String? = "user" , // mac dinh ai dang ki deu la user
-    val isAdmin: Boolean = false
+    
+    @get:PropertyName("admin") @set:PropertyName("admin")
+    var isAdmin: Boolean = false,
+    
+    // THÊM DÒNG NÀY VÀO ĐỂ HẾT BỊ CẢNH BÁO
+    val role: String? = null,
+
+    val followers: List<String> = emptyList(),
+    val following: List<String> = emptyList()
 )

@@ -39,7 +39,6 @@ import com.example.pawshearts.navmodel.goPetDetail
 import java.text.Normalizer
 import java.util.regex.Pattern
 
-// HÀM LOẠI BỎ DẤU (ĐÃ RẤT TỐT)
 fun String.removeAccents(): String {
     val normalized = Normalizer.normalize(this, Normalizer.Form.NFD)
     return Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
@@ -50,11 +49,9 @@ fun String.removeAccents(): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
-    // --- KHỞI TẠO viewmodel và state ---
     val context = LocalContext.current.applicationContext as Application
     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-    // coroutine scope for possible UI feedback (not used here, we log instead)
     val coroutineScope = rememberCoroutineScope()
 
     val allPosts by postViewModel.allPosts.collectAsStateWithLifecycle()
@@ -66,20 +63,17 @@ fun HomeScreen(nav: NavHostController) {
         postViewModel.fetchAllPosts()
     }
 
-    // --- BẮT ĐẦU GIAO DIỆN ---
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background) // Nền chính nghe theo theme
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // --- TOP BAR BAO GỒM CẢ THANH SEARCH ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface) // Nền TopBar nghe theo theme
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
-            // HÀNG 1: ICON, TÊN APP, ICON
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -89,29 +83,24 @@ fun HomeScreen(nav: NavHostController) {
                     Icon(
                         imageVector = Icons.Filled.Notifications,
                         contentDescription = "Thông báo",
-                        tint = MaterialTheme.colorScheme.primary // Màu nghe theo theme
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
-
                 Text(
                     text = "Paws & Hearts",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary // Màu nghe theo theme
+                    color = MaterialTheme.colorScheme.primary
                 )
-
                 IconButton(onClick = { nav.navigate(Routes.MESSAGES) }) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_chat), // Giả sử M có icon này
+                        painter = painterResource(id = R.drawable.ic_chat),
                         contentDescription = "Tin nhắn",
                         modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary) // Màu nghe theo theme
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // HÀNG 2: THANH TÌM KIẾM
             TextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -126,18 +115,15 @@ fun HomeScreen(nav: NavHostController) {
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(24.dp),
-                // Thanh search nghe theo theme
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedIndicatorColor = MaterialTheme.colorScheme.primary, // Thêm viền khi focus
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 singleLine = true
             )
         }
-
-        // --- THANH "BẠN ĐANG NGHĨ GÌ?" ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -155,7 +141,7 @@ fun HomeScreen(nav: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 AsyncImage(
-                    model = currentUserProfile?.profilePictureUrl, // Sửa lại cho đúng model
+                    model = currentUserProfile?.profilePictureUrl,
                     contentDescription = "User Avatar",
                     modifier = Modifier
                         .size(40.dp)
@@ -172,8 +158,6 @@ fun HomeScreen(nav: NavHostController) {
                 )
             }
         }
-
-        // --- DANH SÁCH BÀI ĐĂNG ĐÃ LỌC ---
         val filteredPosts = remember(searchText, allPosts) {
             if (searchText.isBlank()) {
                 allPosts
@@ -184,12 +168,11 @@ fun HomeScreen(nav: NavHostController) {
                             (post.petBreed?.removeAccents()?.lowercase()?.contains(keyword) ?: false) ||
                             (post.location?.removeAccents()?.lowercase()?.contains(keyword) ?: false) ||
                             post.description.removeAccents().lowercase().contains(keyword) ||
-                            post.userName.removeAccents().lowercase().contains(keyword) // Sửa lại cho đúng model
+                            post.userName.removeAccents().lowercase().contains(keyword)
                 }
             }
         }
-
-        if (filteredPosts.isEmpty() && allPosts.isNotEmpty()) { // Chỉ hiện khi có bài đăng nhưng không tìm thấy
+        if (filteredPosts.isEmpty() && allPosts.isNotEmpty()) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -203,10 +186,11 @@ fun HomeScreen(nav: NavHostController) {
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(filteredPosts, key = { it.id }) { post -> // Dùng filteredPosts và thêm key
+                items(filteredPosts, key = { it.id }) { post ->
                     PostCard(
                         post = post,
                         currentUserId = currentUserId,
+                        nav = nav, // <-- TRUYỀN NAV VÀO ĐÂY
                         onClick = { nav.goPetDetail(post.id) },
                         onLikeClick = {
                             if (currentUserId.isNotBlank()) {
@@ -215,7 +199,7 @@ fun HomeScreen(nav: NavHostController) {
                         },
                         onCommentClick = {
                             if (post.id.isNotBlank()) {
-                                nav.navigate(Routes.comment(post.id))
+                                nav.navigate("comment_screen/${post.id}")
                             } else {
                                 Log.e("HomeScreen", "Attempted to open comments for post with blank id: $post")
                             }

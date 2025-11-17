@@ -1,17 +1,17 @@
 package com.example.pawshearts.notification
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider // cha cua viewmodle cung cap viewmodel
+import androidx.lifecycle.ViewModelProvider
+import com.google.firebase.firestore.FirebaseFirestore
 
-class NotificationViewModelFactory(
-    private val repository: NotificationRepository
-) : ViewModelProvider.Factory {
-
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T { // sinh ra viewmodel
-        if (modelClass.isAssignableFrom(NotificationViewModel::class.java)) { // kiem tra phai la Notificationviewmidel
-            return NotificationViewModel(repository) as T // true _> tiep tuc ; false -> loi
+class NotificationViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(NotificationViewModel::class.java)) {
+            val repository = NotificationFirebaseStore(FirebaseFirestore.getInstance())
+            @Suppress("UNCHECKED_CAST")
+            return NotificationViewModel(repository) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class") //  false -> loi
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

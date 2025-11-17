@@ -1,172 +1,102 @@
 package com.example.pawshearts.notification
 
-import androidx.compose.foundation.background
+import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.google.firebase.firestore.FirebaseFirestore
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.pawshearts.ui.theme.Theme
-import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
     userId: String
 ) {
-    val repo = remember {
-        NotificationRepository(
-            remote = NotificationFirebaseStore(FirebaseFirestore.getInstance())
-        )
-    }
+    val context = LocalContext.current.applicationContext as Application
+    val viewModel: NotificationViewModel = viewModel(factory = NotificationViewModelFactory(context))
 
-    val viewModel: NotificationViewModel = viewModel(
-        factory = NotificationViewModelFactory(repo)
-    )
+    val notifications by viewModel.getNotifications(userId).collectAsState()
 
-    LaunchedEffect(userId) {
-        viewModel.loadNotifications(userId)
-    }
-
-    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
-
-    NotificationUI(
-        notifications = notifications,
-        onRead = { id -> viewModel.markAsRead(id) },
-        onDelete = { id -> viewModel.deleteNotification(id) },
-        onClearAll = { viewModel.clearAll() }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NotificationUI(
-    notifications: List<Notification>,
-    onRead: (String) -> Unit,
-    onDelete: (String) -> Unit,
-    onClearAll: () -> Unit
-) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Thông báo") },
                 actions = {
                     if (notifications.isNotEmpty()) {
-                        TextButton(onClick = onClearAll) {
-                            Text("Xóa tất cả")
+                        IconButton(onClick = { viewModel.clearAllNotifications(userId) }) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = "Xóa tất cả")
                         }
                     }
                 }
             )
         }
-    ) { padding ->
-        if (notifications.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize(),
-            ) {
-                Text(
-                    text = "Không có thông báo nào",
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-            ) {
-                items(notifications) { noti ->
-                    NotificationItem(
-                        notification = noti,
-                        onRead = { onRead(noti.id) },
-                        onDelete = { onDelete(noti.id) }
-                    )
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(notifications) { notification ->
+                Card(
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // THÊM AVATAR
+                        AsyncImage(
+                            model = notification.actorAvatarUrl,
+                            contentDescription = "Avatar",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // NỐI TÊN VÀ NỘI DUNG
+                        val fullMessage = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(notification.actorName ?: "Ai đó")
+                            }
+                            append(" ")
+                            append(notification.message)
+                        }
+                        Text(
+                            text = fullMessage,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(onClick = { viewModel.deleteNotification(notification.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Xóa")
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun NotificationItem(
-    notification: Notification,
-    onRead: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val bgColor = if (!notification.isRead)  MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(bgColor)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        AsyncImage(
-            model = notification.actorAvatarUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .size(48.dp)
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = "${notification.actorName ?: "Ai đó"} ${notification.message}",
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Close, contentDescription = "Xóa")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun NotificationPreviewLight() {
-    val fakeList = listOf(
-        Notification(
-            id = "1",
-            userId = "user1",
-            actorName = "Kio",
-            type = "like",
-            message = "đã thích bài viết của bạn 🧡",
-            isRead = false,
-            createdAt = Timestamp.now()
-        ),
-        Notification(
-            id = "2",
-            userId = "user1",
-            actorName = "Mun",
-            type = "comment",
-            message = "đã bình luận: \"Dễ thương quá!\"",
-            isRead = true,
-            createdAt = Timestamp.now()
-        )
-    )
-
-    Theme(darkTheme = false) {
-        NotificationUI(
-            notifications = fakeList,
-            onRead = {},
-            onDelete = {},
-            onClearAll = {}
-        )
     }
 }

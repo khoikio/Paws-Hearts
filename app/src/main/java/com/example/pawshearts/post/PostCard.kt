@@ -1,14 +1,12 @@
 package com.example.pawshearts.post
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,21 +14,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.example.pawshearts.R
-import com.google.firebase.Timestamp
-import java.util.Date
-import java.util.concurrent.TimeUnit // <-- T XÀI CÁI NÀY
+import com.example.pawshearts.navmodel.Routes
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun PostCard(
     post: Post,
     currentUserId: String,
+    nav: NavHostController,
     onClick: () -> Unit,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
@@ -39,77 +36,91 @@ fun PostCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-
-            // 2. SỬA UserInfoRow (TRUYỀN 'post' VÔ)
-            UserInfoRow(post = post)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // LỖI 1: SỬA title THÀNH petName (TỪ file Post.kt)
-            Text(
-                text = post.petName,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            // LỖI 2: SỬA CÁI "KHƠI KHƠI" (M XÓA CÁI CŨ ĐI)
-            Text(
-                text = "Giống: ${post.petBreed ?: "Chưa rõ"} • Giới tính: ${post.petGender ?: "Chưa rõ"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Text(
-                text = "Tuổi: ${post.petAge ?: "?"} tháng • Cân nặng: ${post.weightKg ?: "?"} kg",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Mô tả (Giữ nguyên)
-            Text(
-                text = post.description,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // LỖI 3: SỬA imageURL.firstOrNull() THÀNH imageUrl (TỪ file Post.kt)
-            AsyncImage(
-                model = post.imageUrl, // <-- SỬA
-                contentDescription = post.petName, // <-- SỬA
+        Column {
+            // --- HEADER ---
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp)
-                    .clip(MaterialTheme.shapes.medium),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.avatardefault) // Thêm cái này
-            )
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = post.userAvatarUrl,
+                    contentDescription = "User Avatar",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            if (post.userId.isNotEmpty()) {
+                                nav.navigate(Routes.userProfile(post.userId))
+                            }
+                        },
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = post.userName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = post.createdAt?.let {
+                            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                            sdf.format(it.toDate())
+                        } ?: "Vừa xong",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Địa điểm (T thêm check null)
+            // --- CONTENT ---
             Text(
-                text = "📍 ${post.location ?: "Không rõ"}",
-                color = Color.Gray,
-                style = MaterialTheme.typography.bodySmall
+                text = post.description,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+                    .fillMaxWidth()
             )
-
             Spacer(modifier = Modifier.height(12.dp))
+            if (!post.imageUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = post.imageUrl,
+                    contentDescription = "Post Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
-            // 3. SỬA InteractionRow (TRUYỀN HẾT VÔ)
-            InteractionRow(
-                post = post,
-                currentUserId = currentUserId,
+            // --- FOOTER (Like, Comment counts) ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${post.likes.size} lượt thích",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${post.commentCount} bình luận",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // --- ACTIONS (Like, Comment, Share Buttons) ---
+            PostActions(
+                isLiked = post.likes.contains(currentUserId),
                 onLikeClick = onLikeClick,
                 onCommentClick = onCommentClick,
                 onShareClick = onShareClick
@@ -118,114 +129,63 @@ fun PostCard(
     }
 }
 
-// 2. SỬA HÀM UserInfoRow (NHẬN 'post' CHO GỌN)
 @Composable
-fun UserInfoRow(post: Post) { // <-- Sửa tham số
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = post.userId ?: R.drawable.avatardefault, // Dùng data xịn
-                contentDescription = "User Avatar",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column {
-                Text(text = post.userName ?: "Người dùng PawsHearts", style = MaterialTheme.typography.titleSmall) // Dùng data xịn
-                Text(text = formatTimestamp(post.createdAt), color = Color.Gray, style = MaterialTheme.typography.bodySmall) // Dùng data xịn
-            }
-        }
-
-        IconButton(onClick = { /* More options */ }) {
-            Icon(Icons.Default.MoreHoriz, contentDescription = "More options", tint = Color.Gray)
-        }
-    }
-}
-
-// 3. SỬA HÀM InteractionRow (NHẬN HẾT DATA/CLICK)
-@Composable
-fun InteractionRow(
-    post: Post,
-    currentUserId: String,
+private fun PostActions(
+    isLiked: Boolean,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit
 ) {
-    // Check xem M (currentUserId) có trong list likes ko
-    val isLikedByMe = post.likes.contains(currentUserId)
+    Column {
+        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Nút Like
+            TextButton(
+                onClick = onLikeClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Like",
+                    tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Thích", color = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // NÚT TIM XỊN NÈ KKK (HẾT ẢO)
-            InteractionButton(
-                icon = if (isLikedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder, // <-- Tim Đỏ/Trắng
-                text = post.likes.size.toString(), // <-- Data xịn (Đếm list)
-                color = if (isLikedByMe) Color.Red else Color.Gray, // <-- Màu xịn
-                onClick = onLikeClick // <-- Click xịn
-            )
-            Spacer(modifier = Modifier.width(24.dp))
+            // Nút Comment
+            TextButton(
+                onClick = onCommentClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Comment,
+                    contentDescription = "Comment",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Bình luận", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
-            // NÚT COMMENT XỊN (HẾT ẢO)
-            InteractionButton(
-                icon = Icons.Default.ChatBubbleOutline,
-                text = post.commentCount.toString(), // <-- Data xịn
-                color = Color.Gray, // <-- Mặc định
-                onClick = onCommentClick // <-- Click xịn
-            )
+            // Nút Share
+            TextButton(
+                onClick = onShareClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Chia sẻ", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-
-        // NÚT SHARE (Tạm thời)
-        InteractionButton(
-            icon = Icons.Default.Share,
-            text = "Chia sẻ",
-            color = Color.Gray,
-            onClick = onShareClick // <-- Click xịn
-        )
-    }
-}
-
-// 4. SỬA HÀM InteractionButton (THÊM 'color')
-@Composable
-private fun InteractionButton(
-    icon: ImageVector,
-    text: String,
-    color: Color, // <-- THÊM CÁI NÀY
-    onClick: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp)) // <-- Xài color
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text = text, color = color, style = MaterialTheme.typography.bodyMedium) // <-- Xài color
-    }
-}
-
-// 5. HÀM TIMESTAMP (M PHẢI 'public' NÓ LÊN)
-@Composable
-fun formatTimestamp(timestamp: Date?): String { // <-- Sửa ở đây
-    if (timestamp == null) return "Vừa xong"
-
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp.time // Dùng .time thay vì .toDate().time
-
-    return when {
-        diff < TimeUnit.MINUTES.toMillis(1) -> "Vừa xong"
-        diff < TimeUnit.HOURS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toMinutes(diff)} phút trước"
-        diff < TimeUnit.DAYS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toHours(diff)} giờ trước"
-        else -> "${TimeUnit.MILLISECONDS.toDays(diff)} ngày trước"
     }
 }

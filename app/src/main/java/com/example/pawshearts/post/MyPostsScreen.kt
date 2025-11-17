@@ -68,7 +68,7 @@ fun MyPostsScreen(
                 )
             )
         },
-        floatingActionButton = { // <-- THÊM NÚT NÀY VÔ KKK
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     nav.navigate(Routes.CREATE_POST_SCREEN)
@@ -105,9 +105,12 @@ fun MyPostsScreen(
                     PostCard(
                         post = post,
                         currentUserId = currentUserId,
+                        nav = nav,
                         onClick = { nav.goPetDetail(post.id) },
                         onLikeClick = { postViewModel.toggleLike(post.id, currentUserId) },
-                        onCommentClick = { nav.navigate(Routes.comment(post.id)) },
+                        onCommentClick = {
+                            nav.navigate("comment_screen/${post.id}")
+                        },
                         onShareClick = {}
                     )
                 }

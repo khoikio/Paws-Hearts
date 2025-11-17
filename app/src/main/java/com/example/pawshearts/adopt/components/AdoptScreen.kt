@@ -57,8 +57,6 @@ fun AdoptScreen(
         }
     }
 
-    Log.d("ADOPT_DEBUG", "AdoptScreen Composable đã lấy xong state, chuẩn bị vẽ Scaffold")
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -110,8 +108,9 @@ fun AdoptScreen(
                 items(allAdoptPosts) { adoptPost ->
                     PostAdopt(
                         post = adoptPost,
+                        nav = nav, // <-- TRUYỀN NAV VÀO ĐÂY
                         onEditClick = {
-                            nav.navigate("${Routes.PET_DETAIL_SCREEN}/${adoptPost.id}")
+                            nav.navigate(Routes.petDetail(adoptPost.id))
                         },
                         onCommentClick = { postId ->
                             nav.navigate("${Routes.ADOPT_COMMENT_SCREEN}/${postId}")
@@ -135,7 +134,6 @@ fun AdoptScreen(
             }
         }
     }
-    Log.d("ADOPT_DEBUG", "Vẽ xong AdoptScreen Composable")
 }
 
 @Composable

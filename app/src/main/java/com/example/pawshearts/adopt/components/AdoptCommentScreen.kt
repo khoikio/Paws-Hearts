@@ -1,5 +1,3 @@
-// File mới: package com.example.pawshearts.adopt
-
 package com.example.pawshearts.adopt.components
 
 import android.app.Application
@@ -32,36 +30,32 @@ import com.example.pawshearts.adopt.AdoptViewModelFactory
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
-import com.example.pawshearts.post.formatTimestamp // <== M CẦN ĐẢM BẢO HÀM NÀY PUBLIC
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdoptCommentScreen(
-    adoptPostId: String, // <-- Thay đổi tên biến thành adoptPostId
-    adoptViewModel: AdoptViewModel,
-    authViewModel: AuthViewModel,
+    adoptPostId: String,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current.applicationContext as Application
+    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
-    // 2. LẤY DATA (List cmt và info của M)
     val comments by adoptViewModel.comments.collectAsStateWithLifecycle()
     val addCommentState by adoptViewModel.addCommentState.collectAsStateWithLifecycle(initialValue = null)
     val userData by authViewModel.userProfile.collectAsStateWithLifecycle(null)
-    val currentUser = authViewModel.currentUser // T lấy FirebaseUser cho lẹ
+    val currentUser = authViewModel.currentUser
 
-    // 3. STATE CHO Ô TEXTFIELD Ở DƯỚI
     var myCommentText by remember { mutableStateOf("") }
-    val listState = rememberLazyListState() // Để T cuộn xuống cmt mới nhất
+    val listState = rememberLazyListState()
 
-    // 4. BẮT ĐẦU TẢI CMT KHI M VÔ MÀN HÌNH
     LaunchedEffect(adoptPostId) {
         adoptViewModel.fetchComments(adoptPostId)
     }
 
-
-    // 5. TỰ CUỘN XUỐNG KHI M GỬI CMT MỚI
     LaunchedEffect(comments.size) {
         if (comments.isNotEmpty()) {
             listState.animateScrollToItem(comments.size - 1)
@@ -71,7 +65,7 @@ fun AdoptCommentScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bình luận (${comments.size})") }, // Nó tự F5 số cmt KKK
+                title = { Text("Bình luận (${comments.size})") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -80,16 +74,14 @@ fun AdoptCommentScreen(
             )
         },
         bottomBar = {
-            // CỤC ĐỂ M GÕ CMT Ở DƯỚI ĐÍT NÈ
             BottomCommentBar(
                 text = myCommentText,
                 onTextChange = { myCommentText = it },
                 isLoading = (addCommentState is AuthResult.Loading),
                 onSendClick = {
                     if (currentUser != null && userData != null) {
-                        // === GỌI HÀM MỚI TRONG ADOPT COMMENT VM ===
                         adoptViewModel.addComment(
-                            adoptPostId = adoptPostId, // <== Dùng ID Adopt
+                            adoptPostId = adoptPostId,
                             userId = currentUser.uid,
                             username = userData?.username,
                             userAvatarUrl = userData?.profilePictureUrl,
@@ -101,8 +93,6 @@ fun AdoptCommentScreen(
             )
         }
     ) { innerPadding ->
-
-        // DANH SÁCH CMT
         if (comments.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 Text("Chưa có bình luận nào :(")
@@ -118,14 +108,12 @@ fun AdoptCommentScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
             ) {
                 items(comments) { comment ->
-                    // T VẼ 1 CÁI CMT
                     AdoptCommentRow(comment = comment)
                 }
             }
         }
     }
 
-    // Tự reset state sau khi Gửi
     LaunchedEffect(addCommentState) {
         if (addCommentState is AuthResult.Error || addCommentState is AuthResult.Success) {
             adoptViewModel.clearAddCommentState()
@@ -133,18 +121,12 @@ fun AdoptCommentScreen(
     }
 }
 
-
-
-/**
- * Cục UI cho 1 dòng cmt
- */
 @Composable
-private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
+private fun AdoptCommentRow(comment: AdoptComment) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Avatar thằng cmt
         AsyncImage(
             model = comment.userAvatarUrl ?: R.drawable.avatardefault,
             contentDescription = "Avatar",
@@ -153,7 +135,6 @@ private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
                 .clip(CircleShape)
                 .background(Color.LightGray)
         )
-        // Cục tên + nội dung cmt
         Column {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -161,12 +142,12 @@ private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyMedium
                 )
-                // CẦN ĐẢM BẢO HÀM formatTimestamp TỒN TẠI VÀ CÓ THỂ IMPORT
-                // Hiện tại tôi giữ nguyên, bạn cần đảm bảo nó có trong package post hoặc utility
+                // SỬA LẠI CÁCH HIỂN THỊ THỜI GIAN
                 val timeText = if (comment.createdAt != null) {
-                    com.example.pawshearts.post.formatTimestamp(comment.createdAt.toDate())
+                    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    sdf.format(comment.createdAt!!.toDate())
                 } else {
-                    "Đang tải..." // Hoặc chuỗi bạn muốn hiển thị khi timestamp rỗng
+                    "Đang tải..."
                 }
                 Text(
                     text = timeText,
@@ -175,7 +156,6 @@ private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            // Nội dung cmt
             Text(
                 text = comment.text,
                 style = MaterialTheme.typography.bodyMedium
@@ -184,9 +164,6 @@ private fun AdoptCommentRow(comment: AdoptComment) { // <== Dùng AdoptComment
     }
 }
 
-/**
- * Cục UI cho cái TextField ở đít (Tái sử dụng)
- */
 @Composable
 private fun BottomCommentBar(
     text: String,
@@ -205,7 +182,6 @@ private fun BottomCommentBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Ô GÕ CMT
             OutlinedTextField(
                 value = text,
                 onValueChange = onTextChange,
@@ -213,11 +189,9 @@ private fun BottomCommentBar(
                 placeholder = { Text("Viết bình luận...") },
                 shape = RoundedCornerShape(24.dp)
             )
-
-            // NÚT GỬI
             IconButton(
                 onClick = onSendClick,
-                enabled = !isLoading && text.isNotBlank(), // Đang gửi hoặc chưa gõ -> Mờ
+                enabled = !isLoading && text.isNotBlank(),
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)

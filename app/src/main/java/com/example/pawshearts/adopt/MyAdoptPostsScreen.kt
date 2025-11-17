@@ -25,14 +25,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // <== CẦN CHO CHIA SẺ
+import androidx.compose.ui.platform.LocalContext 
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat // <== CẦN CHO CHIA SẺ
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import com.example.pawshearts.adopt.components.PostAdopt
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.navmodel.Routes
-import android.content.Intent // <== CẦN CHO CHIA SẺ
+import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,22 +42,17 @@ fun MyAdoptPostsScreen(
     authViewModel: AuthViewModel
 ) {
 
-    // LẤY LIST TỪ NÃO MỚI
     val userProfileData by authViewModel.userProfile.collectAsState()
     val currentUserId = userProfileData?.userId ?: ""
     val myAdoptPosts by adoptViewModel.myAdoptPosts.collectAsState()
 
-    // === LẤY DANH SÁCH BÀI ĐĂNG ĐÃ TIM ===
     val likedPostIds by adoptViewModel.likedPostIds.collectAsState()
 
-    // Lấy context cho chức năng Chia sẻ
     val context = LocalContext.current
 
-    // TẠM THỜI CHƯA FETCH
     LaunchedEffect(currentUserId) {
         if (currentUserId.isNotEmpty()) {
             adoptViewModel.fetchMyAdoptPosts(currentUserId)
-            // KÍCH HOẠT LẮNG NGHE TRẠNG THÁI TIM (DÙ LÀ BÀI CỦA MÌNH VẪN CẦN HIỂN THỊ TRẠNG THÁI LIKE)
             adoptViewModel.fetchLikedPosts(currentUserId)
         }
     }
@@ -78,7 +73,7 @@ fun MyAdoptPostsScreen(
                 )
             )
         },
-        floatingActionButton = { // <-- NÚT TẠO MỚI XỊN KKK
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     nav.navigate(Routes.CREATE_ADOPT_POST_SCREEN)
@@ -103,38 +98,31 @@ fun MyAdoptPostsScreen(
             if (myAdoptPosts.isEmpty()) {
                 item {
                     Text(
-                        "M chưa đăng tìm chủ bé nào KKK :v",
+                        "Bạn chưa đăng tìm chủ cho bé nào",
                         modifier = Modifier.padding(vertical = 24.dp),
                         color = Color.Gray
                     )
                 }
             } else {
                 items(myAdoptPosts) { adoptPost ->
-                    // M XÀI LẠI CÁI PostAdopt CỦA M KKK
                     PostAdopt(
                         post = adoptPost,
-                        // Bấm vào Card hoặc onEditClick -> Xem Chi tiết
+                        nav = nav, // <-- THÊM DÒNG NÀY VÀO
                         onEditClick = {
-                            nav.navigate("${Routes.PET_DETAIL_SCREEN}/${adoptPost.id}")
+                            nav.navigate("${Routes.PET_DETAIL}/${adoptPost.id}")
                         },
-
-                        // NÚT BÌNH LUẬN
                         onCommentClick = { postId ->
                             nav.navigate("${Routes.ADOPT_COMMENT_SCREEN}/${postId}")
                         },
-
-                        // NÚT TIM
                         isLiked = likedPostIds.contains(adoptPost.id),
                         onLikeClick = { postId ->
                             adoptViewModel.toggleLike(postId)
                         },
-
-                        // NÚT CHIA SẺ (Dùng Android Intent)
                         onShareClick = { postToShare ->
                             val shareIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_TEXT,
-                                    "Bé ${postToShare.petName} đang tìm chủ! Giống: ${postToShare.petBreed}. Chi tiết tại [LINK APP CỦA M]"
+                                    "Bé ${postToShare.petName} đang tìm chủ! Giống: ${postToShare.petBreed}. Chi tiết tại app"
                                 )
                                 type = "text/plain"
                             }

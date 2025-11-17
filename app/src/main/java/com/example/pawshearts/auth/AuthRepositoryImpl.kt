@@ -7,6 +7,7 @@ import com.example.pawshearts.data.model.UserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,12 @@ class AuthRepositoryImpl(
 
     override suspend fun refreshUserProfile() = withContext(Dispatchers.IO) {
         val userId = currentUser?.uid ?: return@withContext
+        fetchAndCacheUserProfile(userId) // Gọi hàm chung cho gọn
+    }
+    
+    // HÀM MỚI ĐỂ LẤY DATA CỦA BẤT KỲ AI
+    override suspend fun fetchAndCacheUserProfile(userId: String) = withContext(Dispatchers.IO) {
+        if (userId.isEmpty()) return@withContext
         try {
             val snapshot = firestore.collection("users").document(userId).get().await()
             val userData = snapshot.toObject(UserData::class.java)
@@ -48,7 +55,7 @@ class AuthRepositoryImpl(
                 Log.d("AuthRepo", "Đã đồng bộ profile từ Firestore về Room cho user: $userId")
             }
         } catch (e: Exception) {
-            Log.e("AuthRepo", "Lỗi khi đồng bộ profile về Room", e)
+            Log.e("AuthRepo", "Lỗi khi đồng bộ profile của user $userId", e)
         }
     }
 
@@ -56,16 +63,13 @@ class AuthRepositoryImpl(
         return userDao.getUserByIdFlow(userId)
     }
 
-    // SỬA LẠI HÀM NÀY
     override suspend fun logout() {
         withContext(Dispatchers.IO) {
             val userId = currentUser?.uid
             auth.signOut()
             if (userId != null) {
                 userDao.deleteUserById(userId)
-                Log.d("AuthRepo", "Đã xóa user $userId khỏi Room...")
             }
-            Log.d("AuthRepo", "Đã đăng xuất khỏi Firebase.")
         }
     }
 
@@ -151,6 +155,22 @@ class AuthRepositoryImpl(
             AuthResult.Success(authResult.user!!)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Đăng nhập thất bại, vui lòng kiểm tra lại thông tin.")
+        }
+    }
+
+    override suspend fun toggleFollow(targetUserId: String): AuthResult<Unit> = withContext(Dispatchers.IO) {
+        val currentUser = auth.currentUser ?: return@withContext AuthResult.Error("Chưa đăng nhập")
+        return@withContext try {
+            val action = hashMapOf(
+                "actorId" to currentUser.uid,
+                "targetId" to targetUserId,
+                "type" to "TOGGLE_FOLLOW",
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+            firestore.collection("pending_actions").add(action).await()
+            AuthResult.Success(Unit)
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 }
