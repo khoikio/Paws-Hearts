@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.data.model.UserData
-import com.example.pawshearts.auth.AuthRepository
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,12 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.FirebaseAuth
 import androidx.navigation.NavHostController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.pawshearts.navmodel.Routes
 import kotlinx.coroutines.delay
-
 
 class AuthViewModel(
     private val repository: AuthRepository
@@ -26,33 +23,40 @@ class AuthViewModel(
 
     val currentUser: FirebaseUser?
         get() = repository.currentUser
-    
+
+    // Ai đang đăng nhập
     val currentUserState: StateFlow<FirebaseUser?> = repository.currentUserStateFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = repository.currentUser
         )
-        
+
+    // Trạng thái login/register
     private val _authState = MutableStateFlow<AuthResult<FirebaseUser>?>(null)
     val authState: StateFlow<AuthResult<FirebaseUser>?> = _authState.asStateFlow()
 
+    // Đã login hay chưa
     val isUserLoggedIn: StateFlow<Boolean> = repository.isUserLoggedInFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = repository.currentUser != null
         )
+
+    // Gợi ý email/pass sau khi register xong
     private val _prefilledCredentials = MutableStateFlow<Pair<String, String>?>(null)
     val prefilledCredentials: StateFlow<Pair<String, String>?> = _prefilledCredentials.asStateFlow()
 
+    // Logout đơn giản (nếu cần dùng ở đâu đó khác)
     fun logout() {
         viewModelScope.launch {
             repository.logout()
         }
     }
-    
-    // HÀM LOGOUT AN TOÀN VỚI DELAY
+
+
+    // Logout + điều hướng về màn login
     fun logoutAndNavigate(navController: NavHostController) {
         navController.navigate(Routes.LOGIN_SCREEN) {
             popUpTo(navController.graph.findStartDestination().id) {
@@ -61,7 +65,7 @@ class AuthViewModel(
             launchSingleTop = true
         }
         viewModelScope.launch {
-            delay(100) // Thêm delay nhỏ để đảm bảo UI đã hủy xong
+            delay(100)
             repository.logout()
         }
     }
@@ -75,16 +79,20 @@ class AuthViewModel(
             }
         }
     }
+
+    // Profile user đang đăng nhập (Room cache)
     private val _userProfile = MutableStateFlow<UserData?>(null)
     val userProfile: StateFlow<UserData?> = _userProfile.asStateFlow()
 
     init {
-        currentUser?.uid?.let { userId ->
+        // Lần đầu load app, refresh profile user hiện tại
+        currentUser?.uid?.let {
             viewModelScope.launch {
                 repository.refreshUserProfile()
             }
         }
 
+        // Nghe trạng thái login và sync userProfile từ Room
         viewModelScope.launch {
             repository.isUserLoggedInFlow.collect { isLoggedIn ->
                 if (isLoggedIn && currentUser != null) {
@@ -97,16 +105,17 @@ class AuthViewModel(
             }
         }
     }
-    fun refreshProfile() {viewModelScope.launch {
-        Log.d("AuthVM", "Nhận được lệnh refresh profile từ UI...")
-        repository.refreshUserProfile()
-    }
+
+    // Dùng cho ProfileScreen (sau khi follow/unfollow xong)
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            repository.refreshUserProfile()
+        }
     }
 
-    fun updatePersonalInfo(email: String, phone: String, address: String) {
-        viewModelScope.launch {
-            repository.updateUserPersonalInfo(phone, address)
-        }
+
+    fun refreshProfile() {
+        refreshUserProfile()
     }
 
     fun updateProfile(newName: String, newEmail: String) {
@@ -114,11 +123,13 @@ class AuthViewModel(
             repository.updateProfile(newName, newEmail)
         }
     }
+
     fun updateUserPersonalInfo(phone: String, address: String) {
         viewModelScope.launch {
             repository.updateUserPersonalInfo(phone, address)
         }
     }
+
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
             _authState.value = AuthResult.Loading
@@ -130,7 +141,7 @@ class AuthViewModel(
     fun registerWithEmail(email: String, pass: String, fullName: String) {
         viewModelScope.launch {
             _authState.value = AuthResult.Loading
-            val result = repository.registerWithEmail(email,pass, fullName)
+            val result = repository.registerWithEmail(email, pass, fullName)
             if (result is AuthResult.Success) {
                 _prefilledCredentials.value = Pair(email, pass)
             }

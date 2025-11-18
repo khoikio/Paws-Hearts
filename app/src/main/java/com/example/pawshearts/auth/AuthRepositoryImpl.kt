@@ -158,19 +158,39 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun toggleFollow(targetUserId: String): AuthResult<Unit> = withContext(Dispatchers.IO) {
-        val currentUser = auth.currentUser ?: return@withContext AuthResult.Error("Chưa đăng nhập")
-        return@withContext try {
-            val action = hashMapOf(
-                "actorId" to currentUser.uid,
-                "targetId" to targetUserId,
-                "type" to "TOGGLE_FOLLOW",
-                "timestamp" to FieldValue.serverTimestamp()
-            )
-            firestore.collection("pending_actions").add(action).await()
-            AuthResult.Success(Unit)
-        } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Lỗi không xác định")
+    override suspend fun toggleFollow(targetUserId: String): AuthResult<Unit> =
+        withContext(Dispatchers.IO) {
+            val me = auth.currentUser ?: return@withContext AuthResult.Error("Chưa đăng nhập")
+            val meId = me.uid
+
+            try {
+                val targetRef = firestore.collection("users").document(targetUserId)
+                val meRef = firestore.collection("users").document(meId)
+
+                firestore.runTransaction { tx ->
+                    val targetSnap = tx.get(targetRef)
+                    val meSnap = tx.get(meRef)
+
+                    val targetFollowers = targetSnap.get("followers") as? List<String> ?: emptyList()
+                    val meFollowing = meSnap.get("following") as? List<String> ?: emptyList()
+
+                    val isFollowing = meId in targetFollowers
+
+                    val newTargetFollowers =
+                        if (isFollowing) targetFollowers - meId
+                        else targetFollowers + meId
+
+                    val newMeFollowing =
+                        if (isFollowing) meFollowing - targetUserId
+                        else meFollowing + targetUserId
+
+                    tx.update(targetRef, "followers", newTargetFollowers)
+                    tx.update(meRef, "following", newMeFollowing)
+                }.await()
+
+                AuthResult.Success(Unit)
+            } catch (e: Exception) {
+                AuthResult.Error(e.message ?: "Lỗi không xác định")
+            }
         }
-    }
 }

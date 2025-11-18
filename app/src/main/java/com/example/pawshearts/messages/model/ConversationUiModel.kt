@@ -8,7 +8,7 @@ data class ConversationUiModel(
     val name: String,
     val lastMessage: String,
     val timeLabel: String,
-    val unreadCount: Int = 0,              // số tin chưa đọc
-    val statusDotColor: Color? = null,     // màu chấm trạng thái (online/offline)
-    val avatarRes: Int = R.drawable.avatardefault // avatar mặc định
+    val unreadCount: Int = 0,
+    val statusDotColor: Color? = null,
+    val avatarRes: Int = R.drawable.avatardefault
 )

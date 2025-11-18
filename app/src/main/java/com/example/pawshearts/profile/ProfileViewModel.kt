@@ -3,6 +3,7 @@ package com.example.pawshearts.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthRepository
+import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.data.model.UserData
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +31,10 @@ class ProfileViewModel(
 
     fun toggleFollow() {
         viewModelScope.launch {
-            authRepository.toggleFollow(userId)
+            val result = authRepository.toggleFollow(userId)
+            if (result is AuthResult.Success) {
+                authRepository.fetchAndCacheUserProfile(userId)   // target user
+            }
         }
     }
 }

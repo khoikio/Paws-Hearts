@@ -3,20 +3,21 @@ package com.example.pawshearts.adopt
 import com.google.firebase.Timestamp
 
 data class Adopt(
-    val id: String = "",
-    val userId: String = "",
-    val userName: String = "",
+    val id: String? = null,       // THAY ĐỔI: Làm cho id nullable
+    val userId: String? = null,   // THAY ĐỔI: Làm cho userId nullable
+    val userName: String? = null,
     val userAvatarUrl: String? = null,
 
-    val petName: String = "",
-    val petBreed: String = "",
-    val petAge: Int = 0,
-    val petWeight: Double = 0.0,
-    val petGender: String = "",
-    val petLocation: String = "",
-    val description: String = "",
+    val petName: String? = null,
+    val petBreed: String? = null,
+    val petAge: Int? = null,
+    val petWeight: Double? = null,
+    val petGender: String? = null,
+    val petLocation: String? = null,
+    val description: String? = null,
     val imageUrl: String? = null,
-    val likeCount: Int = 0,
+    val petHealthStatus: String? = null,
 
-    val createdAt: Timestamp? = null // <-- SỬA DỨT ĐIỂM Ở ĐÂY
+    val adoptionRequirements: String? = null,
+    val createdAt: Timestamp? = null
 )

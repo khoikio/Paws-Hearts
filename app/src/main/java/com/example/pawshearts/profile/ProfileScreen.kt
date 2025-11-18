@@ -28,6 +28,8 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthViewModel
+import com.example.pawshearts.messages.model.createThreadId
+import com.example.pawshearts.messages.model.generateThreadId
 import com.example.pawshearts.navmodel.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,12 +47,8 @@ fun ProfileScreen(
     var showEditDialog by remember { mutableStateOf(false) }
 
     // --- LOGIC "LẠC QUAN" CHO NÚT FOLLOW ---
-    val isFollowingReal = myProfileData?.following?.contains(userProfile?.userId) == true
-    var optimisticIsFollowing by remember { mutableStateOf(isFollowingReal) }
-    // Cập nhật state "lạc quan" mỗi khi data thật thay đổi
-    LaunchedEffect(isFollowingReal) {
-        optimisticIsFollowing = isFollowingReal
-    }
+    val isFollowing = myProfileData?.following?.contains(userProfile?.userId) == true
+
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -114,13 +112,13 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    ProfileStat("Theo dõi", userData.following.size.toString())
-                    ProfileStat("Follower", userData.followers.size.toString())
-                }
+                 Row(
+                     modifier = Modifier.fillMaxWidth(),
+                     horizontalArrangement = Arrangement.SpaceEvenly,
+                 ) {
+                     ProfileStat("Theo dõi", userData.following.size.toString())
+                     ProfileStat("Follower", userData.followers.size.toString())
+                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -152,7 +150,7 @@ fun ProfileScreen(
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         FunctionButton(text = "Bài đăng", onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
-                        FunctionButton(text = "Nhận nuôi", onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
+                        FunctionButton(text = "Nhận nuôi", onClick = { nav.navigate(Routes.ADOPT) }, modifier = Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -165,27 +163,44 @@ fun ProfileScreen(
                         Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
                     }
 
-                } else {
+                }else {
+                    // userProfile = thằng đang được xem
+                    // myProfileData = profile của user đang đăng nhập (current user)
+                    val currentUserId = authViewModel.currentUser?.uid
+                    val isFollowing = myProfileData?.following
+                        ?.contains(userProfile?.userId ?: "") == true
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
-                            onClick = { 
-                                // Gửi yêu cầu lên server
+                            onClick = {
+                                // 1. Cập nhật followers/following trên Firestore
                                 profileViewModel.toggleFollow()
-                                // Cập nhật giao diện "lạc quan" ngay lập tức
-                                optimisticIsFollowing = !optimisticIsFollowing
+                                // 2. Refresh lại profile của current user để myProfileData.following đổi
+                                authViewModel.refreshUserProfile()
                             },
                             modifier = Modifier.weight(1f),
-                            // SỬ DỤNG STATE "LẠC QUAN" ĐỂ QUYẾT ĐỊNH MÀU SẮC
-                            colors = if (optimisticIsFollowing) ButtonDefaults.outlinedButtonColors() else ButtonDefaults.buttonColors()
+                            colors = if (isFollowing) {
+                                ButtonDefaults.buttonColors()
+                            } else {
+
+                                ButtonDefaults.outlinedButtonColors()
+                            }
                         ) {
-                            // SỬ DỤNG STATE "LẠC QUAN" ĐỂ QUYẾT ĐỊNH CHỮ
-                            Text(if (optimisticIsFollowing) "Đang theo dõi" else "Theo dõi")
+                            Text(if (!isFollowing) "Đang theo dõi" else "Theo dõi")
                         }
+
                         OutlinedButton(
-                            onClick = { /* TODO: Navigate to Chat Screen */ },
+                            onClick = {
+                                val myId = authViewModel.currentUser?.uid ?: return@OutlinedButton
+                                val otherId = userProfile?.userId ?: return@OutlinedButton
+
+                                val threadId = createThreadId(myId, otherId)
+
+                                nav.navigate("chat/$threadId")
+                            },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null)
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                             Text("Nhắn tin")
                         }

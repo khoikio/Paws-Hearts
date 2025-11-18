@@ -1,70 +1,101 @@
+// com/example/pawshearts/messages/presentation/ChatViewModel.kt
 package com.example.pawshearts.messages.presentation
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pawshearts.messages.data.ChatRepository
 import com.example.pawshearts.messages.model.ChatMessageUiModel
 import com.example.pawshearts.messages.model.MessageStatus
-import kotlinx.coroutines.delay
+import com.example.pawshearts.messages.presentation.TimeFormatUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ChatViewModel(
-    application: Application
-) : AndroidViewModel(application) {
+    private val repository: ChatRepository,
+    private val currentUserId: String,
+    private val currentUserName: String?
+) : ViewModel() {
 
-    // Danh sách tin nhắn
     private val _messages = MutableStateFlow<List<ChatMessageUiModel>>(emptyList())
-    val messages: StateFlow<List<ChatMessageUiModel>> = _messages
+    val messages: StateFlow<List<ChatMessageUiModel>> = _messages.asStateFlow()
 
-    // Trạng thái typing (đối phương đang nhập)
     private val _isTyping = MutableStateFlow(false)
-    val isTyping: StateFlow<Boolean> = _isTyping
+    val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
 
+    private var currentThreadId: String? = null
+
+    // job sync Firestore -> Room
+    private var syncJob: Job? = null
+
+    // job observe Room -> UI
+    private var localObserveJob: Job? = null
+
+    /**
+     * Gọi khi mở 1 cuộc trò chuyện.
+     * - Bắt đầu đồng bộ từ Firestore về Room
+     * - Quan sát Room và đổ ra UI model
+     */
     fun loadThread(threadId: String) {
-        // TODO: sau này gọi Room + Firebase
-        // Fake data tạm thời
-        _messages.value = listOf(
-            ChatMessageUiModel(
-                id = "1",
-                text = "Chào bạn, bé vẫn còn nhé. Bạn có muốn hỏi thêm thông tin gì không?",
-                time = "10:33 AM",
-                isMine = false,
-                status = MessageStatus.SENT
-            ),
-            ChatMessageUiModel(
-                id = "2",
-                text = "Chào bạn, mình thấy bạn đăng tin tìm chủ cho bé Corgi, bé còn không ạ?",
-                time = "10:32 AM",
-                isMine = true,
-                status = MessageStatus.SEEN
-            )
-        )
-    }
+        if (threadId == currentThreadId) return
+        currentThreadId = threadId
 
-    fun sendMessage(text: String) {
-        viewModelScope.launch {
-            // Tin nhắn mới ban đầu ở trạng thái SENDING
-            val newMsg = ChatMessageUiModel(
-                id = System.currentTimeMillis().toString(),
-                text = text,
-                time = "Bây giờ",
-                isMine = true,
-                status = MessageStatus.SENDING
-            )
-            _messages.value += newMsg
+        // cancel job cũ nếu có
+        stopAllListeners()
 
-            // Giả lập gửi thành công sau 1s → đổi sang SENT
-            delay(1000)
-            _messages.value = _messages.value.map {
-                if (it.id == newMsg.id) it.copy(status = MessageStatus.SENT) else it
+        // 1. Sync Firestore -> Room
+        syncJob = repository.startSyncThread(threadId, viewModelScope)
+
+        // 2. Observe Room -> UI
+        localObserveJob = viewModelScope.launch {
+            repository.observeMessages(threadId).collect { entities ->
+                _messages.value = entities.map { entity ->
+                    ChatMessageUiModel(
+                        id = entity.id,
+                        text = entity.text,
+                        time = TimeFormatUtils.formatTime(entity.sentAt),
+                        isMine = entity.senderId == currentUserId,
+                        status = entity.status,
+                        threadId = entity.threadId
+                    )
+                }
             }
         }
     }
 
-    // Hàm bật/tắt typing indicator
-    fun setTyping(typing: Boolean) {
-        _isTyping.value = typing
+    /**
+     * Gửi tin nhắn trong thread hiện tại.
+     */
+    fun sendMessage(text: String) {
+        val threadId = currentThreadId ?: return
+        viewModelScope.launch {
+            repository.sendMessage(
+                threadId = threadId,
+                text = text,
+                currentUserId = currentUserId,
+                currentUserName = currentUserName
+            )
+        }
+    }
+
+    fun setTyping(isTyping: Boolean) {
+        _isTyping.value = isTyping
+    }
+
+    /**
+     * Hủy tất cả job đang lắng nghe (gọi khi rời màn chat / logout).
+     */
+    fun stopAllListeners() {
+        syncJob?.cancel()
+        localObserveJob?.cancel()
+        syncJob = null
+        localObserveJob = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopAllListeners()
     }
 }

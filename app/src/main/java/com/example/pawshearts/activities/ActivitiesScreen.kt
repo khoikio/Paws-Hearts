@@ -34,7 +34,7 @@ fun ActivitiesScreen(
 ) {
     LaunchedEffect(key1 = Unit) {
         Log.d("ActivitiesScreen", "Màn hình được hiển thị, đang refresh lại profile user...")
-        authViewModel.refreshProfile() // TẠO HÀM NÀY TRONG VIEWMODEL
+        authViewModel.refreshUserProfile() // TẠO HÀM NÀY TRONG VIEWMODEL
     }
     // Lấy profile của user đang đăng nhập để kiểm tra quyền admin
     val currentUserProfile by authViewModel.userProfile.collectAsStateWithLifecycle()

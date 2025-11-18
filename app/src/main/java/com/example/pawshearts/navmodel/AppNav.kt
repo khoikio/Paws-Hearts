@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,8 +27,8 @@ import androidx.navigation.navArgument
 import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.activities.*
 import com.example.pawshearts.adopt.*
-import com.example.pawshearts.adopt.components.AdoptCommentScreen
 import com.example.pawshearts.adopt.components.AdoptScreen
+import com.example.pawshearts.adopt.components.PetDetailScreen
 import com.example.pawshearts.auth.*
 import com.example.pawshearts.donate.*
 import com.example.pawshearts.messages.ui.screens.ChatScreen
@@ -140,10 +139,10 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
                     MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
                 }
-                composable(Routes.MY_ADOPT_POSTS_SCREEN) {
-                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                    MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
-                }
+//                composable(Routes.ADOPTS_COLLECTION) {
+//                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+////                    MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+//                }
                 composable(Routes.CREATE_ADOPT_POST_SCREEN) {
                     val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
                     CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
@@ -178,25 +177,47 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     CommentScreen(postId = postId, onBack = { nav.popBackStack() })
                 }
 
-                composable(
-                    route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
-                    arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
-                    // SỬA LẠI CHỖ NÀY CHO ĐÚNG
-                    AdoptCommentScreen(
-                        adoptPostId = adoptPostId,
-                        onBack = { nav.popBackStack() }
-                    )
+                composable(Routes.ADOPT) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
                 }
 
+                composable(Routes.CREATE_ADOPT_POST_SCREEN) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
+                }
+                composable(
+                    route = Routes.PET_DETAIL_ROUTE_WITH_ARG, // tức là "pet_detail_screen/{id}"
+                    arguments = listOf(navArgument("id") { type = NavType.StringType })
+                ) { backStack ->
+                    val petId = backStack.arguments?.getString("id") ?: ""
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context)) // Thêm ViewModel
+
+                    // THÊM LỜI GỌI MÀN HÌNH BỊ THIẾU
+                    PetDetailScreen(
+                        id = petId,
+                        onBack = { nav.popBackStack() },
+                        nav = nav,
+                        adoptViewModel = adoptViewModel // Truyền ViewModel vào
+                    )
+                }
                 composable(
                     route = Routes.CHAT,
                     arguments = listOf(navArgument("threadId") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
-                    ChatScreen(threadId = threadId, onBackClick = { nav.popBackStack() })
+                    val threadId = backStackEntry.arguments?.getString("threadId")!!
+                    ChatScreen(threadId = threadId, nav = nav)
                 }
+                composable(
+                    route = "chat/{threadId}",
+                    arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val threadId = backStackEntry.arguments?.getString("threadId")!!
+                    ChatScreen(threadId = threadId, nav = nav)
+                }
+
+
+
             }
         }
     }
