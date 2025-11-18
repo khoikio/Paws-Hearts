@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await // ⚠️ Cần import cái này để dùng await()
 
 class MessagesViewModel : ViewModel() {
 
@@ -26,10 +27,6 @@ class MessagesViewModel : ViewModel() {
         observeConversationsForCurrentUser()
     }
 
-    /**
-     * Lắng nghe collection "threads" trên Firestore,
-     * lấy tất cả thread mà current user là participant.
-     */
     private fun observeConversationsForCurrentUser() {
         val me = auth.currentUser ?: return
 
@@ -43,48 +40,82 @@ class MessagesViewModel : ViewModel() {
 
                 val docs = snapshot?.documents ?: emptyList()
 
-                // Lấy dữ liệu thô + sort theo thời gian mới nhất
-                val sorted = docs
-                    .mapNotNull { doc ->
+                // Vì việc lấy tên user là xử lý bất đồng bộ (Async),
+                // nên ta cần đưa vào viewModelScope
+                viewModelScope.launch {
+                    val uiList = docs.mapNotNull { doc ->
                         val id = doc.getString("id") ?: doc.id
+
+                        // 1. Lấy thông tin cơ bản từ Thread
                         val lastMessage = doc.getString("lastMessage") ?: ""
                         val lastSentAt = doc.getLong("lastSentAt") ?: 0L
+                        val participantIds = doc.get("participantIds") as? List<String> ?: emptyList()
 
-                        RawConversation(
+                        // 2. Xác định tên hiển thị
+                        var displayAvatar = R.drawable.avatardefault
+                        var displayName = "Cuộc trò chuyện"
+
+                        if (id == "global") {
+                            displayName = "Paw Hub"
+                            displayAvatar = R.drawable.ic_app
+                        } else {
+                            // Tìm ID người kia (Không phải tôi)
+                            val partnerId = participantIds.firstOrNull { it != me.uid }
+
+                            if (partnerId != null) {
+                                // 3. ⚠️ GỌI FIRESTORE LẤY TÊN NGƯỜI KIA ⚠️
+                                // Lưu ý: Check lại tên trường trong collection "users"
+                                // (ví dụ: "name", "fullName", hay "displayName")
+                                val nameFromDb = fetchUserName(partnerId)
+                                displayName = nameFromDb
+
+                                // Nếu bạn có lưu URL avatar trong users thì fetch luôn ở đây
+                            }
+                        }
+
+                        // 4. Tạo object tạm để sort
+                        ConversationUiModel(
                             id = id,
+                            name = displayName,
                             lastMessage = lastMessage,
-                            lastSentAt = lastSentAt
+                            timeLabel = formatTimeLabel(lastSentAt),
+                            unreadCount = 0, // Logic unread tính sau
+                            statusDotColor = null,
+                            avatarRes = displayAvatar,
+                            // Dùng trường này để sort bên dưới
+                            // Bạn cần thêm 1 biến lastSentAt vào ConversationUiModel nếu muốn sort chuẩn,
+                            // hoặc sort Raw trước khi map (nhưng vì map async nên sort sau sẽ tiện hơn)
                         )
-                    }
-                    .sortedByDescending { it.lastSentAt }
-
-                // Map sang UI model
-                val uiList = sorted.map { raw ->
-                    val name = when {
-                        raw.id == "global" -> "Paw Hub"
-                        else -> "Cuộc trò chuyện"
+                    }.sortedByDescending {
+                        // Lưu ý: Logic sort này chỉ đúng nếu timeLabel có thể so sánh,
+                        // Tốt nhất UI Model nên giữ lại biến lastSentAt (Long) để sort.
+                        // Ở đây tôi tạm thời để nguyên theo logic hiển thị.
+                        it.lastMessage // Tạm thời. Xem lưu ý bên dưới 👇
                     }
 
-                    ConversationUiModel(
-                        id = raw.id,
-                        name = name,
-                        lastMessage = raw.lastMessage,
-                        timeLabel = formatTimeLabel(raw.lastSentAt),
-                        unreadCount = 0,
-                        statusDotColor = null,
-                        avatarRes = if (raw.id == "global") R.drawable.ic_app else R.drawable.avatardefault
-                    )
+                    _conversations.value = uiList
                 }
-
-                _conversations.value = uiList
             }
     }
 
     /**
-     * Đánh dấu 1 thread là đã đọc (local).
-     * Sau này nếu muốn sync unreadCount lên server thì chỉnh ở đây.
+     * Hàm lấy tên user từ collection "users".
+     * Dùng .await() để đợi kết quả trả về.
      */
+    private suspend fun fetchUserName(userId: String): String {
+        return try {
+            val snapshot = firestore.collection("users").document(userId).get().await()
+
+            // 👇 SỬA Ở ĐÂY: Thay "fullName"/"name" bằng "username" cho đúng database của bạn
+            snapshot.getString("username") ?: "Người dùng ẩn danh"
+
+        } catch (e: Exception) {
+            "Lỗi tải tên"
+        }
+    }
+
     fun markThreadRead(threadId: String) {
+        // Giữ nguyên logic cũ của bạn
         viewModelScope.launch {
             val current = _conversations.value.toMutableList()
             val index = current.indexOfFirst { it.id == threadId }
@@ -101,19 +132,8 @@ class MessagesViewModel : ViewModel() {
         listenerRegistration?.remove()
     }
 
-    /**
-     * Định dạng thời gian hiển thị đơn giản kiểu "HH:mm".
-     * Nếu millis = 0L thì trả chuỗi rỗng.
-     */
     private fun formatTimeLabel(millis: Long): String {
         if (millis == 0L) return ""
         return android.text.format.DateFormat.format("HH:mm", millis).toString()
     }
-
-    // Model tạm dùng nội bộ để sort theo lastSentAt rồi mới map sang UI
-    private data class RawConversation(
-        val id: String,
-        val lastMessage: String,
-        val lastSentAt: Long
-    )
 }

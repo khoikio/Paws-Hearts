@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,13 +59,14 @@ fun MessagesScreen(
     onBackClick: () -> Unit,
     onThreadClick: (String) -> Unit,
     viewModel: MessagesViewModel = viewModel()
+
 ) {
     val conversations by viewModel.conversations.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ChatOuterBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Card(
             modifier = Modifier
@@ -72,7 +74,7 @@ fun MessagesScreen(
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = ChatCardBackground
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -117,7 +119,8 @@ private fun MessagesHeader(
         IconButton(onClick = onBackClick) {
             Icon(
                 imageVector = Icons.Outlined.ArrowBackIosNew,
-                contentDescription = "Back"
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -127,13 +130,16 @@ private fun MessagesHeader(
             text = "Tin nhắn",
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
 
         IconButton(onClick = onAddClick) {
             Icon(
                 imageVector = Icons.Outlined.Add,
-                contentDescription = "New chat"
+                contentDescription = "New chat",
+                tint = MaterialTheme.colorScheme.onSurface
+
             )
         }
     }
@@ -160,9 +166,24 @@ private fun SearchConversationField() {
         singleLine = true,
         shape = RoundedCornerShape(24.dp),
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = ChatSearchBg,
-            unfocusedContainerColor = ChatSearchBg,
-            disabledContainerColor = ChatSearchBg,
+            // 👈 1. Nền của thanh tìm kiếm (Thay ChatSearchBg)
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+
+            // 👈 2. Màu icon kính lúp
+            focusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            // 👈 3. Màu chữ người dùng nhập vào
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+
+            // 👈 4. Màu chữ gợi ý (Placeholder)
+            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            // Ẩn viền (giữ nguyên code cũ của bác)
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent
@@ -205,6 +226,7 @@ private fun ConversationRow(
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -213,7 +235,8 @@ private fun ConversationRow(
                 Text(
                     text = conversation.timeLabel,
                     fontSize = 12.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+
                 )
             }
 
@@ -222,7 +245,7 @@ private fun ConversationRow(
             Text(
                 text = conversation.lastMessage,
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -249,16 +272,24 @@ private fun ConversationRow(
                 Spacer(modifier = Modifier.height(6.dp))
                 Box(
                     modifier = Modifier
-                        .background(ChatOrange, RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = conversation.unreadCount.toString(),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 10.sp
                     )
                 }
             }
         }
     }
+}
+@Preview
+@Composable
+fun MessagesScreenPreview() {
+    MessagesScreen(
+        onBackClick = {},
+        onThreadClick = {}
+    )
 }

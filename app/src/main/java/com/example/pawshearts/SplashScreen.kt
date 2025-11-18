@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.pawshearts.auth.AuthViewModel
@@ -65,4 +66,8 @@ fun SplashScreen(navController: NavHostController) {
 //            text = "Paws & Hearts",
 //            style = MaterialTheme.typography.displayLarge,
 //            color = Color(0xFFEA5600)
-//
+@Preview
+@Composable
+fun SplashScreenPreview() {
+    SplashScreen(navController = NavHostController(LocalContext.current))
+}

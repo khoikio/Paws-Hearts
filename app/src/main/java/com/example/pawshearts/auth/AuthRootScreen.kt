@@ -149,7 +149,7 @@ fun AuthRootScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 if (isLoginMode) "Paws & Hearts" else "Tạo tài khoản",
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.displayLarge,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = if (isLoginMode) Color(0xFFE65100) else Color.Black
             )

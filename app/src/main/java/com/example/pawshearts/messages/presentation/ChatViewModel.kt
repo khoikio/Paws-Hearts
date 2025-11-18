@@ -1,17 +1,17 @@
-// com/example/pawshearts/messages/presentation/ChatViewModel.kt
 package com.example.pawshearts.messages.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.messages.data.ChatRepository
 import com.example.pawshearts.messages.model.ChatMessageUiModel
-import com.example.pawshearts.messages.model.MessageStatus
-import com.example.pawshearts.messages.presentation.TimeFormatUtils
+import com.example.pawshearts.messages.model.GLOBAL_THREAD_ID
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await // ⚠️ Nhớ import cái này
 
 class ChatViewModel(
     private val repository: ChatRepository,
@@ -19,36 +19,40 @@ class ChatViewModel(
     private val currentUserName: String?
 ) : ViewModel() {
 
+    private val firestore = FirebaseFirestore.getInstance() // Khởi tạo Firestore
+
     private val _messages = MutableStateFlow<List<ChatMessageUiModel>>(emptyList())
     val messages: StateFlow<List<ChatMessageUiModel>> = _messages.asStateFlow()
 
     private val _isTyping = MutableStateFlow(false)
     val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
 
+    // 👇 THÊM BIẾN NÀY: Để lưu tên hiển thị trên Header
+    private val _headerTitle = MutableStateFlow("Đang tải...")
+    val headerTitle: StateFlow<String> = _headerTitle.asStateFlow()
+
     private var currentThreadId: String? = null
-
-    // job sync Firestore -> Room
     private var syncJob: Job? = null
-
-    // job observe Room -> UI
     private var localObserveJob: Job? = null
 
-    /**
-     * Gọi khi mở 1 cuộc trò chuyện.
-     * - Bắt đầu đồng bộ từ Firestore về Room
-     * - Quan sát Room và đổ ra UI model
-     */
     fun loadThread(threadId: String) {
         if (threadId == currentThreadId) return
         currentThreadId = threadId
 
-        // cancel job cũ nếu có
         stopAllListeners()
 
-        // 1. Sync Firestore -> Room
+        // 1. Xử lý tên hiển thị (Header Title)
+        if (threadId == GLOBAL_THREAD_ID) {
+            _headerTitle.value = "Paw Hub"
+        } else {
+            // Nếu là chat riêng, đi tìm tên người kia
+            fetchPartnerName(threadId)
+        }
+
+        // 2. Sync Firestore -> Room
         syncJob = repository.startSyncThread(threadId, viewModelScope)
 
-        // 2. Observe Room -> UI
+        // 3. Observe Room -> UI
         localObserveJob = viewModelScope.launch {
             repository.observeMessages(threadId).collect { entities ->
                 _messages.value = entities.map { entity ->
@@ -65,9 +69,33 @@ class ChatViewModel(
         }
     }
 
-    /**
-     * Gửi tin nhắn trong thread hiện tại.
-     */
+    // 👇 HÀM MỚI: Logic tìm tên người chat cùng
+    private fun fetchPartnerName(threadId: String) {
+        viewModelScope.launch {
+            try {
+                // B1: Lấy thông tin cuộc trò chuyện để tìm ID người kia
+                val threadSnap = firestore.collection("threads").document(threadId).get().await()
+                val participantIds = threadSnap.get("participantIds") as? List<String> ?: emptyList()
+
+                // Tìm ID không phải của mình
+                val partnerId = participantIds.firstOrNull { it != currentUserId }
+
+                if (partnerId != null) {
+                    // B2: Lấy thông tin User từ ID đó
+                    val userSnap = firestore.collection("users").document(partnerId).get().await()
+
+                    // ⚠️ QUAN TRỌNG: Lấy đúng trường "username" như bạn đã sửa lúc nãy
+                    val name = userSnap.getString("username") ?: "Người dùng ẩn danh"
+                    _headerTitle.value = name
+                } else {
+                    _headerTitle.value = "Cuộc trò chuyện"
+                }
+            } catch (e: Exception) {
+                _headerTitle.value = "Cuộc trò chuyện"
+            }
+        }
+    }
+
     fun sendMessage(text: String) {
         val threadId = currentThreadId ?: return
         viewModelScope.launch {
@@ -84,9 +112,6 @@ class ChatViewModel(
         _isTyping.value = isTyping
     }
 
-    /**
-     * Hủy tất cả job đang lắng nghe (gọi khi rời màn chat / logout).
-     */
     fun stopAllListeners() {
         syncJob?.cancel()
         localObserveJob?.cancel()

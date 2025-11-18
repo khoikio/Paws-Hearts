@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -91,7 +92,7 @@ fun ChatScreen(
     val messages by chatViewModel.messages.collectAsState()
     val isTyping by chatViewModel.isTyping.collectAsState()
     val isGlobal = threadId == GLOBAL_THREAD_ID
-    val headerTitle = if (isGlobal) "Paw Hub" else "Cuộc trò chuyện"
+    val headerTitle by chatViewModel.headerTitle.collectAsState()
     val headerAvatarRes = if (isGlobal) R.drawable.ic_app else R.drawable.avatardefault
 
     val listState = rememberLazyListState()
@@ -107,7 +108,7 @@ fun ChatScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ChatOuterBackground)
+            .background(MaterialTheme.colorScheme.background)
             .imePadding()
     ) {
         ChatHeader(
@@ -124,7 +125,7 @@ fun ChatScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = ChatCardBackground),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -169,6 +170,14 @@ fun ChatScreen(
     }
 }
 
+@Preview
+@Composable
+fun ChatScreenPreview() {
+    // Fake NavHostController for preview
+    val nav = NavHostController(LocalContext.current)
+    ChatScreen(threadId = GLOBAL_THREAD_ID, nav = nav)
+}
+
 @Composable
 private fun ChatHeader(
     title: String,
@@ -182,7 +191,8 @@ private fun ChatHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick) {
-            Icon(Icons.Outlined.ArrowBackIosNew, contentDescription = "Back")
+            Icon(Icons.Outlined.ArrowBackIosNew, contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onBackground    )
         }
         Image(
             painter = painterResource(id = avatarRes),
@@ -194,6 +204,7 @@ private fun ChatHeader(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = title,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp,
             maxLines = 1,
@@ -202,11 +213,20 @@ private fun ChatHeader(
     }
 }
 
+@Preview
+@Composable
+private fun ChatHeaderPreview() {
+    ChatHeader(
+        title = "Paw Hub",
+        avatarRes = R.drawable.ic_app,
+        onBackClick = {}
+    )
+}
+
 @Composable
 private fun ChatBubble(message: ChatMessageUiModel) {
-    val bubbleColor = if (message.isMine) ChatOrange else Color(0xFFF5F5F5)
-    val textColor = if (message.isMine) Color.White else Color.Black
-
+    val textColor = if (message.isMine) Color.White else MaterialTheme.colorScheme.onSurface
+    val bubbleColor = if (message.isMine) ChatOrange else MaterialTheme.colorScheme.surfaceVariant
     AnimatedVisibility(
         visible = true,
         enter = fadeIn() + slideInHorizontally(initialOffsetX = { if (message.isMine) 200 else -200 })
@@ -269,6 +289,27 @@ private fun ChatBubble(message: ChatMessageUiModel) {
     }
 }
 
+@Preview(showBackground = true, name = "My Message")
+@Composable
+private fun ChatBubbleMinePreview() {
+    val message = ChatMessageUiModel(
+        id = "1",
+        text = "Hello, this is my message.",
+        time = "10:00",
+        isMine = true,
+        status = MessageStatus.SENT,
+        threadId = "global"
+    )
+    ChatBubble(message = message)
+}
+
+@Preview(showBackground = true, name = "Their Message")
+@Composable
+private fun ChatBubbleTheirsPreview() {
+    val message = ChatMessageUiModel(id = "2", text = "Hi, this is a reply.", time = "10:01", isMine = false, status = MessageStatus.SEEN, threadId = "global")
+    ChatBubble(message = message)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatInputBar(
@@ -278,7 +319,8 @@ private fun ChatInputBar(
     var text by remember { mutableStateOf("") }
     val canSend = text.isNotBlank()
 
-    Surface(tonalElevation = 4.dp) {
+    Surface(tonalElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -288,7 +330,8 @@ private fun ChatInputBar(
             IconButton(onClick = onAttach) {
                 Icon(
                     imageVector = Icons.Outlined.AttachFile,
-                    contentDescription = "attach"
+                    contentDescription = "attach",
+                            tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -302,8 +345,13 @@ private fun ChatInputBar(
                 singleLine = true,
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = ChatInputBg,
-                    unfocusedContainerColor = ChatInputBg,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+
+                    // 👈 Màu chữ khi gõ
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
@@ -339,3 +387,13 @@ private fun ChatInputBar(
         }
     }
 }
+
+@Preview
+@Composable
+private fun ChatInputBarPreview() {
+    ChatInputBar(
+        onSend = {},
+        onAttach = {}
+    )
+}
+

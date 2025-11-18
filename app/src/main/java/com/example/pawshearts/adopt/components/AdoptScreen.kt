@@ -181,7 +181,7 @@ fun AdoptScreen(
                 floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    nav.navigate(Routes.CREATE_POST_SCREEN) // Khi bấm, sẽ điều hướng đến màn hình tạo bài đăng mới
+                    nav.navigate(Routes.CREATE_ADOPT_POST_SCREEN) // Khi bấm, sẽ điều hướng đến màn hình tạo bài đăng mới
                 },
                 containerColor = MaterialTheme.colorScheme.primary, // Màu nền của nút
                 contentColor = MaterialTheme.colorScheme.onPrimary // Màu của icon bên trong
