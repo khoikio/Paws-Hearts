@@ -44,7 +44,9 @@ fun CreateAdoptPostScreen(
     var petGender by remember { mutableStateOf("") }
     var petLocation by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var adoptionRequirements by remember { mutableStateOf("") } // <-- SỬA: Bổ sung State cho yêu cầu nhận nuôi
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var petHealthStatus by remember { mutableStateOf("") }
 
     // 2. LAUNCHER ĐỂ CHỌN ẢNH
     val imagePicker = rememberLauncherForActivityResult(
@@ -94,7 +96,9 @@ fun CreateAdoptPostScreen(
                                 // M GỌI HÀM VM M ƠI KKK
                                 adoptViewModel.createAdoptPost(
                                     petName, petBreed, petAge, petWeight,
-                                    petGender, petLocation, description, imageUri
+                                    petGender, petLocation, description,
+                                    adoptionRequirements, // <-- SỬA: Bổ sung tham số bị thiếu
+                                    imageUri // <-- Tham số cuối cùng
                                 )
                             }
                         },
@@ -184,6 +188,11 @@ fun CreateAdoptPostScreen(
                 label = "Giới tính (Đực/Cái)"
             )
             FormTextField(
+                value = petHealthStatus,
+                onValueChange = { petHealthStatus = it },
+                label = "Sức khỏe (Đã tiêm phòng, đã triệt sản, các bệnh lý ...)",
+            )
+            FormTextField(
                 value = petLocation,
                 onValueChange = { petLocation = it },
                 label = "Khu vực (Quận/Thành phố)"
@@ -192,6 +201,15 @@ fun CreateAdoptPostScreen(
                 value = description,
                 onValueChange = { description = it },
                 label = "Mô tả (Tính cách, tình trạng...)",
+                modifier = Modifier.height(120.dp),
+                singleLine = false
+            )
+
+            // <-- SỬA: Bổ sung trường nhập liệu cho yêu cầu nhận nuôi
+            FormTextField(
+                value = adoptionRequirements,
+                onValueChange = { adoptionRequirements = it },
+                label = "Yêu cầu nhận nuôi (Điều kiện)",
                 modifier = Modifier.height(120.dp),
                 singleLine = false
             )

@@ -27,8 +27,12 @@ object Routes {
     const val MY_ADOPT_POSTS_SCREEN = "my-adopt-posts"
     const val CREATE_ADOPT_POST_SCREEN = "create-adopt-post"
 
-    const val ADOPT_COMMENT_SCREEN = "adopt_comment_screen"
+    const val MY_ADOPT_POSTS_ROUTE_WITH_ARG = "my-adopt-posts/{userId}"
+    const val USER_PROFILE_ROUTE_WITH_ARG = "user_profile_screen/{userId}"
 
+    const val PET_DETAIL_ROUTE_WITH_ARG = "pet_detail_screen/{id}"
+
+    fun userProfile(userId: String) = "user_profile_screen/$userId"
     const val DONATE_BANK_SCREEN = "donate-bank-info"
 
     const val ACTIVITIES_LIST_SCREEN = "activities_list"

@@ -27,8 +27,8 @@ import androidx.navigation.navArgument
 import com.example.pawshearts.SplashScreen
 import com.example.pawshearts.activities.*
 import com.example.pawshearts.adopt.*
-import com.example.pawshearts.adopt.components.AdoptCommentScreen
 import com.example.pawshearts.adopt.components.AdoptScreen
+import com.example.pawshearts.adopt.components.PetDetailScreen
 import com.example.pawshearts.auth.*
 import com.example.pawshearts.donate.*
 import com.example.pawshearts.messages.ui.screens.ChatScreen
@@ -100,7 +100,7 @@ private fun AppContent(themeViewModel: SettingViewModel) {
 
             if (isLoggedIn) {
                 val currentUser = authViewModel.currentUser
-                
+
                 composable(Routes.HOME) { HomeScreen(nav) }
                 composable(Routes.DONATE) { DonateScreen(nav) }
                 composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
@@ -136,21 +136,30 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
                 }
 
-                composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
-                
-                composable(Routes.NOTIFICATION_SCREEN) { 
-                    if(currentUser != null) NotificationScreen(userId = currentUser.uid) 
-                }
-                
-                composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
-
                 composable(
-                    route = Routes.PET_DETAIL,
+                    route = Routes.PET_DETAIL_ROUTE_WITH_ARG, // tức là "pet_detail_screen/{id}"
                     arguments = listOf(navArgument("id") { type = NavType.StringType })
                 ) { backStack ->
                     val petId = backStack.arguments?.getString("id") ?: ""
-                    PetDetailScreen(id = petId, onBack = { nav.popBackStack() })
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context)) // Thêm ViewModel
+
+                    // THÊM LỜI GỌI MÀN HÌNH BỊ THIẾU
+                    PetDetailScreen(
+                        id = petId,
+                        onBack = { nav.popBackStack() },
+                        nav = nav,
+                        adoptViewModel = adoptViewModel // Truyền ViewModel vào
+                    )
                 }
+
+                composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
+
+                composable(Routes.NOTIFICATION_SCREEN) {
+                    if(currentUser != null) NotificationScreen(userId = currentUser.uid)
+                }
+
+                composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
+
 
                 composable(
                     route = "comment_screen/{postId}",
@@ -160,19 +169,7 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     CommentScreen(postId = postId, onBack = { nav.popBackStack() })
                 }
 
-                composable(
-                    route = "${Routes.ADOPT_COMMENT_SCREEN}/{adoptPostId}",
-                    arguments = listOf(navArgument("adoptPostId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val adoptPostId = backStackEntry.arguments?.getString("adoptPostId") ?: ""
-                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-                    AdoptCommentScreen(
-                        adoptPostId = adoptPostId,
-                        adoptViewModel = adoptViewModel,
-                        authViewModel = authViewModel,
-                        onBack = { nav.popBackStack() }
-                    )
-                }
+
 
                 composable(
                     route = Routes.CHAT,

@@ -9,14 +9,19 @@ data class Adopt(
     val userAvatarUrl: String? = null,
 
     val petName: String = "",
-    val petBreed: String = "",
-    val petAge: Int = 0,
+    val petBreed: String = "", // Giống/Loài
+    val petAge: Int = 0, // Tính bằng tháng
     val petWeight: Double = 0.0,
     val petGender: String = "",
     val petLocation: String = "",
     val description: String = "",
     val imageUrl: String? = null,
-    val likeCount: Int = 0,
+    val petHealthStatus: String = "",
 
-    val createdAt: Timestamp? = null // <-- SỬA DỨT ĐIỂM Ở ĐÂY
+
+    // Yêu cầu nhận nuôi (Điều kiện)
+    val adoptionRequirements: String = "",
+
+    // Ngày đăng
+    val createdAt: Timestamp? = null
 )
