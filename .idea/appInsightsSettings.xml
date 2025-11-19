@@ -9,9 +9,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.pawshearts" />
-                  <option name="mobileSdkAppId" value="1:771564365435:android:870bdb11e41a8070d4e4de" />
-                  <option name="projectId" value="paws-hearts-13e60" />
-                  <option name="projectNumber" value="771564365435" />
+                  <option name="mobileSdkAppId" value="1:82841880511:android:d19894d95582555da0030a" />
+                  <option name="projectId" value="pawshearts-6fc3f" />
+                  <option name="projectNumber" value="82841880511" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

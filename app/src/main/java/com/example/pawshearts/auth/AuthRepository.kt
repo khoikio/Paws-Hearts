@@ -21,4 +21,6 @@ interface AuthRepository {
     suspend fun registerWithEmail(email: String, pass: String, fullName: String): AuthResult<FirebaseUser>
     suspend fun loginWithEmail(email: String, pass: String): AuthResult<FirebaseUser>
     suspend fun toggleFollow(targetUserId: String): AuthResult<Unit>
+
+
 }

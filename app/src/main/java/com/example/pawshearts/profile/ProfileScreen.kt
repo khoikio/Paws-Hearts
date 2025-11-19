@@ -12,7 +12,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +32,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.messages.model.createThreadId
-import com.example.pawshearts.messages.model.generateThreadId
 import com.example.pawshearts.navmodel.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,9 +48,16 @@ fun ProfileScreen(
     val isMyProfile = userProfile?.userId == currentUser?.uid
     var showEditDialog by remember { mutableStateOf(false) }
 
-    // --- LOGIC "LẠC QUAN" CHO NÚT FOLLOW ---
-    val isFollowing = myProfileData?.following?.contains(userProfile?.userId) == true
+    // Giá trị follow "thật" từ server (current user -> userProfile)
+    val isFollowingFromServer = myProfileData?.following
+        ?.contains(userProfile?.userId ?: "") == true
 
+    // State hiển thị trên UI (lạc quan), reset lại khi server đổi
+    var isFollowingState by remember { mutableStateOf(isFollowingFromServer) }
+
+    LaunchedEffect(isFollowingFromServer) {
+        isFollowingState = isFollowingFromServer
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -59,7 +68,12 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isMyProfile) "Hồ sơ của tôi" else userProfile?.username ?: "Hồ sơ") },
+                title = {
+                    Text(
+                        if (isMyProfile) "Hồ sơ của tôi"
+                        else userProfile?.username ?: "Hồ sơ"
+                    )
+                },
                 navigationIcon = {
                     if (!isMyProfile) {
                         IconButton(onClick = { nav.popBackStack() }) {
@@ -74,12 +88,14 @@ fun ProfileScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
         }
     ) { paddingValues ->
         userProfile?.let { userData ->
-             Column(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -91,7 +107,11 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Image(
-                    painter = if (userData.profilePictureUrl != null) rememberAsyncImagePainter(userData.profilePictureUrl) else painterResource(id = R.drawable.avatardefault),
+                    painter = if (userData.profilePictureUrl != null) {
+                        rememberAsyncImagePainter(userData.profilePictureUrl)
+                    } else {
+                        painterResource(id = R.drawable.avatardefault)
+                    },
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(120.dp)
@@ -107,22 +127,31 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = userData.username ?: "Chưa cập nhật", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(text = userData.email ?: "Chưa có email", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(
+                    text = userData.username ?: "Chưa cập nhật",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = userData.email ?: "Chưa có email",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                 Row(
-                     modifier = Modifier.fillMaxWidth(),
-                     horizontalArrangement = Arrangement.SpaceEvenly,
-                 ) {
-                     ProfileStat("Theo dõi", userData.following.size.toString())
-                     ProfileStat("Follower", userData.followers.size.toString())
-                 }
-                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    ProfileStat("Theo dõi", userData.following.size.toString())
+                    ProfileStat("Follower", userData.followers.size.toString())
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (isMyProfile) {
+                    // ================== HỒ SƠ CỦA TÔI ==================
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -134,9 +163,16 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Thông tin cá nhân", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "Thông tin cá nhân",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 IconButton(onClick = { showEditDialog = true }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Chỉnh sửa thông tin")
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Chỉnh sửa thông tin"
+                                    )
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -147,46 +183,64 @@ fun ProfileScreen(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        FunctionButton(text = "Bài đăng", onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) }, modifier = Modifier.weight(1f))
-                        FunctionButton(text = "Nhận nuôi", onClick = { nav.navigate(Routes.ADOPT) }, modifier = Modifier.weight(1f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        FunctionButton(
+                            text = "Bài đăng",
+                            onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FunctionButton(
+                            text = "Nhận nuôi",
+                            onClick = { nav.navigate(Routes.ADOPT) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Button(
                         onClick = { authViewModel.logoutAndNavigate(nav) },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
                     ) {
-                        Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(
+                            "Đăng xuất",
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                } else {
+                    // ================== HỒ SƠ NGƯỜI KHÁC ==================
+                    val followText = if (isFollowingState) "Đang theo dõi" else "Theo dõi"
+                    val followColors = if (isFollowingState) {
+                        ButtonDefaults.outlinedButtonColors()
+                    } else {
+                        ButtonDefaults.buttonColors()
                     }
 
-                }else {
-                    // userProfile = thằng đang được xem
-                    // myProfileData = profile của user đang đăng nhập (current user)
-                    val currentUserId = authViewModel.currentUser?.uid
-                    val isFollowing = myProfileData?.following
-                        ?.contains(userProfile?.userId ?: "") == true
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Button(
                             onClick = {
-                                // 1. Cập nhật followers/following trên Firestore
+                                isFollowingState = !isFollowingState
+
                                 profileViewModel.toggleFollow()
-                                // 2. Refresh lại profile của current user để myProfileData.following đổi
-                                authViewModel.refreshUserProfile()
+
+                                // Refresh cả 2
+                                authViewModel.refreshUserProfile()    // current user
+                                profileViewModel.refreshUserProfile() // target user
                             },
                             modifier = Modifier.weight(1f),
-                            colors = if (isFollowing) {
-                                ButtonDefaults.buttonColors()
-                            } else {
-
-                                ButtonDefaults.outlinedButtonColors()
-                            }
+                            colors = followColors
                         ) {
-                            Text(if (!isFollowing) "Đang theo dõi" else "Theo dõi")
+                            Text(followText)
                         }
 
                         OutlinedButton(
@@ -195,46 +249,76 @@ fun ProfileScreen(
                                 val otherId = userProfile?.userId ?: return@OutlinedButton
 
                                 val threadId = createThreadId(myId, otherId)
-
                                 nav.navigate("chat/$threadId")
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null)
+                            Icon(
+                                Icons.Default.ChatBubbleOutline,
+                                contentDescription = null
+                            )
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                             Text("Nhắn tin")
                         }
                     }
                 }
             }
-        } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        } ?: Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
             CircularProgressIndicator()
         }
 
-        if (showEditDialog && userProfile != null) {
-            var newName by remember { mutableStateOf(userProfile!!.username ?: "") }
-            var newPhone by remember { mutableStateOf(userProfile!!.phone ?: "") }
-            var newAddress by remember { mutableStateOf(userProfile!!.address ?: "") }
+        // ===== DIALOG SỬA THÔNG TIN (ĐÃ FIX NULL) =====
+        val safeUser = userProfile
+        if (showEditDialog && safeUser != null) {
+            var newName by remember(safeUser.userId) { mutableStateOf(safeUser.username ?: "") }
+            var newPhone by remember(safeUser.userId) { mutableStateOf(safeUser.phone ?: "") }
+            var newAddress by remember(safeUser.userId) { mutableStateOf(safeUser.address ?: "") }
 
             AlertDialog(
                 onDismissRequest = { showEditDialog = false },
                 title = { Text("Chỉnh sửa thông tin") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Tên hiển thị") })
-                        OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, label = { Text("Số điện thoại") })
-                        OutlinedTextField(value = newAddress, onValueChange = { newAddress = it }, label = { Text("Địa chỉ") })
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            label = { Text("Tên hiển thị") }
+                        )
+                        OutlinedTextField(
+                            value = newPhone,
+                            onValueChange = { newPhone = it },
+                            label = { Text("Số điện thoại") }
+                        )
+                        OutlinedTextField(
+                            value = newAddress,
+                            onValueChange = { newAddress = it },
+                            label = { Text("Địa chỉ") }
+                        )
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        authViewModel.updateProfile(newName, userProfile!!.email ?: "")
-                        authViewModel.updateUserPersonalInfo(newPhone, newAddress)
-                        showEditDialog = false
-                    }) { Text("Lưu") }
+                    TextButton(
+                        onClick = {
+                            authViewModel.updateProfile(
+                                newName,
+                                safeUser.email ?: ""
+                            )
+                            authViewModel.updateUserPersonalInfo(newPhone, newAddress)
+                            showEditDialog = false
+                        }
+                    ) {
+                        Text("Lưu")
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showEditDialog = false }) { Text("Hủy") }
+                    TextButton(onClick = { showEditDialog = false }) {
+                        Text("Hủy")
+                    }
                 }
             )
         }
@@ -244,16 +328,30 @@ fun ProfileScreen(
 @Composable
 private fun ProfileStat(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
     }
 }
 
 @Composable
-private fun FunctionButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun FunctionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor =  MaterialTheme.colorScheme.primary),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ),
         modifier = modifier.height(48.dp),
         shape = RoundedCornerShape(12.dp)
     ) {

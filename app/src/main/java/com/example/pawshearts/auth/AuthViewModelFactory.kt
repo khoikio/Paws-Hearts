@@ -23,10 +23,10 @@ class AuthViewModelFactory(
 
             // --- Lắp ráp Repository cho đúng ---
             val repository = AuthRepositoryImpl(
-                auth = auth, // Linh kiện 1
-                firestore = firestore, // Linh kiện 2
-                userDao = userDao, // Linh kiện 3
-                storage = storage // Linh kiện 4
+                auth = auth,
+                firestore = firestore,
+                userDao = userDao,
+                storage = storage
             )
 
             // --- Tạo ViewModel với Repository xịn ---

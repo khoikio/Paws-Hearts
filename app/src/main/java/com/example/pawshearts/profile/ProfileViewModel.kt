@@ -13,7 +13,10 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val userId: String,
     private val authRepository: AuthRepository
+
 ) : ViewModel() {
+    private val meId: String?
+        get() = authRepository.currentUser?.uid
 
     val userProfile: StateFlow<UserData?> = authRepository.getUserProfileFlow(userId)
         .stateIn(
@@ -29,12 +32,25 @@ class ProfileViewModel(
         }
     }
 
+
     fun toggleFollow() {
         viewModelScope.launch {
             val result = authRepository.toggleFollow(userId)
             if (result is AuthResult.Success) {
-                authRepository.fetchAndCacheUserProfile(userId)   // target user
+                // refresh target user
+                authRepository.fetchAndCacheUserProfile(userId)
+
+                // refresh current user (QUAN TRỌNG)
+                meId?.let {
+                    authRepository.fetchAndCacheUserProfile(it)
+                }
             }
+        }
+    }
+
+    fun refreshUserProfile() {
+        viewModelScope.launch {
+            authRepository.fetchAndCacheUserProfile(userId)
         }
     }
 }

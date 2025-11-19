@@ -41,7 +41,7 @@ fun AuthRootScreen(navController: NavController) {
     val prefilled by viewModel.prefilledCredentials.collectAsStateWithLifecycle()
 
     // XÓA HOẶC COMMENT OUT CÁI NÀY ĐI
-    /*
+
     LaunchedEffect(authState) {
         if (authState is AuthResult.Success) {
             navController.navigate(Routes.HOME) {
@@ -49,16 +49,16 @@ fun AuthRootScreen(navController: NavController) {
             }
         }
     }
-    */
 
-    LaunchedEffect(prefilled) {
-        prefilled?.let { (prefillEmail, prefillPassword) ->
-            emailOrPhone = prefillEmail
-            password = prefillPassword
-            isLoginMode = true
-            viewModel.clearPrefilledCredentials()
-        }
-    }
+
+//    LaunchedEffect(prefilled) {
+//        prefilled?.let { (prefillEmail, prefillPassword) ->
+//            emailOrPhone = prefillEmail
+//            password = prefillPassword
+//            isLoginMode = true
+//            viewModel.clearPrefilledCredentials()
+//        }
+//    }
 
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
