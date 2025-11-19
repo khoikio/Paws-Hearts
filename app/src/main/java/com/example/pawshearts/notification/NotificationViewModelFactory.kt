@@ -8,7 +8,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 class NotificationViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NotificationViewModel::class.java)) {
-            val repository = NotificationFirebaseStore(FirebaseFirestore.getInstance())
+            val firebaseStore = NotificationFirebaseStore(FirebaseFirestore.getInstance())
+            val repository: NotificationRepository = firebaseStore
             @Suppress("UNCHECKED_CAST")
             return NotificationViewModel(repository) as T
         }

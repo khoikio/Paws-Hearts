@@ -94,6 +94,9 @@ fun NotificationScreen(
                         IconButton(onClick = { viewModel.deleteNotification(notification.id) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Xóa")
                         }
+                        Button(onClick = { viewModel.sendTest() }) {
+                            Text("Test noti")
+                        }
                     }
                 }
             }

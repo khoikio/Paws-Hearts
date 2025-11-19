@@ -1,5 +1,6 @@
 package com.example.pawshearts.notification
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -54,4 +55,32 @@ class NotificationFirebaseStore(
             // Log lỗi nếu cần
         }
     }
+    suspend fun sendNotification(data: Map<String, Any>) {
+        try {
+            val doc = firestore.collection("notifications").document()
+            doc.set(data + ("id" to doc.id)).await()
+
+            Log.d("NOTI", "Tạo thông báo thành công: ${doc.id}")
+
+        } catch (e: Exception) {
+            Log.e("NOTI", "Lỗi khi tạo notification: ${e.message}", e)
+        }
+    }
+    suspend fun sendTestLikeNotification(
+        receiverId: String,
+        actorId: String
+    ) {
+        val data = mapOf(
+            "userId" to receiverId,
+            "actorId" to actorId,
+            "type" to "LIKE",
+            "message" to "đã thích bài viết của bạn",
+            "createdAt" to com.google.firebase.Timestamp.now(),
+            "isRead" to false
+        )
+
+        sendNotification(data)
+    }
+
+
 }
