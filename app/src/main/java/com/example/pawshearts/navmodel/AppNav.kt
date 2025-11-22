@@ -40,6 +40,9 @@ import com.example.pawshearts.profile.ProfileViewModel
 import com.example.pawshearts.profile.ProfileViewModelFactory
 import com.example.pawshearts.settings.*
 import com.example.pawshearts.ui.theme.Theme
+import com.example.pawshearts.auth.AuthViewModel
+import com.example.pawshearts.activities.ActivitiesScreen // <<== NHỚ THÊM IMPORT NÀY NẾU CHƯA CÓ
+
 
 @Composable
 fun AppRoot() {
@@ -151,10 +154,66 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                     val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
                     ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
                 }
+
+
+                // ***** THÊM COMPOSABLE BỊ THIẾU CHO MÀN HÌNH CHI TIẾT *****
+                composable(
+                    route = Routes.ACTIVITY_DETAIL_WITH_ARG, // "activity_detail_screen/{activityId}"
+                    arguments = listOf(navArgument("activityId") {
+                        type = NavType.StringType
+                    })
+                ) { backStackEntry ->
+                    val activityId = backStackEntry.arguments?.getString("activityId")
+                    // Chỉ hiển thị màn hình nếu có ID hợp lệ
+                    if (activityId != null) {
+                        val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+                        ActivityDetailScreen(
+                            nav = nav,
+                            activityViewModel = activityViewModel,
+                            authViewModel = authViewModel,
+                            activityId = activityId
+                        )
+                    }
+                }
+
+                // SỬA LẠI COMPOSABLE CHO MÀN HÌNH "TẠO"
                 composable(Routes.CREATE_ACTIVITY_SCREEN) {
                     val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-                    CreateActivityScreen(nav = nav, activityViewModel = activityViewModel)
+
+                    // Gọi hàm với activityId = null để nó biết đây là chế độ TẠO
+                    CreateActivityScreen(nav = nav, activityViewModel = activityViewModel, activityId = null)
                 }
+
+// THÊM COMPOSABLE MỚI CHO MÀN HÌNH "SỬA"
+                composable(
+                    route = Routes.EDIT_ACTIVITY_WITH_ARG, // route = "edit_activity_screen/{activityId}"
+                    arguments = listOf(navArgument("activityId") {
+                        type = NavType.StringType
+                        // Bạn có thể thêm nullable = false vì ID là bắt buộc khi sửa
+                        nullable = false
+                    })
+                ) { backStackEntry ->
+                    // Lấy activityId từ route
+                    val activityId = backStackEntry.arguments?.getString("activityId")
+
+                    // Chỉ tiếp tục nếu có activityId hợp lệ
+                    if (activityId != null) {
+                        val context = LocalContext.current.applicationContext as Application
+                        val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+
+                        // <<== SỬA THÀNH TÊN NÀY
+                        // Gọi đúng màn hình CreateActivityScreen và truyền activityId vào
+                        // để nó tự động chuyển sang chế độ "Sửa"
+                        CreateActivityScreen(
+                            nav = nav,
+                            activityViewModel = activityViewModel,
+                            activityId = activityId // <<== Truyền ID vào đây
+                        )
+                    }
+                    // Nếu không có activityId, sẽ không có gì được hiển thị,
+                    // hoặc bạn có thể điều hướng người dùng quay lại.
+                }
+
                 composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
                 composable(Routes.NOTIFICATION_SCREEN) { 
                     if(currentUser != null) NotificationScreen(userId = currentUser.uid) 

@@ -46,6 +46,19 @@ class ActivityRepositoryImpl(
             }
         }
     }
+    override suspend fun getActivityById(activityId: String): Activity? {
+        return try {
+            // 1. Dùng ID để lấy đúng document từ collection "activities"
+            val documentSnapshot = activitiesCollection.document(activityId).get().await()
+
+            // 2. Chuyển đổi document thành đối tượng Activity và trả về
+            documentSnapshot.toObject(Activity::class.java)
+        } catch (e: Exception) {
+            Log.e("ActivityRepoImpl", "Lỗi khi lấy hoạt động theo ID: $activityId", e)
+            null // Trả về null nếu có lỗi hoặc không tìm thấy document
+        }
+    }
+
 
     // === 2. HÀM TẠO ACTIVITIES (CHO ADMIN) KKK ===
     override suspend fun createActivity(activity: Activity): AuthResult<Unit> {
@@ -59,6 +72,7 @@ class ActivityRepositoryImpl(
             AuthResult.Error(e.message ?: "Lỗi đéo biết KKK :v")
         }
     }
+
     override suspend fun deleteActivity(activityId: String) {
         try {
             // Gọi lệnh xóa document có ID tương ứng trên Firestore
@@ -67,6 +81,23 @@ class ActivityRepositoryImpl(
         } catch (e: Exception) {
             Log.e("ActivityRepo", "Lỗi khi xóa hoạt động $activityId", e)
             // Ở đây mày có thể ném ra lỗi để báo cho ViewModel biết
+        }
+    }
+
+    override suspend fun updateActivity(activity: Activity): AuthResult<Unit> {
+        return try {
+            // Đảm bảo activity có ID hợp lệ để biết cần update document nào
+            if (activity.id.isBlank()) {
+                throw IllegalArgumentException("Activity ID không được rỗng khi cập nhật")
+            }
+            // Dùng ID để tìm đúng document và set (ghi đè) dữ liệu mới
+            activitiesCollection.document(activity.id).set(activity).await()
+
+            Log.d("ActivityRepoImpl", "Cập nhật hoạt động THÀNH CÔNG")
+            AuthResult.Success(Unit)
+        } catch (e: Exception) {
+            Log.e("ActivityRepoImpl", "Cập nhật hoạt động THẤT BẠI", e)
+            AuthResult.Error(e.message ?: "Lỗi không xác định")
         }
     }
 }

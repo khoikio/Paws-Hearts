@@ -24,7 +24,7 @@ import androidx.navigation.NavHostController
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.navmodel.Routes
 import com.example.pawshearts.data.model.Activity
-
+import androidx.compose.foundation.clickable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitiesScreen(
@@ -36,11 +36,14 @@ fun ActivitiesScreen(
         Log.d("ActivitiesScreen", "Màn hình được hiển thị, đang refresh lại profile user...")
         authViewModel.refreshUserProfile() // TẠO HÀM NÀY TRONG VIEWMODEL
     }
-    // Lấy profile của user đang đăng nhập để kiểm tra quyền admin
-    val currentUserProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
-
     // Lấy danh sách các hoạt động từ ViewModel
     val activities by activityViewModel.activities.collectAsStateWithLifecycle()
+
+    // Lấy profile của user đang đăng nhập để kiểm tra quyền admin
+    // Tôi đổi tên biến để tránh xung đột với code cũ của bạn
+    val currentUserProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
+    val isAdmin = currentUserProfile?.isAdmin ?: false
+
 
     Scaffold(
         topBar = {
@@ -80,8 +83,9 @@ fun ActivitiesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Tăng khoảng cách
+                .padding(horizontal = 16.dp), // Chỉ padding ngang
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp) // Thêm padding dọc cho content
         ) {
             if (activities.isEmpty()) {
                 item {
@@ -92,12 +96,15 @@ fun ActivitiesScreen(
             } else {
                 items(activities, key = { it.id }) { activity -> // Dùng key để tối ưu hiệu suất
                     // --- TRUYỀN QUYỀN ADMIN VÀ HÀM XÓA VÀO CARD ---
-                    ActivityCard(
+                    ActivityCard( // <<== TÊN ĐÚNG LÀ "ActivityCard"
                         activity = activity,
-                        isAdmin = currentUserProfile?.isAdmin == true,
+                        isAdmin = isAdmin,
                         onDeleteClick = {
-                            // Gọi hàm xóa từ ViewModel
                             activityViewModel.deleteActivity(activity.id)
+                        },
+                        onCardClick = {
+                            // Điều hướng đến màn hình chi tiết, truyền ID của hoạt động
+                            nav.navigate("${Routes.ACTIVITY_DETAIL_SCREEN}/${activity.id}")
                         }
                     )
                 }
@@ -105,48 +112,54 @@ fun ActivitiesScreen(
         }
     }
 }
-
-@Composable
-fun ActivityCard(
-    activity: Activity,
-    isAdmin: Boolean, // Thêm biến để biết có phải admin không
-    onDeleteClick: () -> Unit // Thêm callback để xử lý khi bấm nút xóa
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+    @Composable
+    fun ActivityCard(
+        activity: Activity,
+        isAdmin: Boolean,
+        onDeleteClick: () -> Unit,
+        onCardClick: () -> Unit // <<== THÊM HÀNH ĐỘNG BẤM VÀO CARD
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Card(
+            // *** LÀM CHO NGUYÊN CÁI CARD CÓ THỂ BẤM VÀO ĐƯỢC ***
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onCardClick),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), // Dùng màu từ theme
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            // Phần nội dung (chiếm hết không gian còn lại)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = activity.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.secondary
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Phần nội dung (chiếm hết không gian còn lại)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = activity.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface // Dùng màu từ theme
+                        )
                     )
-                )
-                Spacer(Modifier.height(4.dp))
-                Text("🗓️ ${activity.date}", style = MaterialTheme.typography.bodyMedium)
-                Text("📍 ${activity.location}", style = MaterialTheme.typography.bodyMedium)
-            }
+                    Spacer(Modifier.height(4.dp))
+                    // Dùng màu phụ cho các dòng text này
+                    Text("🗓️ ${activity.date}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("📍 ${activity.location}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
 
-            // --- PHÂN QUYỀN NÚT XÓA ---
-            // Chỉ hiển thị nút xóa nếu là admin
-            if (isAdmin) {
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Xóa hoạt động",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                // Chỉ hiển thị nút xóa nếu là admin
+                if (isAdmin) {
+                    // Đặt IconButton trong một Box để nó không ảnh hưởng đến vị trí của text
+                    Box(modifier = Modifier.padding(start = 8.dp)) {
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Xóa hoạt động",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-}

@@ -29,8 +29,19 @@ object Routes {
     const val CREATE_ADOPT_POST_SCREEN = "create_adopt_post_screen"
     const val PET_DETAIL_ROUTE_WITH_ARG = "pet_detail_screen/{id}"
     const val DONATE_BANK_SCREEN = "donate_bank_screen"
+
+    // --- PHẦN HOẠT ĐỘNG (ACTIVITIES) ---
     const val ACTIVITIES_LIST_SCREEN = "activities_list_screen"
     const val CREATE_ACTIVITY_SCREEN = "create_activity_screen"
+
+    const val EDIT_ACTIVITY_SCREEN = "edit_activity_screen"
+    const val EDIT_ACTIVITY_WITH_ARG = "$EDIT_ACTIVITY_SCREEN/{activityId}"
+
+
+    //
+    const val ACTIVITY_DETAIL_SCREEN = "activity_detail_screen"
+    const val ACTIVITY_DETAIL_WITH_ARG = "$ACTIVITY_DETAIL_SCREEN/{activityId}"
+
     const val SETTINGS_SCREEN = "settings_screen"
     const val NOTIFICATION_SCREEN = "notification_screen"
     const val CHAT = "chat_screen/{threadId}"

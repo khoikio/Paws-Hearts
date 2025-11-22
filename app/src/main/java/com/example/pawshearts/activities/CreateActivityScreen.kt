@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.data.model.Activity
@@ -27,14 +28,48 @@ import com.example.pawshearts.data.model.Activity
 @Composable
 fun CreateActivityScreen(
     nav: NavHostController,
-    activityViewModel: ActivityViewModel
+    activityViewModel: ActivityViewModel,
+    activityId: String?
 ) {
+    // Xác định chế độ: Nếu có activityId thì là Sửa, không thì là Tạo
+    val isEditMode = activityId != null
     // 1. T VỚI M TẠO STATE (BIẾN NHỚ) CHO CÁI FORM
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var contactLink by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
+
+    // Lấy chi tiết hoạt động cần sửa từ ViewModel
+    val activityToEdit by activityViewModel.selectedActivity.collectAsStateWithLifecycle()
+
+    // 2. XỬ LÝ LOGIC CHO CHẾ ĐỘ SỬA
+    // Lấy dữ liệu về nếu là chế độ Sửa
+    LaunchedEffect(activityId) {
+        if (isEditMode) {
+            activityViewModel.getActivityById(activityId!!)
+        }
+    }
+
+    // Tự động điền dữ liệu vào form khi có dữ liệu để sửa
+    LaunchedEffect(activityToEdit) {
+        if (isEditMode && activityToEdit != null) {
+            title = activityToEdit!!.title
+            description = activityToEdit!!.description
+            date = activityToEdit!!.date
+            location = activityToEdit!!.location
+            contactLink = activityToEdit!!.contactLink
+            imageUrl = activityToEdit!!.imageUrl
+        }
+    }
+
+    // Dọn dẹp state trong ViewModel khi thoát khỏi màn hình
+    DisposableEffect(Unit) {
+        onDispose {
+            activityViewModel.clearSelectedActivity()
+        }
+    }
 
     // 2. T VỚI M "NGHE" KẾT QUẢ ĐĂNG BÀI TỪ VM
     val createResult by activityViewModel.createResult.collectAsState()
@@ -62,7 +97,7 @@ fun CreateActivityScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tạo Hoạt động Mới (Admin)") },
+                title = { Text(if (isEditMode) "Chỉnh sửa Hoạt động" else "Tạo Hoạt động Mới") },
                 navigationIcon = {
                     IconButton(onClick = { nav.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
@@ -75,21 +110,27 @@ fun CreateActivityScreen(
                             if (!showLoading && title.isNotBlank() && description.isNotBlank()) {
                                 // M GỌI HÀM VM M ƠI KKK
                                 val newActivity = Activity(
+                                    id = if (isEditMode) activityId!! else "", // Giữ lại ID cũ nếu là chế độ Sửa
                                     title = title,
                                     description = description,
                                     date = date,
                                     location = location,
-                                    contactLink = contactLink
+                                    contactLink = contactLink,
+                                            imageUrl = imageUrl
                                 )
-                                activityViewModel.createActivity(newActivity)
+                                // Gọi hàm tương ứng với chế độ
+                                if (isEditMode) {
+                                    activityViewModel.updateActivity(newActivity)
+                                } else {
+                                    activityViewModel.createActivity(newActivity)
+                                }
                             }
                         },
                         enabled = !showLoading && title.isNotBlank() // Đang tải/thiếu title thì M "mờ" nút đi
                     ) {
                         Text(
-                            "TẠO",
+                            text = if (isEditMode) "LƯU" else "TẠO",
                             fontWeight = FontWeight.Bold,
-                            // DÙNG MÀU TỪ THEME
                             color = if (showLoading || title.isBlank()) Color.Gray else MaterialTheme.colorScheme.primary
                         )
                     }
@@ -106,7 +147,7 @@ fun CreateActivityScreen(
     ) { paddingValues ->
 
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            // 4. CÁI FORM KKK
+            // 4. CÁI FORM Nhập liệu
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -149,6 +190,12 @@ fun CreateActivityScreen(
                     label = "Link Đăng ký/Liên hệ",
                     keyboardType = KeyboardType.Uri
                 )
+                FormTextField(
+                    value = imageUrl,
+                    onValueChange = { imageUrl = it },
+                    label = "URL Ảnh bìa của hoạt động",
+                    keyboardType = KeyboardType.Uri
+                )
             }
 
             // M SỬ DỤNG LẠI CÁI LOADING VÀ DIALOG T VỚI M CODE LÚC NÃY KKK
@@ -171,8 +218,8 @@ fun CreateActivityScreen(
                     onDismissRequest = { showErrorDialog = null },
                     // DÙNG MÀU TỪ THEME
                     icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                    title = { Text("Lỗi vcl M ơi :@") },
-                    text = { Text(showErrorDialog ?: "Lỗi đéo biết KKK") },
+                    title = { Text("Đã có lỗi xảy ra") },
+                    text = { Text(showErrorDialog ?: "Lỗi khôngxacscs định") },
                     confirmButton = {
                         TextButton(onClick = { showErrorDialog = null }) { Text("OK M") }
                     }
@@ -181,6 +228,7 @@ fun CreateActivityScreen(
         }
     }
 }
+// Composable phụ cho các ô nhập liệu
 
 @Composable
 fun FormTextField(
