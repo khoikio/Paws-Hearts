@@ -47,20 +47,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pawshearts.messages.data.local.UserSearchResult
 import com.example.pawshearts.messages.model.ConversationUiModel
+import com.example.pawshearts.messages.model.createThreadId
 import com.example.pawshearts.messages.presentation.MessagesViewModel
 import com.example.pawshearts.messages.ui.components.ChatCardBackground
 import com.example.pawshearts.messages.ui.components.ChatOrange
 import com.example.pawshearts.messages.ui.components.ChatOuterBackground
 import com.example.pawshearts.messages.ui.components.ChatSearchBg
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun MessagesScreen(
     onBackClick: () -> Unit,
     onThreadClick: (String) -> Unit,
     viewModel: MessagesViewModel = viewModel()
-
 ) {
+    // Lấy các state từ ViewModel
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
     val conversations by viewModel.conversations.collectAsState()
 
     Box(
@@ -78,6 +83,7 @@ fun MessagesScreen(
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
+            // Cấu trúc đúng: Toàn bộ nội dung màn hình nằm trong Column này
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -90,16 +96,38 @@ fun MessagesScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                SearchConversationField()
+                SearchConversationField(
+                    query = searchQuery,
+                    onQueryChanged = { viewModel.onSearchQueryChanged(it) }
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Cấu trúc đúng: Logic danh sách nằm trong LazyColumn
                 LazyColumn {
-                    items(conversations) { conversation ->
-                        ConversationRow(
-                            conversation = conversation,
-                            onClick = { onThreadClick(conversation.id) }
-                        )
+                    if (searchQuery.isBlank()) {
+                        // Khi không tìm kiếm, hiển thị danh sách hội thoại
+                        items(conversations) { conversation ->
+                            ConversationRow(
+                                conversation = conversation,
+                                onClick = { onThreadClick(conversation.id) }
+                            )
+                        }
+                    } else {
+                        // Khi đang tìm kiếm, hiển thị kết quả
+                        items(searchResults) { user ->
+                            val me = FirebaseAuth.getInstance().currentUser
+                            UserSearchResultRow(
+                                user = user,
+                                onClick = {
+                                    // Khi click vào người dùng, tạo threadId và điều hướng
+                                    if (me != null) {
+                                        val threadId = createThreadId(me.uid, user.id)
+                                        onThreadClick(threadId)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -147,12 +175,13 @@ private fun MessagesHeader(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchConversationField() {
-    var query = remember { mutableStateOf("") }
-
+private fun SearchConversationField(
+    query: String,
+    onQueryChanged: (String) -> Unit
+) {
     OutlinedTextField(
-        value = query.value,
-        onValueChange = { query.value = it }, // TODO: filter list sau
+        value = query,
+        onValueChange = onQueryChanged,
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
@@ -189,6 +218,52 @@ private fun SearchConversationField() {
             disabledIndicatorColor = Color.Transparent
         )
     )
+}
+
+// THÊM MỚI COMPOSABLE NÀY ĐỂ HIỂN THỊ KẾT QUẢ TÌM KIẾM
+@Composable
+private fun UserSearchResultRow(
+    user: UserSearchResult,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp), // Thêm padding ngang
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar (sử dụng avatar mặc định nếu không có)
+        Image(
+            // painter = painterResource(id = user.avatarUrl ?: R.drawable.avatardefault),
+            painter = painterResource(id = com.example.pawshearts.R.drawable.avatardefault), // Dùng tạm
+            contentDescription = user.name,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = user.name,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = user.email,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
 }
 
 @Composable

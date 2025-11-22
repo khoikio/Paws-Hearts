@@ -24,3 +24,11 @@ data class MessageEntity(
     val sentAt: Long,           // epoch millis
     val status: MessageStatus
 )
+
+data class UserSearchResult(
+    val id: String,
+    val name: String,
+    val email: String,
+    // Thêm avatar nếu có
+    val avatarUrl: String? = null
+)
