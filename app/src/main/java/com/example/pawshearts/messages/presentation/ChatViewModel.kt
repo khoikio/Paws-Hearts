@@ -73,28 +73,37 @@ class ChatViewModel(
     private fun fetchPartnerName(threadId: String) {
         viewModelScope.launch {
             try {
-                // B1: Lấy thông tin cuộc trò chuyện để tìm ID người kia
                 val threadSnap = firestore.collection("threads").document(threadId).get().await()
-                val participantIds = threadSnap.get("participantIds") as? List<String> ?: emptyList()
+                var partnerId: String? = null
 
-                // Tìm ID không phải của mình
-                val partnerId = participantIds.firstOrNull { it != currentUserId }
+                if (threadSnap.exists()) {
+                    // --- LOGIC CŨ (Dành cho cuộc trò chuyện đã tồn tại) ---
+                    // Nếu document thread đã có, lấy partnerId từ danh sách participantIds
+                    val participantIds = threadSnap.get("participantIds") as? List<String> ?: emptyList()
+                    partnerId = participantIds.firstOrNull { it != currentUserId }
+                } else {
+                    // --- LOGIC MỚI (Dành cho cuộc trò chuyện CHƯA tồn tại) ---
+                    // Nếu chưa có, suy luận partnerId từ chính threadId (định dạng "id1_id2")
+                    val ids = threadId.split("_")
+                    partnerId = ids.firstOrNull { it != currentUserId }
+                }
 
+                // --- LOGIC CHUNG (Sau khi đã có partnerId) ---
                 if (partnerId != null) {
-                    // B2: Lấy thông tin User từ ID đó
+                    // Lấy thông tin User từ partnerId đã tìm được
                     val userSnap = firestore.collection("users").document(partnerId).get().await()
-
-                    // ⚠️ QUAN TRỌNG: Lấy đúng trường "username" như bạn đã sửa lúc nãy
                     val name = userSnap.getString("username") ?: "Người dùng ẩn danh"
                     _headerTitle.value = name
                 } else {
+                    // Trường hợp dự phòng nếu không thể tìm thấy partnerId
                     _headerTitle.value = "Cuộc trò chuyện"
                 }
             } catch (e: Exception) {
-                _headerTitle.value = "Cuộc trò chuyện"
+                _headerTitle.value = "Lỗi tải tên"
             }
         }
     }
+
 
     fun sendMessage(text: String) {
         val threadId = currentThreadId ?: return

@@ -3,6 +3,7 @@ package com.example.pawshearts.messages.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.R
+import com.example.pawshearts.messages.data.local.UserSearchResult
 import com.example.pawshearts.messages.model.ConversationUiModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,21 +12,115 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await // ⚠️ Cần import cái này để dùng await()
+
+
+
 
 class MessagesViewModel : ViewModel() {
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
+    private val me = auth.currentUser
+    // --- State cho danh sách hội thoại (Giữ nguyên) ---
     private val _conversations = MutableStateFlow<List<ConversationUiModel>>(emptyList())
     val conversations: StateFlow<List<ConversationUiModel>> = _conversations.asStateFlow()
-
     private var listenerRegistration: ListenerRegistration? = null
+
+
+    // --- State cho chuỗi tìm kiếm ---
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // --- State cho kết quả tìm kiếm ---
+    private val _searchResults = MutableStateFlow<List<UserSearchResult>>(emptyList())
+    val searchResults: StateFlow<List<UserSearchResult>> = _searchResults.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         observeConversationsForCurrentUser()
     }
+
+    /**
+     * Được gọi từ UI mỗi khi người dùng thay đổi nội dung ô tìm kiếm.
+     */
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+        searchJob?.cancel() // Hủy bỏ job tìm kiếm cũ nếu có
+
+        if (query.isBlank()) {
+            _searchResults.value = emptyList() // Xóa kết quả nếu query trống
+            return
+        }
+
+        // Debounce: Chờ 500ms sau khi người dùng ngừng gõ rồi mới tìm kiếm
+        // để tránh gọi Firebase liên tục.
+        searchJob = viewModelScope.launch {
+            delay(500L)
+            performSearch(query)
+        }
+    }
+
+    private suspend fun performSearch(query: String) {
+        if (me == null) return
+
+        try {
+            // Firestore không hỗ trợ tìm kiếm "contains", nhưng hỗ trợ "starts with".
+            // Ký tự \uf8ff là một ký tự Unicode rất lớn, giúp tạo ra một khoảng để
+            // tìm tất cả các chuỗi bắt đầu bằng `query`.
+            val endQuery = query + "\uf8ff"
+
+            // Tìm theo email
+            val emailQuery = firestore.collection("users")
+                .orderBy("email")
+                .startAt(query)
+                .endAt(endQuery)
+                .get()
+                .await()
+
+            // Tìm theo username (tên hiển thị)
+            val usernameQuery = firestore.collection("users")
+                .orderBy("username")
+                .startAt(query)
+                .endAt(endQuery)
+                .get()
+                .await()
+
+            val combinedResults = mutableMapOf<String, UserSearchResult>()
+
+            // Gộp kết quả và loại bỏ trùng lặp (nếu có)
+            val allDocs = emailQuery.documents + usernameQuery.documents
+            for (doc in allDocs) {
+                // Bỏ qua chính mình trong kết quả tìm kiếm
+                if (doc.id == me.uid) continue
+
+                val user = UserSearchResult(
+                    id = doc.id,
+                    name = doc.getString("username") ?: "Unknown User",
+                    email = doc.getString("email") ?: "no-email@example.com"
+                    // Lấy avatarUrl nếu có
+                )
+                combinedResults[user.id] = user
+            }
+
+            _searchResults.value = combinedResults.values.toList()
+        } catch (e: Exception) {
+            // Xử lý lỗi, có thể hiển thị một thông báo
+            _searchResults.value = emptyList()
+        }
+    }
+
+    // === KẾT THÚC PHẦN THÊM MỚI ===
+
+    init {
+        observeConversationsForCurrentUser()
+    }
+
+
+
 
     private fun observeConversationsForCurrentUser() {
         val me = auth.currentUser ?: return
