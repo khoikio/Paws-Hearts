@@ -26,22 +26,23 @@ fun SplashScreen(navController: NavHostController) {
     val context = LocalContext.current.applicationContext as Application
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
-    // (1) Dùng LaunchedEffect chỉ chạy MỘT LẦN DUY NHẤT khi màn hình được tạo
-    LaunchedEffect(key1 = true) {
-        // (2) Thêm một độ trễ nhỏ để user thấy logo (cái này hay, giữ lại)
-        delay(2000) // Tăng lên 2s cho chắc ăn KKK
+    LaunchedEffect(Unit) {
+        delay(2000)
 
-        // (3) Lấy giá trị CUỐI CÙNG của trạng thái đăng nhập
-        val isLoggedIn = authViewModel.isUserLoggedIn.value
+        val isLoggedIn = try {
+            authViewModel.isUserLoggedIn.value
+        } catch (e: Exception) {
+            android.util.Log.e("SplashScreen", "🔥 Lỗi khi lấy trạng thái đăng nhập", e)
+            false
+        }
 
-        // (4) Dựa vào giá trị cuối cùng đó để ra quyết định
+        android.util.Log.d("SplashScreen", "✅ isLoggedIn = $isLoggedIn")
+
         if (isLoggedIn) {
-            // Nếu đã đăng nhập, đi thẳng vào HOME
             navController.navigate(Routes.HOME) {
                 popUpTo(Routes.SPLASH_SCREEN) { inclusive = true }
             }
         } else {
-            // Nếu chưa, đi đến màn hình LOGIN
             navController.navigate(Routes.LOGIN_SCREEN) {
                 popUpTo(Routes.SPLASH_SCREEN) { inclusive = true }
             }

@@ -1,17 +1,23 @@
 package com.example.pawshearts.notification
 
 import com.google.firebase.Timestamp
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-// ĐÂY LÀ "BẢN THIẾT KẾ" CHÍNH THỨC, NẰM CÙNG NHÀ VỚI CÁC FILE KHÁC CỦA TÍNH NĂNG
+@Entity(tableName = "notification")
 data class Notification(
-    val id: String = "",
-    val userId: String = "", // Người nhận thông báo
-    val actorId: String? = null, // Người thực hiện hành động
+    @PrimaryKey val id: String = "",
+    val userId: String = "",
+    val actorId: String? = null,
     val actorName: String? = null,
     val actorAvatarUrl: String? = null,
-    val type: String = "", // "LIKE", "COMMENT", "FOLLOW", "NEW_POST"
+    val type: String = "",
     val message: String = "",
-    val postId: String? = null, // ID bài viết liên quan (nếu có)
+    val targetType: String? = null,
+    val targetId: String? = null,
+    val isPending: Boolean = false,
     val isRead: Boolean = false,
-    val createdAt: Timestamp? = null
+    val createdAt: Timestamp = Timestamp.now(),
+    val readAt: Timestamp? = null,
+    val extraData: Map<String, Any>? = null
 )

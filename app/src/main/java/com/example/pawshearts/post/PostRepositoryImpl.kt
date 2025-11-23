@@ -210,4 +210,8 @@ class PostRepositoryImpl(
             awaitClose { listener.remove() }
         }
     }
+    override suspend fun getPostOwnerId(postId: String): String? {
+        val doc = firestore.collection("posts").document(postId).get().await()
+        return doc.getString("userId")
+    }
 }

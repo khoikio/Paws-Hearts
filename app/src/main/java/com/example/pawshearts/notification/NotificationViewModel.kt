@@ -1,53 +1,57 @@
 package com.example.pawshearts.notification
 
-import android.util.Log
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class NotificationViewModel(
-    private val repository: NotificationRepository,
-) : ViewModel(){
+    app: Application,
+    private val repository: NotificationRepository
+) : AndroidViewModel(app) {
 
+    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
+    val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
-    fun getNotifications(userId: String): StateFlow<List<Notification>> {
-        return repository.getNotifications(userId)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
-    }
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
 
-    fun deleteNotification(notificationId: String) {
+    fun loadNotifications(userId: String) {
         viewModelScope.launch {
-            repository.deleteNotification(notificationId)
+            _isLoading.value = true
+            repository.getNotifications(userId)
+                .catch { e ->
+                    _error.value = e.message
+                    _isLoading.value = false
+                }
+                .collect { list ->
+                    _notifications.value = list
+                    _isLoading.value = false
+                }
         }
     }
 
-    // THÊM HÀM MỚI
-    fun clearAllNotifications(userId: String) {
-        viewModelScope.launch {
-            repository.clearAllNotifications(userId)
-        }
-    }
-    fun sendTest() {
+    fun deleteNotification(id: String) {
         viewModelScope.launch {
             try {
-                val store = repository as? NotificationFirebaseStore
-                store?.sendTestLikeNotification(
-                    receiverId = "UID_CUA_M",
-                    actorId = "UID_GAY_RA_SU_KIEN"
-                )
+                repository.deleteNotification(id)
             } catch (e: Exception) {
-                Log.e("NOTI", "Lỗi test thông báo: ${e.message}", e)
+                _error.value = e.message
             }
         }
     }
 
-
+    fun clearAll(userId: String) {
+        viewModelScope.launch {
+            try {
+                repository.clearAllNotifications(userId)
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
 }

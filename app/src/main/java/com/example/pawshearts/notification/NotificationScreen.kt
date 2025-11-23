@@ -1,104 +1,129 @@
 package com.example.pawshearts.notification
 
-import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
-    userId: String
+    navController: NavHostController,
+    viewModel: NotificationViewModel
 ) {
-    val context = LocalContext.current.applicationContext as Application
-    val viewModel: NotificationViewModel = viewModel(factory = NotificationViewModelFactory(context))
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-    val notifications by viewModel.getNotifications(userId).collectAsState()
+    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+
+    // Gọi load khi vào màn
+    LaunchedEffect(userId) {
+        viewModel.loadNotifications(userId)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Thông báo") },
+                title = { Text("Thông báo 🐾", fontWeight = FontWeight.Bold) },
                 actions = {
-                    if (notifications.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clearAllNotifications(userId) }) {
-                            Icon(Icons.Default.DeleteSweep, contentDescription = "Xóa tất cả")
-                        }
+                    IconButton(onClick = { viewModel.clearAll(userId) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Xóa tất cả")
                     }
                 }
             )
         }
-    ) { paddingValues ->
-        LazyColumn(
+    ) { padding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(padding)
         ) {
-            items(notifications) { notification ->
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                error != null -> {
+                    Text(
+                        text = "Lỗi: $error",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                notifications.isEmpty() -> {
+                    Text(
+                        text = "Không có thông báo nào ",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp)
                     ) {
-                        // THÊM AVATAR
-                        AsyncImage(
-                            model = notification.actorAvatarUrl,
-                            contentDescription = "Avatar",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // NỐI TÊN VÀ NỘI DUNG
-                        val fullMessage = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(notification.actorName ?: "Ai đó")
-                            }
-                            append(" ")
-                            append(notification.message)
-                        }
-                        Text(
-                            text = fullMessage,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(onClick = { viewModel.deleteNotification(notification.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Xóa")
-                        }
-                        Button(onClick = { viewModel.sendTest() }) {
-                            Text("Test noti")
+                        items(
+                            items = notifications,
+                            key = { it.id.ifEmpty { it.hashCode().toString() } } // 👈 tránh trùng key rỗng
+                        ) { notification ->
+                            NotificationItem(
+                                noti = notification,
+                                onDelete = { viewModel.deleteNotification(notification.id) }
+                            )
                         }
                     }
+
+
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationItem(
+    noti: Notification,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = noti.message,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Loại: ${noti.type}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Xóa thông báo")
             }
         }
     }
