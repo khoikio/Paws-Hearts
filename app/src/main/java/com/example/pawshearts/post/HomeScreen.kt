@@ -60,6 +60,8 @@ fun HomeScreen(nav: NavHostController) {
     var searchText by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
+        Log.d("DEBUG_HOME", "🔥 HomeScreen đã load thành công")
+
         postViewModel.fetchAllPosts()
     }
 

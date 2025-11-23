@@ -20,4 +20,6 @@ interface  PostRepository{
     suspend fun addComment(comment: Comment): AuthResult<Unit>
     suspend fun uploadImage(uri: Uri): AuthResult<String>
     fun getPostById(postId: String): Flow<Post?>
+    suspend fun getPostOwnerId(postId: String): String?
+
 }

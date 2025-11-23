@@ -1,137 +1,158 @@
 package com.example.pawshearts.post
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
+import com.example.pawshearts.notification.NotificationFirebaseSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class PostViewModel(
-    private val repository: PostRepository
+    private val repository: PostRepository,
+    private val notificationSource: NotificationFirebaseSource
 ) : ViewModel() {
 
-    // 1. State để báo cho UI biết là "Đang đăng..." hay "Lỗi"
     private val _createPostState = MutableStateFlow<AuthResult<Unit>?>(null)
     val createPostState: StateFlow<AuthResult<Unit>?> = _createPostState.asStateFlow()
-    // --- THÊM CỤM NÀY ĐỂ GIỮ LIST BÀI ĐĂNG ---
+
     private val _myPosts = MutableStateFlow<List<Post>>(emptyList())
     val myPosts: StateFlow<List<Post>> = _myPosts.asStateFlow()
-    // --- THÊM CỤM NÀY CHO HOME SCREEN ---
+
     private val _allPosts = MutableStateFlow<List<Post>>(emptyList())
     val allPosts: StateFlow<List<Post>> = _allPosts.asStateFlow()
-    //Ham Comment
+
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     val comments: StateFlow<List<Comment>> = _comments.asStateFlow()
 
-    // 2. Ô nhớ để báo state ĐĂNG cmt (Loading/Error/Success)
     private val _addCommentState = MutableStateFlow<AuthResult<Unit>?>(null)
     val addCommentState: StateFlow<AuthResult<Unit>?> = _addCommentState.asStateFlow()
-    // --- THÊM HÀM NÀY ĐỂ BẮT ĐẦU TẢI BÀI ---
+
     private val _selectedPost = MutableStateFlow<Post?>(null)
     val selectedPost: StateFlow<Post?> = _selectedPost.asStateFlow()
-    fun fetchMyPosts(userId: String) {
-        //  check để nó ko gọi hàm này 1000 lần
-        if (userId.isBlank()) return
 
+    fun fetchMyPosts(userId: String) {
+        if (userId.isBlank()) return
         viewModelScope.launch {
             repository.getPostsByUserId(userId).collect { posts ->
-                _myPosts.value = posts // Cập nhật list
+                _myPosts.value = posts
             }
         }
     }
-    // ham nay cho home
+
     fun fetchAllPosts() {
         viewModelScope.launch {
             repository.fetchAllPostsFlow().collect { posts ->
-                _allPosts.value = posts // Cập nhật list TẤT CẢ sang home
+                Log.d("DEBUG_POSTS", "📸 Fetched ${posts.size} posts from Firestore")
+
+                _allPosts.value = posts
             }
         }
     }
+
     fun createPost(
-        // Thông tin thằng đăng (M lấy từ AuthViewModel/UserData)
         userId: String,
         username: String?,
         userAvatarUrl: String?,
-
-        // Thông tin con pet (M lấy từ mấy cái OutlinedTextField)
         petName: String,
         petBreed: String?,
         petAge: Int?,
         petGender: String?,
         location: String?,
         weightKg: Double?,
-        imageUri: Uri?, // <-- T SỬA String THÀNH Uri?
+        imageUri: Uri?,
         description: String
     ) {
         viewModelScope.launch {
-            // 1. Báo là "Đang tải"
             _createPostState.value = AuthResult.Loading
 
-            // 2. XỬ LÝ ẢNH (Upload nếu có)
-            val imageUrl: String
-            if (imageUri != null) {
-                // Nếu M có chọn ảnh -> T up ảnh
-                val uploadResult = repository.uploadImage(imageUri)
-
-                if (uploadResult is AuthResult.Success) {
-                    imageUrl = uploadResult.data // <-- LẤY LINK XỊN KKK
-                } else {
-                    // Up ảnh lỗi -> Báo lỗi KKK
-                    _createPostState.value = AuthResult.Error("Lỗi up ảnh: ${(uploadResult as AuthResult.Error).message}")
-                    return@launch // Dừng
+            val imageUrl = if (imageUri != null) {
+                when (val uploadResult = repository.uploadImage(imageUri)) {
+                    is AuthResult.Success -> uploadResult.data
+                    is AuthResult.Error -> {
+                        _createPostState.value = AuthResult.Error("Lỗi upload ảnh: ${uploadResult.message}")
+                        return@launch
+                    }
+                    else -> ""
                 }
-            } else {
-                // Nếu M đéo chọn ảnh
-                imageUrl = "" // Link rỗng
-            }
+            } else ""
 
-            // 3. Tạo object Post xịn (với link ảnh xịn)
             val newPost = Post(
                 id = "",
                 userId = userId,
-                userName = username ?: "", // Sửa lại cho khớp
-                userAvatarUrl = userAvatarUrl, // Sửa lại cho khớp
-                createdAt = null, // Để null cho Firebase tự điền
+                userName = username ?: "",
+                userAvatarUrl = userAvatarUrl,
+                createdAt = null,
                 petName = petName,
                 petBreed = petBreed,
                 petAge = petAge,
                 petGender = petGender,
                 location = location,
                 weightKg = weightKg,
-                imageUrl = imageUrl, // <-- LINK XỊN (hoặc rỗng)
+                imageUrl = imageUrl,
                 description = description
-                // Mấy cái likes, commentCount nó tự = 0
             )
 
-            // 4. Quăng cho Repository (để lưu vô Firestore)
             val result = repository.createPost(newPost)
-
-            // 5. Báo kết quả
             _createPostState.value = result
-        }
-    }
-    // ham tim, like'
-    fun toggleLike(postId: String, userId: String){
-        viewModelScope.launch {
-            repository.toggleLike(postId, userId)
-        }
-    }
-    // ham comment
-    fun fetchComments(postId: String) {
-        if (postId.isBlank()) return
-        viewModelScope.launch {
-            repository.getCommentsFlow(postId).collect { commentList ->
-                _comments.value = commentList // Cập nhật list
+
+            // ✅ Gửi thông báo bài đăng mới cho tất cả người dùng (trừ chính mình)
+            if (result is AuthResult.Success) {
+                val allUsers = FirebaseFirestore.getInstance().collection("users").get().await()
+                allUsers.documents.forEach { doc ->
+                    val receiverId = doc.id
+                    if (receiverId != userId) {
+                        notificationSource.sendPostNotification(
+                            receiverId = receiverId,
+                            actorId = userId,
+                            actorName = username ?: "Người dùng",
+                            actorAvatarUrl = userAvatarUrl ?: "",
+                            postId = newPost.id
+                        )
+                    }
+                }
             }
         }
     }
 
-    // ==========================================================
-    // HÀM NÀY ĐÃ ĐƯỢC SỬA LẠI HOÀN CHỈNH
-    // ==========================================================
+    fun toggleLike(postId: String, userId: String) {
+        viewModelScope.launch {
+            repository.toggleLike(postId, userId)
+            val postOwnerId = repository.getPostOwnerId(postId)
+
+            if (postOwnerId != null && postOwnerId != userId) {
+                val userDoc = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                val username = userDoc.getString("userName") ?: "Người dùng"
+                val userAvatarUrl = userDoc.getString("userAvatarUrl") ?: ""
+
+                notificationSource.sendLikeNotification(
+                    receiverId = postOwnerId,
+                    actorId = userId,
+                    actorName = username,
+                    actorAvatarUrl = userAvatarUrl,
+                    postId = postId
+                )
+            }
+        }
+    }
+
+    fun fetchComments(postId: String) {
+        if (postId.isBlank()) return
+        viewModelScope.launch {
+            repository.getCommentsFlow(postId).collect { _comments.value = it }
+        }
+    }
+
     fun addComment(
         postId: String,
         userId: String,
@@ -140,47 +161,51 @@ class PostViewModel(
         text: String
     ) {
         viewModelScope.launch {
-            // 1. Check xem M gõ chữ chưa KKK
             if (text.isBlank()) {
-                _addCommentState.value = AuthResult.Error("bạn chưa có comment")
+                _addCommentState.value = AuthResult.Error("Bạn chưa nhập nội dung bình luận!")
                 return@launch
             }
 
-            // 2. Báo là "Đang gửi..."
             _addCommentState.value = AuthResult.Loading
 
-            // 3. Tạo object Comment (ĐÃ SỬA LẠI CHO ĐÚNG)
             val newComment = Comment(
                 postId = postId,
                 userId = userId,
-                username = username,      // <-- SỬA LẠI THÀNH "authorName"
-                userAvatarUrl = userAvatarUrl, // <-- SỬA LẠI THÀNH "authorAvatarUrl"
+                username = username,
+                userAvatarUrl = userAvatarUrl,
                 text = text,
-                createdAt = null // Để null cho Firebase tự điền
+                createdAt = null
             )
 
-            // 4. Quăng cho Repository
             val result = repository.addComment(newComment)
-
-            // 5. Báo kết quả
             _addCommentState.value = result
+
+            if (result is AuthResult.Success) {
+                val postOwnerId = repository.getPostOwnerId(postId)
+                if (postOwnerId != null && postOwnerId != userId) {
+                    notificationSource.sendCommentNotification(
+                        receiverId = postOwnerId,
+                        actorId = userId,
+                        actorName = username ?: "Người dùng",
+                        actorAvatarUrl = userAvatarUrl ?: "",
+                        postId = postId
+                    )
+                }
+            }
         }
     }
-    // ==========================================================
 
     fun fetchPostDetails(postId: String) {
         if (postId.isBlank()) return
         viewModelScope.launch {
-            repository.getPostById(postId).collect { post ->
-                _selectedPost.value = post // Cập nhật bài
-            }
+            repository.getPostById(postId).collect { _selectedPost.value = it }
         }
     }
+
     fun clearAddCommentState() {
         _addCommentState.value = null
     }
 
-    // Hàm này để M reset cái state (sau khi M báo lỗi/thành công)
     fun clearCreatePostState() {
         _createPostState.value = null
     }

@@ -42,6 +42,10 @@ import com.example.pawshearts.settings.*
 import com.example.pawshearts.ui.theme.Theme
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.activities.ActivitiesScreen // <<== NHỚ THÊM IMPORT NÀY NẾU CHƯA CÓ
+import com.example.pawshearts.notification.NotificationViewModel
+import com.example.pawshearts.notification.NotificationViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -70,6 +74,7 @@ private fun AppContent(themeViewModel: SettingViewModel) {
     val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
     LaunchedEffect(isLoggedIn) {
+        delay(200)
         val currentRoute = nav.currentBackStackEntry?.destination?.route
         if (isLoggedIn && (currentRoute == Routes.LOGIN_SCREEN || currentRoute == Routes.REGISTER_SCREEN)) {
             nav.navigate(Routes.HOME) {
@@ -215,8 +220,20 @@ private fun AppContent(themeViewModel: SettingViewModel) {
                 }
 
                 composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
-                composable(Routes.NOTIFICATION_SCREEN) { 
-                    if(currentUser != null) NotificationScreen(userId = currentUser.uid) 
+                composable(Routes.NOTIFICATION_SCREEN) {
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    if (currentUser != null) {
+                        // Tạo ViewModel đúng cách (qua Factory)
+                        val factory =
+                            NotificationViewModelFactory(LocalContext.current.applicationContext as Application)
+                        val viewModel: NotificationViewModel = viewModel(factory = factory)
+
+                        //  Truyền userId + viewModel vào UI
+                        NotificationScreen(
+                            navController  = nav,
+                            viewModel = viewModel
+                        )
+                    }
                 }
                 composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
 
