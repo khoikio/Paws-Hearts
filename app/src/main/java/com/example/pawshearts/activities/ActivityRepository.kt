@@ -13,4 +13,6 @@ interface ActivityRepository {
     suspend fun updateActivity(activity: Activity): AuthResult<Unit>
     suspend fun deleteActivity(activityId: String)
     suspend fun getActivityById(activityId: String): Activity?
+    suspend fun registerUserToActivity(activityId: String, userId: String, userName: String, userAvatar: String): AuthResult<Unit>
+    suspend fun checkIsRegistered(activityId: String, userId: String): Boolean
 }
