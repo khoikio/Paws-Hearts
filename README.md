@@ -17,7 +17,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    **Tên dự án:** Paws Hearts
    **Chủ đề:** Ứng dụng quản lý thú cưng và kết nối cộng đồng yêu thú cưng.
 
-2. Lý do lựa chọn dự án
+## 2. Lý do lựa chọn dự án
 
    Trong xã hội hiện đại, thú cưng ngày càng trở thành một phần quan trọng trong cuộc sống của nhiều người. Tuy nhiên, việc quản lý thông tin thú cưng, kết nối với cộng đồng những người yêu thú cưng, và tìm kiếm các dịch vụ liên quan đôi khi còn gặp nhiều khó khăn. Dự án Paws Hearts ra đời với mong muốn tạo ra một nền tảng toàn diện, giúp người dùng:
 
@@ -26,7 +26,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    - **Hỗ trợ và quyên góp:** Cung cấp tính năng quyên góp và các hoạt động hỗ trợ cho các tổ chức bảo vệ động vật hoặc những thú cưng gặp hoàn cảnh khó khăn.
    - **Tìm kiếm dịch vụ:** Dễ dàng tìm kiếm các dịch vụ thú cưng lân cận như phòng khám, cửa hàng thức ăn, hoặc dịch vụ trông giữ.
 
-3. Công nghệ sử dụng
+## 3. Công nghệ sử dụng
 
    Dự án Paws Hearts được xây dựng trên nền tảng các công nghệ hiện đại và mạnh mẽ để đảm bảo hiệu suất, khả năng mở rộng và trải nghiệm người dùng tốt nhất:
 
@@ -39,7 +39,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    - **Quản lý bất đồng bộ:** Kotlin Coroutines và Flow
    - **Tải và hiển thị hình ảnh:** Coil Compose
 
-4. Các tính năng chính
+## 4. Các tính năng chính
 
    Ứng dụng Paws Hearts cung cấp các tính năng đa dạng nhằm kết nối và hỗ trợ cộng đồng yêu thú cưng:
 
@@ -53,7 +53,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    - **Thông báo:** Nhận các thông báo quan trọng về hoạt động, tin nhắn mới và các sự kiện khác.
    - **Cài đặt ứng dụng:** Tùy chỉnh các thiết lập của ứng dụng theo sở thích cá nhân.
 
-5. Hướng dẫn sử dụng & Demo
+## 5. Hướng dẫn sử dụng & Demo
 
    Để cài đặt và chạy ứng dụng Paws Hearts trên môi trường phát triển của bạn, hãy làm theo các bước sau:
 
@@ -90,7 +90,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    - Tham gia vào các cuộc trò chuyện và gửi tin nhắn.
    - Thử nghiệm tính năng quyên góp.
 
-6. Nguyên tắc làm việc
+## 6. Nguyên tắc làm việc
 
    Dự án Paws Hearts tuân thủ các nguyên tắc phát triển phần mềm sau để đảm bảo chất lượng, khả năng bảo trì và hợp tác hiệu quả:
 
