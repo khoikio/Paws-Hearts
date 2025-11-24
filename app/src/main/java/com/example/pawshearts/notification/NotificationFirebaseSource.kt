@@ -67,7 +67,7 @@ class NotificationFirebaseSource(private val firestore: FirebaseFirestore) {
                 "actorName" to (actorName ?: "Người dùng"),
                 "actorAvatarUrl" to (actorAvatarUrl ?: ""),
                 "postId" to postId,
-                "type" to "post",
+                "type" to "NEW_POST",
                 "message" to "đã đăng một bài viết mới 🐾",
                 "createdAt" to Timestamp.now()
             )
@@ -89,7 +89,7 @@ class NotificationFirebaseSource(private val firestore: FirebaseFirestore) {
                 "actorName" to (actorName ?: "Người dùng"),
                 "actorAvatarUrl" to (actorAvatarUrl ?: ""),
                 "postId" to postId,
-                "type" to "like",
+                "type" to "LIKE",
                 "message" to "đã thích bài viết của bạn ❤️",
                 "createdAt" to Timestamp.now()
             )
@@ -111,7 +111,7 @@ class NotificationFirebaseSource(private val firestore: FirebaseFirestore) {
                 "actorName" to (actorName ?: "Người dùng"),
                 "actorAvatarUrl" to (actorAvatarUrl ?: ""),
                 "postId" to postId,
-                "type" to "comment",
+                "type" to "COMMENT",
                 "message" to "đã bình luận bài viết của bạn 💬",
                 "createdAt" to Timestamp.now()
             )

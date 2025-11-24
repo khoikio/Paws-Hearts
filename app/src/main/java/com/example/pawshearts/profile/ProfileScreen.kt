@@ -82,6 +82,7 @@ fun ProfileScreen(
                     Text(
                         if (isMyProfile) "Hồ sơ của tôi"
                         else userProfile?.username ?: "Hồ sơ"
+
                     )
                 },
                 navigationIcon = {
@@ -99,7 +100,9 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
