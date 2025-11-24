@@ -2,6 +2,7 @@ package com.example.pawshearts.adopt
 
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
+import com.example.pawshearts.image.CloudinaryService
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -9,9 +10,14 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import java.io.File
 
 class AdoptRepositoryImpl(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val cloudinaryService: CloudinaryService
 ) : AdoptRepository {
     private val ADOPTS_COLLECTION = "adopt_posts"
 
@@ -102,6 +108,24 @@ class AdoptRepositoryImpl(
                 .toObject(Adopt::class.java)
         } catch (e: Exception) {
             null
+        }
+    }
+    override suspend fun uploadImage(imageFile: File): AuthResult<String> {
+        return try {
+            val presetName = "paws-hearts"
+            val presetBody = RequestBody.create("text/plain".toMediaTypeOrNull(), presetName)
+            val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), imageFile)
+            val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+
+            val response = cloudinaryService.uploadImage(filePart, presetBody)
+
+            if (response.secure_url != null) {
+                AuthResult.Success(response.secure_url)
+            } else {
+                AuthResult.Error("Lỗi: Không nhận được link")
+            }
+        } catch (e: Exception) {
+            AuthResult.Error("Lỗi upload: ${e.message}")
         }
     }
 }

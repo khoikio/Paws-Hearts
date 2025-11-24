@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 import com.example.pawshearts.data.model.UserData
+import java.io.File
 
 interface AuthRepository {
     val currentUser: FirebaseUser?
@@ -14,13 +15,14 @@ interface AuthRepository {
     suspend fun fetchAndCacheUserProfile(userId: String) // Dùng cho bất kỳ user nào
     fun getUserProfileFlow(userId: String): Flow<UserData?>
     suspend fun logout()
-    suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<Unit>
     suspend fun updateUserPersonalInfo(phone: String, address: String)
     suspend fun updateProfile(newName: String, newEmail: String)
     suspend fun signInWithGoogle(idToken: String): AuthResult<FirebaseUser>
     suspend fun registerWithEmail(email: String, pass: String, fullName: String): AuthResult<FirebaseUser>
     suspend fun loginWithEmail(email: String, pass: String): AuthResult<FirebaseUser>
     suspend fun toggleFollow(targetUserId: String): AuthResult<Unit>
+    suspend fun uploadImage(imageFile: File): AuthResult<String>
+    suspend fun updateUserAvatar(userId: String, newUrl: String): AuthResult<Unit>
 
 
 }

@@ -16,6 +16,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.pawshearts.navmodel.Routes
 import kotlinx.coroutines.delay
+import java.io.File
 
 class AuthViewModel(
     private val repository: AuthRepository
@@ -70,12 +71,30 @@ class AuthViewModel(
         }
     }
 
-    fun updateAvatar(uri: Uri) {
+    fun updateAvatar(imageFile: File) {
         viewModelScope.launch {
             val userId = currentUser?.uid ?: return@launch
-            val result = repository.uploadAvatar(userId, uri)
-            if (result is AuthResult.Error) {
-                Log.e("AuthViewModel", "Lỗi up avatar: ${result.message}")
+
+            // BƯỚC 1: Bắn ảnh lên Cloudinary
+            // (Hàm uploadImage này mày phải viết trong AuthRepository nha)
+            val uploadResult = repository.uploadImage(imageFile)
+
+            when (uploadResult) {
+                is AuthResult.Success -> {
+                    val newLink = uploadResult.data
+                    Log.d("AuthViewModel", "✅ Cloudinary trả về link: $newLink")
+
+                    // BƯỚC 2: Lưu cái link đó vào Firestore
+                    // (Hàm này cập nhật trường 'profilePictureUrl' trong user)
+                    repository.updateUserAvatar(userId, newLink)
+
+                    // BƯỚC 3: Refresh lại data để UI cập nhật ảnh mới liền
+                    refreshUserProfile()
+                }
+                is AuthResult.Error -> {
+                    Log.e("AuthViewModel", "Lỗi up avatar: ${uploadResult.message}")
+                }
+                else -> {}
             }
         }
     }

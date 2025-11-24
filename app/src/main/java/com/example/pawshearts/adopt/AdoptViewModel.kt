@@ -1,6 +1,7 @@
 package com.example.pawshearts.adopt
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.auth.AuthResult
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.io.File
 
 class AdoptViewModel(
     private val repository: AdoptRepository
@@ -107,7 +109,7 @@ class AdoptViewModel(
         petLocation: String,
         description: String,
         adoptionRequirements: String,
-        imageUri: Uri?
+        imageFile: File? // <--- Nhận File nha (Không phải Uri)
     ) {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
@@ -122,16 +124,28 @@ class AdoptViewModel(
 
         viewModelScope.launch {
             try {
-                val newPostId = repository.getNewAdoptPostId()
+                // 1. UPLOAD ẢNH LÊN CLOUDINARY (Nếu có file)
                 var imageUrl: String? = null
 
-                if (imageUri != null) {
-                    val storageRef = FirebaseStorage.getInstance()
-                        .getReference("adopt_images/${newPostId}")
-                    imageUrl = storageRef.putFile(imageUri).await()
-                        .storage.downloadUrl.await().toString()
+                if (imageFile != null) {
+                    Log.d("AdoptVM", "📸 Đang upload ảnh Pet...")
+                    when (val uploadResult = repository.uploadImage(imageFile)) {
+                        is AuthResult.Success -> {
+                            imageUrl = uploadResult.data
+                            Log.d("AdoptVM", "✅ Upload xong: $imageUrl")
+                        }
+                        is AuthResult.Error -> {
+                            _postResult.value = AuthResult.Error("Lỗi ảnh: ${uploadResult.message}")
+                            return@launch
+                        }
+                        else -> {}
+                    }
                 }
 
+                // 2. TẠO ID MỚI (Logic cũ của mày)
+                val newPostId = repository.getNewAdoptPostId()
+
+                // 3. TẠO OBJECT ADOPT
                 val newAdoptPost = Adopt(
                     id = newPostId,
                     userId = userId,
@@ -144,10 +158,11 @@ class AdoptViewModel(
                     petGender = petGender,
                     petLocation = petLocation,
                     description = description,
-                    imageUrl = imageUrl,
+                    imageUrl = imageUrl, // <--- Link Cloudinary nằm ở đây
                     adoptionRequirements = adoptionRequirements
                 )
 
+                // 4. LƯU VÀO FIRESTORE
                 val result = repository.createAdoptPostWithId(newPostId, newAdoptPost)
                 _postResult.value = result
 
