@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import com.example.pawshearts.data.model.Activity // M nhớ import Activity
+import com.google.firebase.firestore.FieldValue
 
 
 // T GIẢ SỬ M SẼ 'inject' CÁI FIREBASE VÔ KKK
@@ -98,6 +99,45 @@ class ActivityRepositoryImpl(
         } catch (e: Exception) {
             Log.e("ActivityRepoImpl", "Cập nhật hoạt động THẤT BẠI", e)
             AuthResult.Error(e.message ?: "Lỗi không xác định")
+        }
+    }
+    override suspend fun registerUserToActivity(
+        activityId: String,
+        userId: String,
+        userName: String,
+        userAvatar: String
+    ): AuthResult<Unit> {
+        return try {
+            val registrationData = hashMapOf(
+                "userId" to userId,
+                "userName" to userName,
+                "userAvatar" to userAvatar,
+                "registeredAt" to FieldValue.serverTimestamp()
+            )
+
+            // Lưu vào sub-collection "registrations" bên trong cái activity đó
+            firestore.collection("activities").document(activityId)
+                .collection("registrations")
+                .document(userId) // Dùng userId làm ID document để không bị trùng
+                .set(registrationData)
+                .await()
+
+            AuthResult.Success(Unit)
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Lỗi đăng ký")
+        }
+    }
+
+    override suspend fun checkIsRegistered(activityId: String, userId: String): Boolean {
+        return try {
+            val doc = firestore.collection("activities").document(activityId)
+                .collection("registrations")
+                .document(userId)
+                .get()
+                .await()
+            doc.exists() // Trả về true nếu tìm thấy document
+        } catch (e: Exception) {
+            false
         }
     }
 }

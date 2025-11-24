@@ -2,6 +2,7 @@ package com.example.pawshearts.activities
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,17 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // <--- THÊM IMPORT NÀY
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-//import com.example.pawshearts.image.NetworkImage
 import com.example.pawshearts.navmodel.Routes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 
 
@@ -38,11 +39,36 @@ fun ActivityDetailScreen(
     // Lấy context để mở Intent
     val context = LocalContext.current
 
+    // Lấy thông tin user hiện tại
+    val currentUserData by authViewModel.userProfile.collectAsStateWithLifecycle()
+
+    // Lấy trạng thái đăng ký
+    val isRegistered by activityViewModel.isRegistered.collectAsStateWithLifecycle()
+    val registerResult by activityViewModel.registerState.collectAsStateWithLifecycle()
+    val activity by activityViewModel.selectedActivity.collectAsStateWithLifecycle()
+
     LaunchedEffect(activityId) {
         activityViewModel.getActivityById(activityId)
+        // Kiểm tra xem user này đăng ký chưa để hiện nút cho đúng
+        if (currentUserData != null) {
+            activityViewModel.checkRegistrationStatus(activityId, currentUserData!!.userId)
+        }
+    }
+    // Xử lý thông báo kết quả
+    LaunchedEffect(registerResult) {
+        when(registerResult) {
+            is AuthResult.Success -> {
+                Toast.makeText(context, "Đăng ký thành công! 🎉", Toast.LENGTH_SHORT).show()
+                activityViewModel.resetRegisterState()
+            }
+            is AuthResult.Error -> {
+                Toast.makeText(context, "Lỗi: ${(registerResult as AuthResult.Error).message}", Toast.LENGTH_SHORT).show()
+                activityViewModel.resetRegisterState()
+            }
+            else -> {}
+        }
     }
 
-    val activity by activityViewModel.selectedActivity.collectAsStateWithLifecycle()
 
     DisposableEffect(Unit) {
         onDispose {
@@ -59,20 +85,20 @@ fun ActivityDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
-                actions = {
-                    val currentActivityId = activity?.id
-                    // NÚT SỬA (Chỉ hiển thị nếu là Admin, logic quyền admin cần được thêm)
-                    if (currentActivityId != null) {
-                        TextButton(
-                            onClick = {
-                                // Tự ghép chuỗi route cho màn hình sửa
-                                nav.navigate("${Routes.EDIT_ACTIVITY_SCREEN}/$activityId")
-                            }
-                        ) {
-                            Text("Sửa")
-                        }
-                    }
-                }
+//                actions = {
+//                    val currentActivityId = activity?.id
+//                    // NÚT SỬA (Chỉ hiển thị nếu là Admin, logic quyền admin cần được thêm)
+//                    if (currentActivityId != null) {
+//                        TextButton(
+//                            onClick = {
+//                                // Tự ghép chuỗi route cho màn hình sửa
+//                                nav.navigate("${Routes.EDIT_ACTIVITY_SCREEN}/$activityId")
+//                            }
+//                        ) {
+//                            Text("Sửa")
+//                        }
+//                    }
+//                }
             )
         }
     ) { paddingValues ->
@@ -123,20 +149,32 @@ fun ActivityDetailScreen(
                     // Nút đăng ký (link)
                     Button(
                         onClick = {
-                            // LOGIC MỞ LINK BẰNG INTENT
-                            if (currentActivity.contactLink.isNotBlank()) {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(currentActivity.contactLink))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Xử lý lỗi nếu không tìm thấy app để mở link
-                                }
+                            if (currentUserData != null) {
+                                // Gọi hàm đăng ký
+                                activityViewModel.registerToActivity(
+                                    activityId = activityId,
+                                    userId = currentUserData!!.userId,
+                                    userName = currentUserData!!.username ?: "User",
+                                    userAvatar = currentUserData!!.profilePictureUrl ?: ""
+                                )
+                            } else {
+                                Toast.makeText(context, "Vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        // Nút sẽ tự động bật nếu có link, và mờ đi nếu không có link
-                        enabled = currentActivity.contactLink.isNotBlank()
+                        modifier = Modifier.fillMaxWidth(),
+                        // Disable nút nếu: Đã đăng ký rồi HOẶC Đang loading
+                        enabled = !isRegistered && registerResult !is AuthResult.Loading,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isRegistered) Color.Gray else MaterialTheme.colorScheme.primary
+                        )
                     ) {
-                        Text("Link Đăng ký/Liên hệ")
+                        if (registerResult is AuthResult.Loading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        } else {
+                            Text(
+                                text = if (isRegistered) "✅ Đã đăng ký tham gia" else "✍️ Đăng ký tham gia ngay"
+                            )
+                        }
                     }
                 }
             }
