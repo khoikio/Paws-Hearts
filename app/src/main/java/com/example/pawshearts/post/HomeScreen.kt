@@ -86,8 +86,8 @@ fun HomeScreen(nav: NavHostController) {
 
         postViewModel.fetchAllPosts()
     }
-
     Column(
+
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
@@ -97,7 +97,10 @@ fun HomeScreen(nav: NavHostController) {
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
+//                .statusBarsPadding()
         ) {
+            Spacer(modifier = Modifier.height(20.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

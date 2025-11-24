@@ -33,7 +33,12 @@ fun SettingsScreen(nav: NavController, themeViewModel: SettingViewModel) {
                     IconButton(onClick = { nav.navigateUp() }) { // nút Back quay lại màn hình trước
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary
+                )
             )
         }
     ) { paddingValues -> // phần thân(content) của khung sườn(scaffold) đẩy nội dung xuống bên dưới thanh tiêu đề
@@ -56,40 +61,5 @@ fun SettingsScreen(nav: NavController, themeViewModel: SettingViewModel) {
                 )
             }
         }
-    }
-}
-//==============================================================
-// HÀM PREVIEW ĐỂ MÀY XEM TRƯỚC GIAO DIỆN (≧✯◡✯≦)
-//==============================================================
-@Preview(showBackground = true, name = "Chế độ Sáng")
-@Composable
-fun SettingsScreenPreviewLight() {
-    // 1. Tạo ra các đối tượng "giả" để Composable có thể chạy
-    val fakeNavController = rememberNavController()
-    val fakeRepository = SettingsRepository(LocalContext.current)
-    val fakeViewModel = SettingViewModel(fakeRepository)
-
-    // 2. Bọc trong Theme để xem đúng màu sắc
-    Theme(darkTheme = false) {
-        SettingsScreen(
-            nav = fakeNavController,
-            themeViewModel = fakeViewModel
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Chế độ Tối")
-@Composable
-fun SettingsScreenPreviewDark() {
-    val fakeNavController = rememberNavController()
-    val fakeRepository = SettingsRepository(LocalContext.current)
-    val fakeViewModel = SettingViewModel(fakeRepository)
-
-    // Bật darkTheme = true để xem trước giao diện nền tối
-    Theme(darkTheme = true) {
-        SettingsScreen(
-            nav = fakeNavController,
-            themeViewModel = fakeViewModel
-        )
     }
 }
