@@ -141,7 +141,7 @@ fun CreateAdoptPostScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri == null) {
-                    TextButton(onClick = { imagePicker.launch("image/*") }) {
+                    TextButton(onClick = { imagePicker.launch("com/example/pawshearts/image/*") }) {
                         Text("🖼️ Chọn ảnh pet KKK")
                     }
                 } else {

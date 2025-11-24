@@ -25,9 +25,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.pawshearts.Utils.uriToFile
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.auth.AuthViewModelFactory
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,12 +41,12 @@ fun CreatePostScreen(
     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context)) // <-- HẾT LỖI
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
-    // 2. LẤY DATA (Info của M)
+    // 2. LẤY DATA (Info của user)
     val userData by authViewModel.userProfile.collectAsStateWithLifecycle(null)
     val createPostState by postViewModel.createPostState.collectAsStateWithLifecycle()
 
 
-    // 4. MẤY CÁI STATE T "BÊ" TỪ DIALOG QUA
+    // 4. MẤY CÁI STATE  "BÊ" TỪ DIALOG QUA
     var name by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
     var ageMonth by remember { mutableStateOf("") }
@@ -92,6 +94,11 @@ fun CreatePostScreen(
                     TextButton(
                         onClick = {
                             if (createPostState !is AuthResult.Loading && userData != null) {
+                                val fileAnh: File? = if (imgUri != null) {
+                                    uriToFile(imgUri!!, context) // Dùng hàm Utils
+                                } else {
+                                    null
+                                }
                                 postViewModel.createPost(
                                     userId = userData!!.userId, // Lấy ID xịn
                                     username = userData!!.username,
@@ -102,7 +109,7 @@ fun CreatePostScreen(
                                     petGender = gender,
                                     location = location,
                                     weightKg = weightKg.toDoubleOrNull() ?: 0.0,
-                                    imageUri = imgUri, // M vừa code up ảnh
+                                    imageFile = fileAnh,
                                     description = desc
                                 )
                             }

@@ -12,7 +12,7 @@ data class Post(
     val userName: String = "",
     val userAvatarUrl: String? = null,
 
-    val createdAt: Timestamp? = null, // <-- SỬA LẠI DỨT ĐIỂM Ở ĐÂY
+    val createdAt: Timestamp? = null,
 
 
     val petName: String = "",
@@ -22,7 +22,7 @@ data class Post(
     val location: String? = null,
     val weightKg: Double? = 0.0,
 
-    val imageUrl: String = "", // Ảnh pet
+    val imageUrl: String = "",
     val description: String = "",
     val likes: List<String> = emptyList(), // Danh sách ID thằng like
     val commentCount: Int = 0, // Số lượng bình luận
