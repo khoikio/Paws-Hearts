@@ -21,12 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.pawshearts.Utils.uriToFile
 import com.example.pawshearts.auth.AuthResult
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +48,7 @@ fun CreateAdoptPostScreen(
     var adoptionRequirements by remember { mutableStateOf("") } // <-- SỬA: Bổ sung State cho yêu cầu nhận nuôi
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var petHealthStatus by remember { mutableStateOf("") }
-
+    val context = LocalContext.current
     // 2. LAUNCHER ĐỂ CHỌN ẢNH
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -87,16 +90,22 @@ fun CreateAdoptPostScreen(
                     }
                 },
                 actions = {
-                    // NÚT "ĐĂNG" XỊN VCL KKK
                     TextButton(
                         onClick = {
-                            if (!showLoading) { // Nếu đéo đang tải...
-                                // M GỌI HÀM VM M ƠI KKK
+                            if (!showLoading) {
+                                // 👇 BƯỚC QUAN TRỌNG: CONVERT URI -> FILE
+                                val fileAnhThat: File? = if (imageUri != null) {
+                                    uriToFile(imageUri!!, context) // Dùng hàm Utils
+                                } else {
+                                    null
+                                }
+
                                 adoptViewModel.createAdoptPost(
                                     petName, petBreed, petAge, petWeight,
                                     petGender, petLocation, description,
-                                    adoptionRequirements, // <-- SỬA: Bổ sung tham số bị thiếu
-                                    imageUri // <-- Tham số cuối cùng
+                                    adoptionRequirements,
+
+                                    imageFile = fileAnhThat
                                 )
                             }
                         },
@@ -141,8 +150,8 @@ fun CreateAdoptPostScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri == null) {
-                    TextButton(onClick = { imagePicker.launch("com/example/pawshearts/image/*") }) {
-                        Text("🖼️ Chọn ảnh pet KKK")
+                    TextButton(onClick = { imagePicker.launch("image/*") }) {
+                        Text("🖼️ Chọn ảnh pet")
                     }
                 } else {
                     Image(

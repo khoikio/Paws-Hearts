@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
+import com.example.pawshearts.Utils.uriToFile
 import com.example.pawshearts.auth.AuthViewModel
 import com.example.pawshearts.messages.model.createThreadId
 import com.example.pawshearts.navmodel.Routes
@@ -48,6 +50,8 @@ fun ProfileScreen(
     val isMyProfile = userProfile?.userId == currentUser?.uid
     var showEditDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
     // Giá trị follow "thật" từ server (current user -> userProfile)
     val isFollowingFromServer = myProfileData?.following
         ?.contains(userProfile?.userId ?: "") == true
@@ -62,7 +66,13 @@ fun ProfileScreen(
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { authViewModel.updateAvatar(it) }
+        if (uri != null) {
+            // BƯỚC QUAN TRỌNG: Convert Uri -> File
+            val fileAnhThat = uriToFile(uri, context)
+
+            // Gọi ViewModel với File thật
+            authViewModel.updateAvatar(fileAnhThat)
+        }
     }
 
     Scaffold(
@@ -119,8 +129,7 @@ fun ProfileScreen(
                         .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         .clickable {
                             if (isMyProfile) {
-                                imagePicker.launch("com/example/pawshearts/image/*")
-                            }
+                                imagePicker.launch("image/*")                            }
                         },
                     contentScale = ContentScale.Crop
                 )

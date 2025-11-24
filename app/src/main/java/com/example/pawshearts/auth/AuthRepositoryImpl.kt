@@ -4,12 +4,12 @@ import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.data.local.UserDao
 import com.example.pawshearts.data.model.UserData
+import com.example.pawshearts.image.CloudinaryService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -17,12 +17,16 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import java.io.File
 
 class AuthRepositoryImpl(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
     private val userDao: UserDao,
-    private val storage: FirebaseStorage
+    private val cloudinaryService: CloudinaryService
 ) : AuthRepository {
 
     override val currentUser: FirebaseUser?
@@ -73,18 +77,35 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun uploadAvatar(userId: String, uri: Uri): AuthResult<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val storageRef = storage.reference.child("avatars/$userId")
-            val downloadUrl = storageRef.putFile(uri).await().storage.downloadUrl.await().toString()
-            firestore.collection("users").document(userId).update("profilePictureUrl", downloadUrl).await()
-            refreshUserProfile()
-            AuthResult.Success(Unit)
+    override suspend fun uploadImage(imageFile: File): AuthResult<String> {
+        return try {
+            val presetName = "paws-hearts"
+            val presetBody = RequestBody.create("text/plain".toMediaTypeOrNull(), presetName)
+            val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), imageFile)
+            val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+
+            val response = cloudinaryService.uploadImage(filePart, presetBody)
+
+            if (response.secure_url != null) {
+                AuthResult.Success(response.secure_url)
+            } else {
+                AuthResult.Error("Không nhận được link ảnh")
+            }
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Lỗi không xác định")
+            e.printStackTrace()
+            AuthResult.Error("Lỗi upload: ${e.message}")
         }
     }
-
+    override suspend fun updateUserAvatar(userId: String, newUrl: String): AuthResult<Unit> {
+        return try {
+            firestore.collection("users").document(userId)
+                .update("profilePictureUrl", newUrl) // Đảm bảo tên trường trong DB đúng là 'profilePictureUrl'
+                .await()
+            AuthResult.Success(Unit)
+        } catch (e: Exception) {
+            AuthResult.Error("Lỗi lưu DB: ${e.message}")
+        }
+    }
     override suspend fun updateUserPersonalInfo(phone: String, address: String) = withContext(Dispatchers.IO) {
         val userId = currentUser?.uid ?: return@withContext
         try {
