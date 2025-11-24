@@ -14,8 +14,8 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
 
 ## 1. Tên dự án và chủ đề
 
-   **Tên dự án:** Paws Hearts
-   **Chủ đề:** Ứng dụng quản lý thú cưng và kết nối cộng đồng yêu thú cưng.
+- **Tên dự án:** Paws Hearts
+- **Chủ đề:** Ứng dụng quản lý thú cưng và kết nối cộng đồng yêu thú cưng.
 
 ## 2. Lý do lựa chọn dự án
 
