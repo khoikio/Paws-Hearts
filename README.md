@@ -25,6 +25,7 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
    - **Kết nối cộng đồng:** Xây dựng một cộng đồng vững mạnh nơi những người yêu thú cưng có thể chia sẻ kinh nghiệm, tìm kiếm lời khuyên, và hỗ trợ lẫn nhau.
    - **Hỗ trợ và quyên góp:** Cung cấp tính năng quyên góp và các hoạt động hỗ trợ cho các tổ chức bảo vệ động vật hoặc những thú cưng gặp hoàn cảnh khó khăn.
    - **Tìm kiếm dịch vụ:** Dễ dàng tìm kiếm các dịch vụ thú cưng lân cận như phòng khám, cửa hàng thức ăn, hoặc dịch vụ trông giữ.
+   - **Nhận nuôi:** Nhận nuôi ác thú cưng bị bỏ rơi hoặc cần tìm chủ mới
 
 ## 3. Công nghệ sử dụng
 
@@ -55,40 +56,11 @@ https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHj
 
 ## 5. Hướng dẫn sử dụng & Demo
 
-   Để cài đặt và chạy ứng dụng Paws Hearts trên môi trường phát triển của bạn, hãy làm theo các bước sau:
+   **Cài ứng dụng:** Quét mã QR để tải
+    
 
-   1. **Clone dự án:**
-      ```bash
-      git clone https://github.com/your-username/Paws-Hearts.git
-      cd Paws-Hearts
-      ```
-   2. **Cài đặt Firebase:**
-      - Tạo một dự án Firebase mới tại [Firebase Console](https://console.firebase.google.com/).
-      - Thêm ứng dụng Android vào dự án Firebase của bạn và tải xuống tệp `google-services.json`.
-      - Đặt tệp `google-services.json` vào thư mục `app/` của dự án.
-      - Đảm bảo rằng bạn đã kích hoạt các dịch vụ sau trong Firebase:
-        - Authentication (Email/Password, Google Sign-In)
-        - Cloud Firestore
-        - Cloud Storage
-        - Google Analytics (Tùy chọn)
-   3. **Cấu hình biến môi trường (nếu có):** Kiểm tra file `local.properties` hoặc các file cấu hình khác để xem có cần thêm biến môi trường nào không. (Hiện tại không có)
-   4. **Mở dự án bằng Android Studio:**
-      - Mở Android Studio và chọn "Open an existing Android Studio project".
-      - Điều hướng đến thư mục gốc của dự án `Paws-Hearts` và mở nó.
-   5. **Đồng bộ Gradle:** Android Studio sẽ tự động đồng bộ hóa Gradle. Nếu có lỗi, hãy kiểm tra kết nối internet và đảm bảo các plugin và dependency đã được cấu hình đúng.
-   6. **Chạy ứng dụng:**
-      - Chọn một thiết bị Android (máy ảo hoặc thiết bị vật lý) đã được kết nối.
-      - Nhấp vào nút "Run" (biểu tượng tam giác màu xanh lá cây) trên thanh công cụ của Android Studio để cài đặt và chạy ứng dụng.
+   **Demo:** Video sơ lược về app
 
-   **Demo:**
-
-   Hiện tại, không có video demo trực tiếp. Tuy nhiên, bạn có thể dễ dàng trải nghiệm các tính năng bằng cách chạy ứng dụng trên thiết bị của mình và khám phá từng phần:
-
-   - Đăng ký tài khoản mới hoặc đăng nhập bằng tài khoản Google.
-   - Tạo hồ sơ thú cưng và cập nhật thông tin cá nhân.
-   - Duyệt qua các hoạt động và bài viết của cộng đồng.
-   - Tham gia vào các cuộc trò chuyện và gửi tin nhắn.
-   - Thử nghiệm tính năng quyên góp.
 
 ## 6. Nguyên tắc làm việc
 
