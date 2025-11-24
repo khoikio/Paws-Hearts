@@ -1,6 +1,8 @@
 package com.example.pawshearts.post
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -46,10 +48,29 @@ fun String.removeAccents(): String {
         .replaceAll("")
 }
 
+// 👇 HÀM SHARE: Gom thông tin bài viết và mở hộp thoại chia sẻ
+private fun sharePost(context: Context, post: Post) {
+    val shareContent = buildString {
+        append("🐾 Tìm mái ấm cho bé: ${post.petName}\n")
+        if (!post.petBreed.isNullOrBlank()) append("🐶 Giống: ${post.petBreed}\n")
+        if (!post.location.isNullOrBlank()) append("📍 Địa chỉ: ${post.location}\n")
+        append("📝 Thông tin: ${post.description}\n")
+        if (!post.imageUrl.isNullOrBlank()) append("\nXem ảnh bé tại: ${post.imageUrl}")
+        append("\n\n(Chia sẻ từ ứng dụng Paws & Hearts)")
+    }
+
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        putExtra(Intent.EXTRA_TEXT, shareContent)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, "Chia sẻ bài viết qua...")
+    context.startActivity(shareIntent)
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(nav: NavHostController) {
     val context = LocalContext.current.applicationContext as Application
+    val localContext = LocalContext.current
     val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
     val coroutineScope = rememberCoroutineScope()
@@ -58,6 +79,7 @@ fun HomeScreen(nav: NavHostController) {
     val currentUserId = authViewModel.currentUser?.uid ?: ""
     val currentUserProfile by authViewModel.userProfile.collectAsStateWithLifecycle()
     var searchText by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
         Log.d("DEBUG_HOME", "🔥 HomeScreen đã load thành công")
@@ -206,7 +228,9 @@ fun HomeScreen(nav: NavHostController) {
                                 Log.e("HomeScreen", "Attempted to open comments for post with blank id: $post")
                             }
                         },
-                        onShareClick = { /*TODO*/ }
+                        onShareClick = {
+                            sharePost(localContext, post)
+                        }
                     )
                 }
             }
