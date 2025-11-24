@@ -119,7 +119,7 @@ fun ProfileScreen(
                         .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         .clickable {
                             if (isMyProfile) {
-                                imagePicker.launch("image/*")
+                                imagePicker.launch("com/example/pawshearts/image/*")
                             }
                         },
                     contentScale = ContentScale.Crop

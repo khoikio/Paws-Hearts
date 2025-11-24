@@ -3,21 +3,25 @@ package com.example.pawshearts.post
 import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
+import com.example.pawshearts.image.CloudinaryService
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import java.io.File
 import java.lang.Exception
-import java.util.Date
 
 class PostRepositoryImpl(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val cloudinaryService: CloudinaryService
 ) : PostRepository {
 
     // ... (các hàm khác giữ nguyên) ...
@@ -185,15 +189,41 @@ class PostRepositoryImpl(
         }
     }
 
-    override suspend fun uploadImage(uri: Uri): AuthResult<String> {
+//    override suspend fun uploadImage(uri: Uri): AuthResult<String> {
+//        return try {
+//            val fileName = "posts/${uri.lastPathSegment}_${System.currentTimeMillis()}"
+//            val imageRef = FirebaseStorage.getInstance().reference.child(fileName)
+//            imageRef.putFile(uri).await()
+//            val downloadUrl = imageRef.downloadUrl.await()
+//            AuthResult.Success(downloadUrl.toString())
+//        } catch (e: Exception) {
+//            AuthResult.Error(e.message ?: "Lỗi không xác định")
+//        }
+//    } bỏ vì không dùng firebase lưu ảnh nữa
+
+    override suspend fun uploadImage(imageFile: File): AuthResult<String> {
         return try {
-            val fileName = "posts/${uri.lastPathSegment}_${System.currentTimeMillis()}"
-            val imageRef = FirebaseStorage.getInstance().reference.child(fileName)
-            imageRef.putFile(uri).await()
-            val downloadUrl = imageRef.downloadUrl.await()
-            AuthResult.Success(downloadUrl.toString())
+            // 1. Tạo cái "chìa khóa" (Preset)
+            val presetName = "paws-hearts"
+            val presetBody = RequestBody.create("text/plain".toMediaTypeOrNull(), presetName)
+
+            // 2. Gói cái ảnh lại thành gói hàng (MultipartBody)
+            val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), imageFile)
+            val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+
+            // 3. Gọi thằng "Ship hàng" Cloudinary
+            val response = cloudinaryService.uploadImage(filePart, presetBody)
+
+            // 4. Kiểm tra kết quả
+            if (response.secure_url != null) {
+                AuthResult.Success(response.secure_url)
+            } else {
+                AuthResult.Error("Upload thất bại: Không nhận được link")
+            }
+
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Lỗi không xác định")
+            e.printStackTrace()
+            AuthResult.Error(e.message ?: "Lỗi upload ảnh: ${e.message}")
         }
     }
 

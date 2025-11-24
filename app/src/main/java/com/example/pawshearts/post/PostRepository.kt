@@ -3,6 +3,7 @@ package com.example.pawshearts.post
 import android.net.Uri
 import com.example.pawshearts.auth.AuthResult
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 //interface la luat cho PostReposirory
 interface  PostRepository{
@@ -18,8 +19,6 @@ interface  PostRepository{
     // ham comment
     fun getCommentsFlow(postId: String): Flow<List<Comment>>
     suspend fun addComment(comment: Comment): AuthResult<Unit>
-    suspend fun uploadImage(uri: Uri): AuthResult<String>
-    fun getPostById(postId: String): Flow<Post?>
+    suspend fun uploadImage(imageFile: File): AuthResult<String>    fun getPostById(postId: String): Flow<Post?>
     suspend fun getPostOwnerId(postId: String): String?
-
 }
