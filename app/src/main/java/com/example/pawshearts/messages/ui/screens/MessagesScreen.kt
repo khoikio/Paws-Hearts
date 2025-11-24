@@ -114,19 +114,31 @@ fun MessagesScreen(
                             )
                         }
                     } else {
-                        // Khi đang tìm kiếm, hiển thị kết quả
-                        items(searchResults) { user ->
-                            val me = FirebaseAuth.getInstance().currentUser
-                            UserSearchResultRow(
-                                user = user,
-                                onClick = {
-                                    // Khi click vào người dùng, tạo threadId và điều hướng
-                                    if (me != null) {
-                                        val threadId = createThreadId(me.uid, user.id)
-                                        onThreadClick(threadId)
-                                    }
+                        if (searchResults.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Không tìm thấy người dùng nào", color = Color.Gray)
+
                                 }
-                            )
+                            }
+                        } else {                        // Khi đang tìm kiếm, hiển thị kết quả
+                            items(searchResults) { user ->
+                                val me = FirebaseAuth.getInstance().currentUser
+                                UserSearchResultRow(
+                                    user = user,
+                                    onClick = {
+                                        // Khi click vào người dùng, tạo threadId và điều hướng
+                                        if (me != null) {
+                                            val threadId = createThreadId(me.uid, user.id)
+                                            onThreadClick(threadId)
+                                        }
+                                    }
+                                )
+                            }
+
                         }
                     }
                 }

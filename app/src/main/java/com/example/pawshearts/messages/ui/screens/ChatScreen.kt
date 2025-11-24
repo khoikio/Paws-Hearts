@@ -1,13 +1,25 @@
 package com.example.pawshearts.messages.ui.screens
 
+import android.Manifest
 import android.app.Application
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,57 +30,63 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.pawshearts.R
 import com.example.pawshearts.messages.model.ChatMessageUiModel
 import com.example.pawshearts.messages.model.GLOBAL_THREAD_ID
 import com.example.pawshearts.messages.model.MessageStatus
 import com.example.pawshearts.messages.presentation.ChatViewModel
 import com.example.pawshearts.messages.presentation.ChatViewModelFactory
-import com.example.pawshearts.messages.ui.components.ChatCardBackground
-import com.example.pawshearts.messages.ui.components.ChatInputBg
 import com.example.pawshearts.messages.ui.components.ChatOrange
 import com.example.pawshearts.messages.ui.components.ChatOuterBackground
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     threadId: String,
     nav: NavHostController
 ) {
-    val app = LocalContext.current.applicationContext as Application
+    val context = LocalContext.current
+    val app = context.applicationContext as Application
     val currentUser = FirebaseAuth.getInstance().currentUser
 
-    // Nếu chưa login thì thôi, show màn trống
     if (currentUser == null) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ChatOuterBackground),
+            modifier = Modifier.fillMaxSize().background(ChatOuterBackground),
             contentAlignment = Alignment.Center
-        ) {
-            Text("Bạn chưa đăng nhập")
-        }
+        ) { Text("Bạn chưa đăng nhập") }
         return
     }
 
-    // 1 ChatViewModel duy nhất cho cả màn
     val chatViewModel: ChatViewModel = viewModel(
         factory = ChatViewModelFactory(
             app = app,
@@ -77,32 +95,109 @@ fun ChatScreen(
         )
     )
 
-    // Hủy listener khi rời màn
-    DisposableEffect(Unit) {
-        onDispose {
-            chatViewModel.stopAllListeners()
+    // --- State & Launchers ---
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+
+    // 1. Launcher chọn Ảnh
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            showSheet = false
+            chatViewModel.sendImage(context, uri)
         }
     }
 
-    // Load đúng thread khi threadId thay đổi
-    LaunchedEffect(threadId) {
-        chatViewModel.loadThread(threadId)
+    // 2. Launcher Camera
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            showSheet = false
+            Toast.makeText(context, "Tính năng đang phát triển (cần convert bitmap -> file)", Toast.LENGTH_SHORT).show()
+        }
     }
+
+    // 3. Launcher chọn Tài liệu (PDF, Word...) - MỚI
+    val documentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            showSheet = false
+            chatViewModel.sendFile(context, uri) // Gọi hàm gửi file
+        }
+    }
+
+    // 4. Launcher xin quyền & lấy Vị trí - MỚI
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Check lại quyền lần nữa cho chắc
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        showSheet = false
+                        chatViewModel.sendLocation(location.latitude, location.longitude)
+                    } else {
+                        Toast.makeText(context, "Không lấy được vị trí, hãy bật GPS", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } else {
+            Toast.makeText(context, "Cần quyền vị trí để gửi", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // --- Lifecycle & Effects ---
+    DisposableEffect(Unit) { onDispose { chatViewModel.stopAllListeners() } }
+    LaunchedEffect(threadId) { chatViewModel.loadThread(threadId) }
 
     val messages by chatViewModel.messages.collectAsState()
     val isTyping by chatViewModel.isTyping.collectAsState()
-    val isGlobal = threadId == GLOBAL_THREAD_ID
+    val toastMessage by chatViewModel.toastMessage.collectAsState()
+    val isSendDisabled by chatViewModel.isSendDisabled.collectAsState()
     val headerTitle by chatViewModel.headerTitle.collectAsState()
+    val isGlobal = threadId == GLOBAL_THREAD_ID
     val headerAvatarRes = if (isGlobal) R.drawable.ic_app else R.drawable.avatardefault
 
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    // Auto scroll xuống cuối khi có tin mới
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            chatViewModel.clearToastMessage()
+        }
+    }
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             scope.launch { listState.animateScrollToItem(messages.lastIndex) }
         }
+    }
+
+    // --- UI Content ---
+    if (showSheet) {
+        AttachmentBottomSheet(
+            onDismiss = { showSheet = false },
+            onCameraClick = { cameraLauncher.launch(null) },
+            onGalleryClick = {
+                galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+            },
+            // 👇 Xử lý click Tài liệu
+            onDocumentClick = {
+                // Mở chọn file (PDF, Word, Text)
+                documentLauncher.launch(arrayOf("application/pdf", "application/msword", "text/plain"))
+            },
+            // 👇 Xử lý click Vị trí
+            onLocationClick = {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            },
+            sheetState = sheetState
+        )
     }
 
     Column(
@@ -129,7 +224,6 @@ fun ChatScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Danh sách tin nhắn
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -143,39 +237,33 @@ fun ChatScreen(
                     item { Spacer(modifier = Modifier.height(8.dp)) }
                 }
 
-                // Đang nhập...
                 AnimatedVisibility(visible = isTyping) {
                     Text(
                         text = "Đang nhập...",
                         modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
-                        style = LocalTextStyle.current.copy(
-                            color = Color.Gray,
-                            fontSize = 12.sp
-                        )
+                        style = LocalTextStyle.current.copy(color = Color.Gray, fontSize = 12.sp)
                     )
                 }
 
-                // Thanh nhập tin nhắn
                 ChatInputBar(
+                    isDisabled = isSendDisabled,
                     onSend = { text ->
                         val trimmed = text.trim()
                         if (trimmed.isNotEmpty()) {
                             chatViewModel.sendMessage(trimmed)
                         }
                     },
-                    onAttach = { /* TODO: handle file attach */ }
+                    onAttach = {
+                        if (!isSendDisabled) {
+                            showSheet = true
+                        } else {
+                            Toast.makeText(context, "Chờ phản hồi để gửi tệp", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 )
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun ChatScreenPreview() {
-    // Fake NavHostController for preview
-    val nav = NavHostController(LocalContext.current)
-    ChatScreen(threadId = GLOBAL_THREAD_ID, nav = nav)
 }
 
 @Composable
@@ -197,9 +285,7 @@ private fun ChatHeader(
         Image(
             painter = painterResource(id = avatarRes),
             contentDescription = title,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
+            modifier = Modifier.size(40.dp).clip(CircleShape)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -213,20 +299,13 @@ private fun ChatHeader(
     }
 }
 
-@Preview
-@Composable
-private fun ChatHeaderPreview() {
-    ChatHeader(
-        title = "Paw Hub",
-        avatarRes = R.drawable.ic_app,
-        onBackClick = {}
-    )
-}
-
+// 👇 ChatBubble ĐÃ ĐƯỢC NÂNG CẤP (Text, Image, File, Location)
 @Composable
 private fun ChatBubble(message: ChatMessageUiModel) {
     val textColor = if (message.isMine) Color.White else MaterialTheme.colorScheme.onSurface
     val bubbleColor = if (message.isMine) ChatOrange else MaterialTheme.colorScheme.surfaceVariant
+    val context = LocalContext.current
+
     AnimatedVisibility(
         visible = true,
         enter = fadeIn() + slideInHorizontally(initialOffsetX = { if (message.isMine) 200 else -200 })
@@ -239,10 +318,7 @@ private fun ChatBubble(message: ChatMessageUiModel) {
                 Image(
                     painter = painterResource(id = R.drawable.avatardefault),
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .align(Alignment.Bottom)
+                    modifier = Modifier.size(28.dp).clip(CircleShape).align(Alignment.Bottom)
                 )
                 Spacer(Modifier.width(6.dp))
             }
@@ -256,17 +332,79 @@ private fun ChatBubble(message: ChatMessageUiModel) {
                         .background(
                             bubbleColor,
                             RoundedCornerShape(
-                                topStart = 20.dp,
-                                topEnd = 20.dp,
+                                topStart = 20.dp, topEnd = 20.dp,
                                 bottomStart = if (message.isMine) 20.dp else 4.dp,
                                 bottomEnd = if (message.isMine) 4.dp else 20.dp
                             )
                         )
-                        .padding(14.dp)
+                        .padding(if (message.type == "image") 4.dp else 14.dp)
                 ) {
                     Column {
-                        Text(message.text, color = textColor)
-                        Spacer(modifier = Modifier.height(6.dp))
+                        // --- Xử lý hiển thị theo loại ---
+                        when (message.type) {
+                            "image" -> {
+                                AsyncImage(
+                                    model = message.text,
+                                    contentDescription = "Sent image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 300.dp)
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop,
+                                    placeholder = painterResource(R.drawable.ic_app),
+                                    error = painterResource(R.drawable.ic_app)
+                                )
+                            }
+                            "file" -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(message.text))
+                                        try { context.startActivity(intent) } catch (e: Exception) {
+                                            Toast.makeText(context, "Không mở được file", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Rounded.Description, contentDescription = null, tint = textColor)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = "File đính kèm",
+                                        color = textColor,
+                                        fontWeight = FontWeight.Bold,
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                }
+                            }
+                            "location" -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(message.text))
+                                        try { context.startActivity(intent) } catch (e: Exception) {
+                                            Toast.makeText(context, "Không mở được bản đồ", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Rounded.LocationOn, contentDescription = null, tint = if(message.isMine) Color.White else Color.Red)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = "Vị trí hiện tại",
+                                        color = textColor,
+                                        fontWeight = FontWeight.Bold,
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                }
+                            }
+                            else -> { // Text thường
+                                Text(message.text, color = textColor)
+                            }
+                        }
+
+                        // Hiển thị trạng thái (Đã gửi/Đang gửi)
+                        if (message.isMine && message.type != "image") {
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
                         if (message.isMine) {
                             val statusText = when (message.status) {
                                 MessageStatus.SENDING -> "Đang gửi..."
@@ -278,7 +416,8 @@ private fun ChatBubble(message: ChatMessageUiModel) {
                                 Text(
                                     statusText,
                                     color = textColor.copy(alpha = 0.8f),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(start = 2.dp)
                                 )
                             }
                         }
@@ -289,111 +428,127 @@ private fun ChatBubble(message: ChatMessageUiModel) {
     }
 }
 
-@Preview(showBackground = true, name = "My Message")
-@Composable
-private fun ChatBubbleMinePreview() {
-    val message = ChatMessageUiModel(
-        id = "1",
-        text = "Hello, this is my message.",
-        time = "10:00",
-        isMine = true,
-        status = MessageStatus.SENT,
-        threadId = "global"
-    )
-    ChatBubble(message = message)
-}
-
-@Preview(showBackground = true, name = "Their Message")
-@Composable
-private fun ChatBubbleTheirsPreview() {
-    val message = ChatMessageUiModel(id = "2", text = "Hi, this is a reply.", time = "10:01", isMine = false, status = MessageStatus.SEEN, threadId = "global")
-    ChatBubble(message = message)
-}
-
+// ChatInputBar và AttachmentBottomSheet giữ nguyên
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatInputBar(
+    isDisabled: Boolean,
     onSend: (String) -> Unit,
     onAttach: () -> Unit
 ) {
     var text by remember { mutableStateOf("") }
-    val canSend = text.isNotBlank()
+    val canSend = text.isNotBlank() && !isDisabled
 
-    Surface(tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surface) {
+    Surface(tonalElevation = 4.dp, color = MaterialTheme.colorScheme.surface) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onAttach) {
+            IconButton(onClick = onAttach, enabled = !isDisabled) {
                 Icon(
                     imageVector = Icons.Outlined.AttachFile,
                     contentDescription = "attach",
-                            tint = MaterialTheme.colorScheme.onSurface
+                    tint = if (isDisabled) Color.Gray else MaterialTheme.colorScheme.onSurface
                 )
             }
-
             TextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                placeholder = { Text("Nhập tin nhắn...") },
+                enabled = !isDisabled,
+                modifier = Modifier.weight(1f).height(52.dp),
+                placeholder = {
+                    Text(
+                        if (isDisabled) "Đang chờ phản hồi..." else "Nhập tin nhắn...",
+                        color = if (isDisabled) Color.Red.copy(alpha = 0.6f) else Color.Gray
+                    )
+                },
                 singleLine = true,
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-
-                    // 👈 Màu chữ khi gõ
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = {
-                    if (canSend) {
-                        onSend(text)
-                        text = ""
-                    }
-                })
+                keyboardActions = KeyboardActions(onSend = { if (canSend) { onSend(text); text = "" } })
             )
-
             Spacer(Modifier.width(8.dp))
-
             IconButton(
-                onClick = {
-                    if (canSend) {
-                        onSend(text)
-                        text = ""
-                    }
-                },
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(if (canSend) ChatOrange else Color(0xFFCCCCCC))
+                onClick = { if (canSend) { onSend(text); text = "" } },
+                enabled = canSend,
+                modifier = Modifier.size(46.dp).clip(CircleShape).background(if (canSend) ChatOrange else Color(0xFFCCCCCC))
             ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.Send,
-                    contentDescription = "send",
-                    tint = Color.White
-                )
+                Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "send", tint = Color.White)
             }
         }
     }
 }
 
-@Preview
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChatInputBarPreview() {
-    ChatInputBar(
-        onSend = {},
-        onAttach = {}
+fun AttachmentBottomSheet(
+    onDismiss: () -> Unit,
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDocumentClick: () -> Unit,
+    onLocationClick: () -> Unit,
+    sheetState: SheetState
+) {
+    val options = listOf(
+        AttachmentOption("Tài liệu", Icons.Rounded.Description, Color(0xFF9C27B0), onDocumentClick),
+        AttachmentOption("Camera", Icons.Rounded.CameraAlt, Color(0xFFE91E63), onCameraClick),
+        AttachmentOption("Thư viện", Icons.Rounded.Image, Color(0xFF9C27B0), onGalleryClick),
+        AttachmentOption("Âm thanh", Icons.Rounded.Headphones, Color(0xFFFF9800), {}),
+        AttachmentOption("Vị trí", Icons.Rounded.LocationOn, Color(0xFF4CAF50), onLocationClick),
+        AttachmentOption("Liên hệ", Icons.Rounded.Person, Color(0xFF2196F3), {})
     )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp)
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(options) { option -> AttachmentItem(option) }
+            }
+        }
+    }
 }
 
+@Composable
+fun AttachmentItem(option: AttachmentOption) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { option.action() }
+    ) {
+        Box(
+            modifier = Modifier.size(60.dp).background(option.color, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(imageVector = option.icon, contentDescription = option.title, tint = Color.White, modifier = Modifier.size(30.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = option.title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+// Data class cho Menu
+data class AttachmentOption(
+    val title: String,
+    val icon: ImageVector,
+    val color: Color,
+    val action: () -> Unit
+)

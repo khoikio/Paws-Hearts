@@ -47,7 +47,9 @@ class ChatRepository(
                         senderName = dto.senderName,
                         text = dto.text,
                         sentAt = dto.sentAt,
-                        status = MessageStatus.SENT  // đã nằm trên server
+                        status = MessageStatus.SENT,
+                        type = dto.type
+                    // đã nằm trên server
                     )
                 }
                 messageDao.upsertMessages(entities)
@@ -68,7 +70,8 @@ class ChatRepository(
         threadId: String,
         text: String,
         currentUserId: String,
-        currentUserName: String?
+        currentUserName: String?,
+        type: String ="text"//<--- Mặc định là text để code cũ không lỗi
     ) {
         val localId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
@@ -80,7 +83,8 @@ class ChatRepository(
             senderName = currentUserName,
             text = text,
             sentAt = now,
-            status = MessageStatus.SENDING
+            status = MessageStatus.SENDING,
+            type = type // <--- Lưu loại tin nhắn vào Local
         )
         messageDao.upsertMessage(local)
 
@@ -91,22 +95,25 @@ class ChatRepository(
                 text = text,
                 senderId = currentUserId,
                 senderName = currentUserName,
-                messageId = localId          // <<< quan trọng: giữ id đồng nhất
+                messageId = localId,
+                type = type // <<< quan trọng: giữ id đồng nhất
             )
 
             // ==== NEW: cập nhật metadata thread cho màn danh sách hội thoại ====
             // Giả sử threadId = "uidA_uidB" (2 userId sắp xếp)
-            val participantIds = threadId.split("_").filter { it.isNotBlank() }
+
 
             val threadRef = firestore.collection("threads").document(threadId)
+            // Nếu là ảnh thì hiện "Đã gửi một ảnh" thay vì link dài ngoằng
+            val previewText = if (type == "image") "[Hình ảnh]" else text
             val threadData = mutableMapOf<String, Any>(
                 "id" to threadId,
-                "lastMessage" to text,
+                "lastMessage" to previewText,
                 "lastSentAt" to remoteMessage.sentAt,
                 "lastSenderId" to currentUserId,
                 "lastSenderName" to (currentUserName ?: "")
             )
-
+            val participantIds = threadId.split("_").filter { it.isNotBlank() }
             if (participantIds.isNotEmpty()) {
                 threadData["participantIds"] = participantIds
             }

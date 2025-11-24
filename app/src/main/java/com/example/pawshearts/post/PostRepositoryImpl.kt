@@ -1,6 +1,5 @@
 package com.example.pawshearts.post
 
-import android.net.Uri
 import android.util.Log
 import com.example.pawshearts.auth.AuthResult
 import com.example.pawshearts.image.CloudinaryService
@@ -16,6 +15,8 @@ import kotlinx.coroutines.tasks.await
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.lang.Exception
 
@@ -23,8 +24,6 @@ class PostRepositoryImpl(
     private val firestore: FirebaseFirestore,
     private val cloudinaryService: CloudinaryService
 ) : PostRepository {
-
-    // ... (các hàm khác giữ nguyên) ...
 
     object NotificationTypes {
         const val LIKE = "LIKE"
@@ -44,7 +43,7 @@ class PostRepositoryImpl(
             val userAvatarUrl = userDoc.getString("profilePictureUrl") ?: currentUser.photoUrl?.toString()
 
             val newPostRef = firestore.collection("posts").document()
-            
+
             val finalPost = post.copy(
                 id = newPostRef.id,
                 userId = authorId,
@@ -95,7 +94,6 @@ class PostRepositoryImpl(
         }
     }
 
-    // BẢN SỬA CUỐI CÙNG - AN TOÀN TUYỆT ĐỐI
     override suspend fun toggleLike(postId: String, userId: String) {
         val postRef = firestore.collection("posts").document(postId)
         val currentUser = FirebaseAuth.getInstance().currentUser ?: return
@@ -103,13 +101,11 @@ class PostRepositoryImpl(
         try {
             val postSnapshot = postRef.get().await()
             val currentLikes = postSnapshot.get("likes") as? List<String> ?: emptyList()
-            
+
             if (currentLikes.contains(userId)) {
-                // CHỈ UPDATE ĐÚNG MỘT TRƯỜNG "likes"
                 postRef.update("likes", FieldValue.arrayRemove(userId)).await()
                 Log.d("PostRepoImpl", "User $userId unliked post $postId")
             } else {
-                // CHỈ UPDATE ĐÚNG MỘT TRƯỜNG "likes"
                 postRef.update("likes", FieldValue.arrayUnion(userId)).await()
                 Log.d("PostRepoImpl", "User $userId liked post $postId")
 
@@ -161,7 +157,7 @@ class PostRepositoryImpl(
                 userAvatarUrl = currentUser.photoUrl?.toString(),
                 createdAt = Timestamp.now()
             )
-            
+
             val postSnapshot = postRef.get().await()
             val postAuthorId = postSnapshot.getString("userId")
 
@@ -189,32 +185,19 @@ class PostRepositoryImpl(
         }
     }
 
-//    override suspend fun uploadImage(uri: Uri): AuthResult<String> {
-//        return try {
-//            val fileName = "posts/${uri.lastPathSegment}_${System.currentTimeMillis()}"
-//            val imageRef = FirebaseStorage.getInstance().reference.child(fileName)
-//            imageRef.putFile(uri).await()
-//            val downloadUrl = imageRef.downloadUrl.await()
-//            AuthResult.Success(downloadUrl.toString())
-//        } catch (e: Exception) {
-//            AuthResult.Error(e.message ?: "Lỗi không xác định")
-//        }
-//    } bỏ vì không dùng firebase lưu ảnh nữa
-
+    // 👇 HÀM UPLOAD ẢNH ĐÃ ĐƯỢC SỬA
     override suspend fun uploadImage(imageFile: File): AuthResult<String> {
         return try {
-            // 1. Tạo cái "chìa khóa" (Preset)
             val presetName = "paws-hearts"
-            val presetBody = RequestBody.create("text/plain".toMediaTypeOrNull(), presetName)
+            // Dùng extension .toRequestBody() cho gọn và đúng chuẩn okhttp3 mới
+            val presetBody = presetName.toRequestBody("text/plain".toMediaTypeOrNull())
 
-            // 2. Gói cái ảnh lại thành gói hàng (MultipartBody)
-            val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), imageFile)
+            val requestFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
             val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
 
-            // 3. Gọi thằng "Ship hàng" Cloudinary
-            val response = cloudinaryService.uploadImage(filePart, presetBody)
+            // 👇 SỬA Ở ĐÂY: uploadImage -> uploadFile
+            val response = cloudinaryService.uploadFile(filePart, presetBody)
 
-            // 4. Kiểm tra kết quả
             if (response.secure_url != null) {
                 AuthResult.Success(response.secure_url)
             } else {

@@ -22,7 +22,8 @@ data class MessageEntity(
     val senderName: String?,
     val text: String,
     val sentAt: Long,           // epoch millis
-    val status: MessageStatus
+    val status: MessageStatus,
+    val type: String = "text"
 )
 
 data class UserSearchResult(

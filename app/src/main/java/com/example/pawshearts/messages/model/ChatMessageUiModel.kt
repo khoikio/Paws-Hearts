@@ -7,7 +7,8 @@ data class ChatMessageUiModel(
     val time: String,
     val isMine: Boolean,
     val status: MessageStatus,
-    val threadId: String
+    val threadId: String,
+    val type: String = "text"
 )
 
 

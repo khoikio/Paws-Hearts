@@ -117,7 +117,7 @@ class AdoptRepositoryImpl(
             val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), imageFile)
             val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
 
-            val response = cloudinaryService.uploadImage(filePart, presetBody)
+            val response = cloudinaryService.uploadFile(filePart, presetBody)
 
             if (response.secure_url != null) {
                 AuthResult.Success(response.secure_url)

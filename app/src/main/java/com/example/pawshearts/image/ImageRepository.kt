@@ -8,30 +8,26 @@ import java.io.File
 
 class ImageRepository {
 
-    // Gọi cái service vừa tạo ở bước 3
     private val cloudinaryService = RetrofitCloudinary.instance
 
-    suspend fun uploadImageToCloudinary(imageFile: File): String? {
+    // 👇 SỬA TÊN HÀM & THÊM THAM SỐ mimeType
+    suspend fun uploadFileToCloudinary(file: File, mimeType: String = "image/*"): String? {
         return try {
-            // 1. Chuẩn bị cái tên preset "paws-hearts"
-            // Cái này giống như cái CHÌA KHÓA để mở cửa Cloudinary
             val presetName = "paws-hearts"
             val presetBody = presetName.toRequestBody("text/plain".toMediaTypeOrNull())
 
-            // 2. Gói cái file ảnh lại
-            // "image/*" nghĩa là file này là ảnh
-            val requestFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
-            val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+            // 👇 SỬA Ở ĐÂY: Dùng mimeType được truyền vào thay vì cứng nhắc "image/*"
+            val requestFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
 
-            // 3. Gọi API bắn lên
-            val response = cloudinaryService.uploadImage(filePart, presetBody)
+            val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
-            // 4. Trả về cái link ảnh (secure_url)
-            // Đây là cái link mày sẽ lưu vào Firestore nè!
+            // Gọi hàm bên Service (lát nhớ sửa bên Service thành auto/upload nhé)
+            val response = cloudinaryService.uploadFile(filePart, presetBody)
+
             response.secure_url
 
         } catch (e: Exception) {
-            e.printStackTrace() // In lỗi ra Logcat nếu toang
+            e.printStackTrace()
             null
         }
     }

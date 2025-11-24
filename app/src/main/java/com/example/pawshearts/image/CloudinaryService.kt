@@ -7,11 +7,10 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 
 interface CloudinaryService {
-
-    // URL chuẩn: v1_1/{cloud_name}/image/upload
+    // 👇 Sửa "image" thành "auto" để nhận cả PDF, Video, File...
     @Multipart
-    @POST("v1_1/do5kuvliy/image/upload")
-    suspend fun uploadImage(
+    @POST("v1_1/do5kuvliy/auto/upload")
+    suspend fun uploadFile(
         @Part file: MultipartBody.Part,
         @Part("upload_preset") preset: RequestBody
     ): CloudinaryResponse

@@ -17,7 +17,8 @@ data class RemoteMessageDto(
     val senderId: String,
     val senderName: String?,
     val text: String,
-    val sentAt: Long   // epoch millis
+    val sentAt: Long,  // epoch millis
+    val type: String = "text"
 )
 class ChatFirebaseDataSource(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -46,14 +47,17 @@ class ChatFirebaseDataSource(
                         val text = doc.getString("text") ?: ""
                         val senderName = doc.getString("senderName")
                         val sentAt = doc.getLong("sentAt") ?: 0L
-
+                            // 👇 Lấy type từ Firestore về
+                        val type = doc.getString("type") ?: "text"
                         RemoteMessageDto(
                             id = id,
                             threadId = threadId,
                             senderId = senderId,
                             senderName = senderName,
                             text = text,
-                            sentAt = sentAt
+                            sentAt = sentAt,
+                            type = type
+
                         )
                     }
                     trySend(list).isSuccess
@@ -72,7 +76,8 @@ class ChatFirebaseDataSource(
         text: String,
         senderId: String,
         senderName: String?,
-        messageId: String,              // <- thêm param
+        messageId: String,
+        type: String// <- thêm param
     ): RemoteMessageDto {
         val now = System.currentTimeMillis()
 
@@ -85,7 +90,8 @@ class ChatFirebaseDataSource(
             senderId = senderId,
             senderName = senderName,
             text = text,
-            sentAt = now
+            sentAt = now,
+            type = type
         )
 
         val data = mapOf(
@@ -94,7 +100,8 @@ class ChatFirebaseDataSource(
             "senderId" to remote.senderId,
             "senderName" to remote.senderName,
             "text" to remote.text,
-            "sentAt" to remote.sentAt
+            "sentAt" to remote.sentAt,
+            "type" to remote.type
         )
 
         docRef.set(data).await()
