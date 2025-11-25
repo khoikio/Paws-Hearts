@@ -171,7 +171,7 @@ Paws-Hearts/
 ## 6. Cài đặt app & Demo
 
    **Cài đặt app:**
-   ![Uploading image.png…]()
+
 
 
    **Video demo app:**
