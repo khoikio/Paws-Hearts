@@ -4,18 +4,9 @@
 
 https://www.figma.com/design/UwuzUCmsJjyzOvyAOjTwII/UI?node-id=0-1&p=f&t=ih4SgHjN8IlcIb1s-0
 
-# Mục lục
-
-- [Tên dự án và chủ đề](#tên-dự-án-và-chủ-đề)
-- [Lý do lựa chọn dự án](#lý-do-lựa-chọn-dự-án)
-- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Các tính năng chính](#các-tính-năng-chính)
-- [Hướng dẫn sử dụng & Demo](#hướng-dẫn-sử-dụng--demo)
-- [Nguyên tắc làm việc](#nguyên-tắc-làm-việc)
-
 ## 1. Tên dự án và chủ đề
 
-### 📌 Ý nghĩa tên Paws Hearts
+###  Ý nghĩa tên Paws Hearts
 
 Paws Hearts là sự kết hợp của hai từ mang ý nghĩa sâu sắc và liên quan đến mục đích của dự án:
 
@@ -24,7 +15,7 @@ Paws Hearts là sự kết hợp của hai từ mang ý nghĩa sâu sắc và li
 
 Kết hợp lại, **Paws&Hearts** mang ý nghĩa về một nền tảng nơi tình yêu thương và sự quan tâm dành cho thú cưng được lan tỏa, kết nối những trái tim nhân ái để cùng chăm sóc và tạo mái ấm cho những người bạn động vật.
 
-### 🎯 Sơ lược về dự án
+###  Sơ lược về dự án
 
 Paws Hearts là một ứng dụng di động toàn diện, được thiết kế để kết nối cộng đồng những người yêu thú cưng và hỗ trợ các hoạt động liên quan đến chăm sóc, nhận nuôi và bảo vệ động vật:
 
@@ -54,7 +45,7 @@ Paws Hearts là một ứng dụng di động toàn diện, được thiết k�
 
    Dự án Paws Hearts được xây dựng trên nền tảng các công nghệ hiện đại và mạnh mẽ để đảm bảo hiệu suất, khả năng mở rộng và trải nghiệm người dùng tốt nhất:
 
-   ### ✨ Phát triển di động (Mobile Development)
+   ###  Phát triển di động (Mobile Development)
 
    - **Ngôn ngữ lập trình:** Kotlin
    - **Framework UI:** Jetpack Compose
@@ -63,7 +54,7 @@ Paws Hearts là một ứng dụng di động toàn diện, được thiết k�
    - **Quản lý bất đồng bộ:** Kotlin Coroutines và Flow
    - **Tải và hiển thị hình ảnh:** Coil Compose
 
-   ### 🌐 Backend as a Service (BaaS)
+   ###  Backend as a Service (BaaS)
 
    - **Google Firebase:**
      - Authentication: Quản lý người dùng và xác thực.
@@ -71,7 +62,7 @@ Paws Hearts là một ứng dụng di động toàn diện, được thiết k�
      - Cloud Storage: Lưu trữ và quản lý các tệp phương tiện (hình ảnh, video) của người dùng.
      - Analytics: Thu thập dữ liệu phân tích để hiểu hành vi người dùng và cải thiện ứng dụng.
 
-   ### 🔧 Công cụ phát triển & Triển khai (Development Tools & Deployment)
+   ###  Công cụ phát triển & Triển khai (Development Tools & Deployment)
 
    - **Hệ thống kiểm soát phiên bản:** Git, GitHub
    - **Môi trường phát triển tích hợp (IDE):** Android Studio
@@ -81,7 +72,7 @@ Paws Hearts là một ứng dụng di động toàn diện, được thiết k�
 
    Ứng dụng Paws Hearts cung cấp các tính năng đa dạng nhằm kết nối và hỗ trợ cộng đồng yêu thú cưng:
 
-   ### 🛡️ Xác thực & Quản lý tài khoản
+   ###  Xác thực & Quản lý tài khoản
 
    - **Đăng ký tài khoản:** Người dùng có thể đăng ký tài khoản mới bằng email và mật khẩu hoặc thông qua tài khoản Google.
    - **Đăng nhập:** Đăng nhập an toàn với các phương thức xác thực đã đăng ký.
@@ -89,47 +80,47 @@ Paws Hearts là một ứng dụng di động toàn diện, được thiết k�
    - **Quên/Đặt lại mật khẩu:** Hỗ trợ khôi phục mật khẩu qua email khi người dùng quên.
    - **Bảo mật:** Dữ liệu người dùng được bảo vệ thông qua Firebase Authentication và các quy tắc bảo mật của Firestore.
 
-   ### 👥 Quản lý hồ sơ & Thú cưng
+   ###  Quản lý hồ sơ & Thú cưng
 
    - **Hồ sơ cá nhân:** Tạo và quản lý hồ sơ cá nhân chi tiết, bao gồm thông tin liên hệ và giới thiệu bản thân.
    - **Quản lý thú cưng:** Thêm, chỉnh sửa và xóa thông tin về thú cưng của bạn (tên, loài, giống, ngày sinh, lịch sử y tế, ảnh).
 
-   ### 📝 Bài viết & Tương tác cộng đồng
+   ###  Bài viết & Tương tác cộng đồng
 
    - **Tạo bài viết:** Chia sẻ hình ảnh, video và văn bản về thú cưng của bạn hoặc các hoạt động cộng đồng.
    - **Trang chủ:** Hiển thị các bài viết mới nhất và phổ biến từ cộng đồng.
    - **Bình luận & Thích:** Tương tác với các bài viết thông qua bình luận và biểu tượng cảm xúc.
    - **Bài viết của tôi:** Xem và quản lý tất cả các bài viết của bạn.
 
-   ### 🐾 Nhận nuôi thú cưng
+   ###  Nhận nuôi thú cưng
 
    - **Đăng bài nhận nuôi:** Đăng tin về thú cưng cần nhận nuôi, cung cấp thông tin chi tiết và hình ảnh.
    - **Tìm kiếm thú cưng:** Duyệt qua danh sách thú cưng cần nhận nuôi, lọc theo các tiêu chí (loài, giống, địa điểm).
    - **Chi tiết thú cưng:** Xem thông tin chi tiết về từng thú cưng, bao gồm thông tin liên hệ của người đăng.
 
-   ### 🤝 Hoạt động cộng đồng
+   ###  Hoạt động cộng đồng
 
    - **Tạo hoạt động:** Tổ chức và quản lý các sự kiện, buổi gặp mặt hoặc hoạt động từ thiện liên quan đến thú cưng.
    - **Tham gia hoạt động:** Tìm kiếm và đăng ký tham gia các hoạt động cộng đồng.
    - **Chi tiết hoạt động:** Xem thông tin chi tiết về từng hoạt động, bao gồm thời gian, địa điểm và mô tả.
 
-   ### 💬 Hệ thống tin nhắn
+   ###  Hệ thống tin nhắn
 
    - **Trò chuyện trực tiếp:** Giao tiếp riêng tư với người dùng khác trong ứng dụng.
    - **Quản lý cuộc trò chuyện:** Xem danh sách các cuộc trò chuyện và lịch sử tin nhắn.
    - **Thông báo tin nhắn mới:** Nhận thông báo khi có tin nhắn mới.
 
-   ### 💰 Quyên góp
+   ###  Quyên góp
 
    - **Quyên góp cho tổ chức/cá nhân:** Hỗ trợ tài chính cho các hoạt động bảo vệ động vật hoặc các trường hợp thú cưng cần giúp đỡ.
    - **Lịch sử quyên góp:** Theo dõi các khoản quyên góp của bạn.
 
-   ### 🔔 Thông báo
+   ###  Thông báo
 
    - **Thông báo trong ứng dụng:** Nhận các thông báo về tin nhắn mới, hoạt động, bình luận và các sự kiện quan trọng khác.
    - **Quản lý thông báo:** Tùy chỉnh cài đặt thông báo.
 
-   ### ⚙️ Yêu cầu khác (phi kỹ thuật)
+   ###  Yêu cầu khác (phi kỹ thuật)
 
    - **An toàn & tốc độ:** Đảm bảo quyền riêng tư và bảo mật dữ liệu người dùng, tối ưu hóa hiệu suất ứng dụng để có trải nghiệm mượt mà.
    - **Giao diện người dùng (UI):** Thiết kế thân thiện, dễ sử dụng, với khả năng hỗ trợ chế độ sáng/tối (Dark/Light Mode) và hiển thị hình ảnh rõ nét.
