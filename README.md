@@ -171,8 +171,8 @@ Paws-Hearts/
 ## 6. Cài đặt app & Demo
 
    **Cài đặt app:**
-   
-     <img width="1000" height="1000" alt="image" src="https://github.com/user-attachments/assets/e099e97b-1f7a-493b-8cf8-c8c515210eac" />
+   ![Uploading image.png…]()
+
 
    **Video demo app:**
 
