@@ -1,22 +1,21 @@
 package com.example.pawshearts.profile
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,282 +27,346 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
+import com.example.pawshearts.Utils.uriToFile
 import com.example.pawshearts.auth.AuthViewModel
-import com.example.pawshearts.data.model.UserData
-import com.example.pawshearts.post.PostViewModel
-import com.example.pawshearts.post.PostViewModelFactory
-import androidx.compose.runtime.getValue
+import com.example.pawshearts.messages.model.createThreadId
 import com.example.pawshearts.navmodel.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     nav: NavHostController,
-    userData: UserData,
-    outSignOut: () -> Unit,
     authViewModel: AuthViewModel,
-    postViewModel: PostViewModel
-
+    profileViewModel: ProfileViewModel,
 ) {
+    val userProfile by profileViewModel.userProfile.collectAsStateWithLifecycle()
+    val currentUser = authViewModel.currentUser
+    val myProfileData by authViewModel.userProfile.collectAsStateWithLifecycle()
 
-    val user = authViewModel.currentUser
-    val userName = userData.username ?: user?.displayName ?: "UserName"
-    val userEmail = userData.email ?: user?.email ?: "NameEmail@gmail.com"
-    val avatarUriString = userData.profilePictureUrl
-    val address = userData.address ?: ""
-    val phone = userData.phone ?: ""
-
-    // (T GIỮ MẤY CÁI STATE CẦN THIẾT)
+    val isMyProfile = userProfile?.userId == currentUser?.uid
     var showEditDialog by remember { mutableStateOf(false) }
-    var showEditPersonalDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current.applicationContext as Application
+
+    val context = LocalContext.current
+
+    // Giá trị follow "thật" từ server (current user -> userProfile)
+    val isFollowingFromServer = myProfileData?.following
+        ?.contains(userProfile?.userId ?: "") == true
+
+    // State hiển thị trên UI (lạc quan), reset lại khi server đổi
+    var isFollowingState by remember { mutableStateOf(isFollowingFromServer) }
+
+    LaunchedEffect(isFollowingFromServer) {
+        isFollowingState = isFollowingFromServer
+    }
+
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            authViewModel.updateAvatar(uri) // <-- GIỜ NÓ GỌI HÀM XỊN RỒI
+            // BƯỚC QUAN TRỌNG: Convert Uri -> File
+            val fileAnhThat = uriToFile(uri, context)
+
+            // Gọi ViewModel với File thật
+            authViewModel.updateAvatar(fileAnhThat)
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState()) // M GIỮ CÁI NÀY
-    ) {
-        ProfileTopBar()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (isMyProfile) "Hồ sơ của tôi"
+                        else userProfile?.username ?: "Hồ sơ"
 
-        // ====== THÔNG TIN NGƯỜI DÙNG ======
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Ảnh đại diện + nút thay ảnh
-                Box(
-                    modifier = Modifier.align(Alignment.Center),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
-                    Image(
-                        painter = if (avatarUriString != null)
-                            rememberAsyncImagePainter(avatarUriString)
-                        else painterResource(id = R.drawable.avatardefault),
-                        contentDescription = "Avatar",
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color(0xFFE65100), CircleShape),
-                        contentScale = ContentScale.Crop
                     )
-
-                    // NÚT MỞ LẠI (HẾT LỖI 'imagePicker')
-                    IconButton(
-                        onClick = { imagePicker.launch("image/*") },
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(Color.White, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Đổi ảnh đại diện",
-                            tint = Color(0xFFE65100)
-                        )
-                    }
-                }
-
-                // ✏️ Nút chỉnh sửa hồ sơ ở góc phải trên
-                IconButton(
-                    onClick = { showEditDialog = true },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(30.dp)
-                        .background(Color(0xFFFFF3E0), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Chỉnh sửa hồ sơ",
-                        tint = Color(0xFFE65100)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = userName, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
-            Text(text = userEmail, fontSize = 14.sp, color = Color.Gray)
-        }
-
-
-        // ====== THÔNG TIN CÁ NHÂN ======
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Thông tin cá nhân", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                        IconButton(
-                            onClick = { showEditPersonalDialog = true },
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(Color(0xFFFFF3E0), shape = CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Chỉnh sửa",
-                                tint = Color(0xFFE65100)
-                            )
+                },
+                navigationIcon = {
+                    if (!isMyProfile) {
+                        IconButton(onClick = { nav.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Email: $userEmail")
+                },
+                actions = {
+                    if (isMyProfile) {
+                        IconButton(onClick = { nav.navigate(Routes.SETTINGS_SCREEN) }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("SĐT: ${if (phone.isBlank()) "..." else phone}")
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+    ) { paddingValues ->
+        userProfile?.let { userData ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Image(
+                    painter = if (userData.profilePictureUrl != null) {
+                        rememberAsyncImagePainter(userData.profilePictureUrl)
+                    } else {
+                        painterResource(id = R.drawable.avatardefault)
+                    },
+                    contentDescription = "Avatar",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        .clickable {
+                            if (isMyProfile) {
+                                imagePicker.launch("image/*")                            }
+                        },
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = userData.username ?: "Chưa cập nhật",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = userData.email ?: "Chưa có email",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    ProfileStat("Theo dõi", userData.following.size.toString())
+                    ProfileStat("Follower", userData.followers.size.toString())
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (isMyProfile) {
+                    // ================== HỒ SƠ CỦA TÔI ==================
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Thông tin cá nhân",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                IconButton(onClick = { showEditDialog = true }) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Chỉnh sửa thông tin"
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("SĐT: ${userData.phone ?: "Chưa cập nhật"}")
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Địa chỉ: ${userData.address ?: "Chưa cập nhật"}")
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Địa chỉ: ${if (address.isBlank()) "..." else address}")
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        FunctionButton(
+                            text = "Bài đăng",
+                            onClick = { nav.navigate(Routes.MY_POSTS_SCREEN) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FunctionButton(
+                            text = "Nhận nuôi",
+                            onClick = { nav.navigate(Routes.ADOPT) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { authViewModel.logoutAndNavigate(nav) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            "Đăng xuất",
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                } else {
+                    // ================== HỒ SƠ NGƯỜI KHÁC ==================
+                    val followText = if (isFollowingState) "Đang theo dõi" else "Theo dõi"
+                    val followColors = if (isFollowingState) {
+                        ButtonDefaults.outlinedButtonColors()
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                isFollowingState = !isFollowingState
+
+                                profileViewModel.toggleFollow()
+
+                                // Refresh cả 2
+                                authViewModel.refreshUserProfile()    // current user
+                                profileViewModel.refreshUserProfile() // target user
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = followColors
+                        ) {
+                            Text(followText)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val myId = authViewModel.currentUser?.uid ?: return@OutlinedButton
+                                val otherId = userProfile?.userId ?: return@OutlinedButton
+
+                                val threadId = createThreadId(myId, otherId)
+                                nav.navigate("chat/$threadId")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.ChatBubbleOutline,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("Nhắn tin")
+                        }
                     }
                 }
             }
-        }
-
-        // ====== NÚT ĐĂNG XUẤT ======
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = { outSignOut() },
+        } ?: Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Đăng xuất", color = MaterialTheme.colorScheme.onErrorContainer)
+            CircularProgressIndicator()
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
+        // ===== DIALOG SỬA THÔNG TIN (ĐÃ FIX NULL) =====
+        val safeUser = userProfile
+        if (showEditDialog && safeUser != null) {
+            var newName by remember(safeUser.userId) { mutableStateOf(safeUser.username ?: "") }
+            var newPhone by remember(safeUser.userId) { mutableStateOf(safeUser.phone ?: "") }
+            var newAddress by remember(safeUser.userId) { mutableStateOf(safeUser.address ?: "") }
 
-        // ====== MẤY CÁI HỘP THOẠI (DIALOG) CHỈNH SỬA ======
-        if (showEditDialog) {
-            var newName by remember { mutableStateOf(userName) }
-            var newEmail by remember { mutableStateOf(userEmail) }
             AlertDialog(
                 onDismissRequest = { showEditDialog = false },
-                title = { Text("✏️ Chỉnh sửa hồ sơ") },
+                title = { Text("Chỉnh sửa thông tin") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Tên người dùng") }, singleLine = true)
-                        OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email") }, singleLine = true)
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            label = { Text("Tên hiển thị") }
+                        )
+                        OutlinedTextField(
+                            value = newPhone,
+                            onValueChange = { newPhone = it },
+                            label = { Text("Số điện thoại") }
+                        )
+                        OutlinedTextField(
+                            value = newAddress,
+                            onValueChange = { newAddress = it },
+                            label = { Text("Địa chỉ") }
+                        )
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        authViewModel.updateProfile(newName, newEmail)
-                        showEditDialog = false
-                    }) { Text("Lưu") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showEditDialog = false }) { Text("Hủy") }
-                }
-            )
-        }
-        if (showEditPersonalDialog) {
-            var newEmail by remember { mutableStateOf(userEmail) }
-            var newPhone by remember { mutableStateOf(phone) }
-            var newAddress by remember { mutableStateOf(address) }
-            AlertDialog(
-                onDismissRequest = { showEditPersonalDialog = false },
-                title = { Text("📋 Chỉnh sửa thông tin cá nhân") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email (Tạm thời ko sửa đc)") }, readOnly = true)
-                        OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, label = { Text("Số điện thoại") })
-                        OutlinedTextField(value = newAddress, onValueChange = { newAddress = it }, label = { Text("Địa chỉ") })
+                    TextButton(
+                        onClick = {
+                            authViewModel.updateProfile(
+                                newName,
+                                safeUser.email ?: ""
+                            )
+                            authViewModel.updateUserPersonalInfo(newPhone, newAddress)
+                            showEditDialog = false
+                        }
+                    ) {
+                        Text("Lưu")
                     }
                 },
-                confirmButton = {
-                    TextButton(onClick = {
-                        authViewModel.updateUserPersonalInfo(newPhone, newAddress)
-                        showEditPersonalDialog = false
-                    }) { Text("Lưu") }
-                },
                 dismissButton = {
-                    TextButton(onClick = { showEditPersonalDialog = false }) { Text("Hủy") }
+                    TextButton(onClick = { showEditDialog = false }) {
+                        Text("Hủy")
+                    }
                 }
             )
         }
+    }
+}
 
-        // ====== NÚT CHUYỂN TAB vào các bài đăng ======
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = {nav.navigate(Routes.MY_POSTS_SCREEN) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE65100)
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    "Bài đăng",
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-            Button(
-                onClick = { nav.navigate(Routes.MY_ADOPT_POSTS_SCREEN) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE65100)
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    "Nhận nuôi",
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+@Composable
+private fun ProfileStat(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-
-        // ====== TAB 2: NHẬN NUÔI ======
-
-
-        Spacer(modifier = Modifier.height(50.dp)) // Thêm tí đệm ở đít
+@Composable
+private fun FunctionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ),
+        modifier = modifier.height(48.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(text, color = Color.White)
     }
 }

@@ -1,5 +1,6 @@
 package com.example.pawshearts.post
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -55,24 +57,24 @@ fun MyPostsScreen(
             TopAppBar(
                 title = { Text("Bài đăng") },
                 navigationIcon = {
-                    IconButton(onClick = { nav.popBackStack() }) { // <-- NÚT BACK XỊN
+                    IconButton(onClick = { nav.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0), // Màu cam lợt :3
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         },
-        floatingActionButton = { // <-- THÊM NÚT NÀY VÔ KKK
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    nav.navigate(Routes.CREATE_POST_SCREEN) // <-- BẤM VÔ NHẢY QUA TRANG ĐĂNG BÀI
+                    nav.navigate(Routes.CREATE_POST_SCREEN)
                 },
-                containerColor = Color(0xFFE65100), // Màu cam xịn
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Đăng bài mới")
             }
@@ -84,6 +86,7 @@ fun MyPostsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp), // Thêm tí đệm 2 bên
             contentPadding = PaddingValues(vertical = 12.dp), // Đệm trên dưới
             verticalArrangement = Arrangement.spacedBy(12.dp) // Cách nhau 12dp
@@ -102,9 +105,12 @@ fun MyPostsScreen(
                     PostCard(
                         post = post,
                         currentUserId = currentUserId,
+                        nav = nav,
                         onClick = { nav.goPetDetail(post.id) },
                         onLikeClick = { postViewModel.toggleLike(post.id, currentUserId) },
-                        onCommentClick = { nav.navigate(Routes.comment(post.id)) },
+                        onCommentClick = {
+                            nav.navigate("comment_screen/${post.id}")
+                        },
                         onShareClick = {}
                     )
                 }

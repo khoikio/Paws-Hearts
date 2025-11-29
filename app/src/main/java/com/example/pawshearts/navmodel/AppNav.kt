@@ -1,42 +1,22 @@
 package com.example.pawshearts.navmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -44,221 +24,291 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.pawshearts.auth.AuthRootScreen
-import com.example.pawshearts.auth.AuthViewModel
-import com.example.pawshearts.auth.AuthViewModelFactory
-import com.example.pawshearts.adopt.AdoptViewModel
-import com.example.pawshearts.adopt.AdoptViewModelFactory
-import com.example.pawshearts.adopt.CreateAdoptPostScreen
-import com.example.pawshearts.adopt.MyAdoptPostsScreen
-import com.example.pawshearts.adopt.components.AdoptScreen
-import com.example.pawshearts.activities.ActivitiesScreen
-import com.example.pawshearts.activities.ActivityViewModel
-import com.example.pawshearts.activities.ActivityViewModelFactory
-import com.example.pawshearts.activities.CreateActivityScreen
-import com.example.pawshearts.donate.BankDonateScreen
-import com.example.pawshearts.donate.DonateScreen
-import com.example.pawshearts.post.CommentScreen
-import com.example.pawshearts.post.CreatePostScreen
-import com.example.pawshearts.post.HomeScreen
-import com.example.pawshearts.post.MyPostsScreen
-import com.example.pawshearts.post.PetDetailScreen
-import com.example.pawshearts.post.PostViewModel
-import com.example.pawshearts.post.PostViewModelFactory
-import com.example.pawshearts.profile.ProfileScreen
 import com.example.pawshearts.SplashScreen
-import com.example.pawshearts.ui.theme.LightBackground
+import com.example.pawshearts.activities.*
+import com.example.pawshearts.adopt.*
+import com.example.pawshearts.adopt.components.AdoptScreen
+import com.example.pawshearts.adopt.components.PetDetailScreen
+import com.example.pawshearts.auth.*
+import com.example.pawshearts.donate.*
+import com.example.pawshearts.messages.ui.screens.ChatScreen
+import com.example.pawshearts.messages.ui.screens.MessagesScreen
+import com.example.pawshearts.notification.NotificationScreen
+import com.example.pawshearts.post.*
+import com.example.pawshearts.profile.ProfileScreen
+import com.example.pawshearts.profile.ProfileViewModel
+import com.example.pawshearts.profile.ProfileViewModelFactory
+import com.example.pawshearts.settings.*
+import com.example.pawshearts.ui.theme.Theme
+import com.example.pawshearts.auth.AuthViewModel
+import com.example.pawshearts.activities.ActivitiesScreen // <<== NHỚ THÊM IMPORT NÀY NẾU CHƯA CÓ
+import com.example.pawshearts.notification.NotificationViewModel
+import com.example.pawshearts.notification.NotificationViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
+
+
+@Composable
+fun AppRoot() {
+    val context = LocalContext.current.applicationContext
+    val themeViewModel: SettingViewModel = viewModel(
+        factory = SettingViewModelFactory(SettingsRepository(context))
+    )
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
+
+    Theme(darkTheme = isDarkMode) {
+        AppContent(themeViewModel = themeViewModel)
+    }
+}
+
+fun NavHostController.goPetDetail(id: String) {
+    navigate(Routes.petDetail(id))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppRoot() {
+private fun AppContent(themeViewModel: SettingViewModel) {
     val nav = rememberNavController()
-    // KHAI BÁO CÁC VM CẦN CHUNG (TẠO 1 LẦN DUY NHẤT Ở ĐÂY KKK)
     val context = LocalContext.current.applicationContext as Application
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
-    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
-    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
-    val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
-    val currentUser = authViewModel.currentUser
     val isLoggedIn by authViewModel.isUserLoggedIn.collectAsStateWithLifecycle()
 
-    // Logic hiển thị BottomBar (Giữ nguyên)
-    val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+    LaunchedEffect(isLoggedIn) {
+        delay(200)
+        val currentRoute = nav.currentBackStackEntry?.destination?.route
+        if (isLoggedIn && (currentRoute == Routes.LOGIN_SCREEN || currentRoute == Routes.REGISTER_SCREEN)) {
+            nav.navigate(Routes.HOME) {
+                popUpTo(nav.graph.id) { inclusive = true }
+            }
+        }
+    }
 
-    // THÊM ĐIỀU KIỆN NÈ M KKK :D
-    val showBottomBar = currentRoute != Routes.LOGIN_SCREEN &&
-            currentRoute != Routes.REGISTER_SCREEN &&
-            currentRoute != Routes.SPLASH_SCREEN
+    val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+    val showBottomBar = isLoggedIn && currentRoute !in listOf(
+        Routes.SPLASH_SCREEN,
+        Routes.LOGIN_SCREEN,
+        Routes.REGISTER_SCREEN,
+        Routes.CHAT
+    )
 
     Scaffold(
-        topBar = {},
-        bottomBar = { if (showBottomBar) {
-            BottomBar(nav)
-        }
+        bottomBar = {
+            if (showBottomBar) {
+                BottomBar(nav = nav)
+            }
         },
-        contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp), // Fix tràn viền
-
+        contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
     ) { innerPadding ->
         NavHost(
             navController = nav,
             startDestination = Routes.SPLASH_SCREEN,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Routes.SPLASH_SCREEN) {
-                SplashScreen(navController = nav)
-            }
-            composable(Routes.CREATE_POST_SCREEN) {
-                CreatePostScreen(navController = nav)
-            }
+            composable(Routes.SPLASH_SCREEN) { SplashScreen(navController = nav) }
+            composable(Routes.LOGIN_SCREEN) { AuthRootScreen(navController = nav) }
 
-            // MY_POSTS_SCREEN: Dùng lại VM đã tạo ở ngoài
-            composable (Routes.MY_POSTS_SCREEN){
-                MyPostsScreen(
-                    nav = nav,
-                    authViewModel = authViewModel,
-                    postViewModel = postViewModel
-                )
-            }
-
-            composable(Routes.LOGIN_SCREEN) {
-                AuthRootScreen(navController = nav)
-            }
-
-            composable(Routes.HOME)    { HomeScreen(nav) }
-            composable(Routes.DONATE)  { DonateScreen(nav) }
-
-            // ADOPT: Dùng lại VM đã tạo ở ngoài
-            composable(Routes.ADOPT)   {
-                AdoptScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel
-                )
-            }
-
-            composable(Routes.DONATE_BANK_SCREEN) {
-                BankDonateScreen(nav = nav)
-            }
-
-            // PROFILE: Dùng lại AuthVM đã tạo ở ngoài
-            composable(Routes.PROFILE) {
-                // T VỚI M KHÔNG CẦN FACTORY Ở ĐÂY NỮA
-
-                // Lấy dữ liệu người dùng từ AuthVM đã tạo ở ngoài
-                val firestoreProfile by authViewModel.userProfile.collectAsStateWithLifecycle(null)
-
-                if (firestoreProfile != null) {
+            if (isLoggedIn) {
+                val currentUser = authViewModel.currentUser
+                
+                composable(Routes.HOME) { HomeScreen(nav) }
+                composable(Routes.DONATE) { DonateScreen(nav) }
+                
+                composable(Routes.ADOPT) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+                }
+                
+                composable(Routes.PROFILE) {
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(currentUser!!.uid, context))
                     ProfileScreen(
                         nav = nav,
-                        userData = firestoreProfile!!,
-                        outSignOut = {
-                            authViewModel.logout()
-                            nav.navigate(Routes.LOGIN_SCREEN) {
-                                popUpTo(nav.graph.id) { inclusive = true }
-                            }
-                        },
                         authViewModel = authViewModel,
-                        postViewModel = postViewModel
-
+                        profileViewModel = profileViewModel
                     )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                }
+
+                composable(
+                    route = Routes.userProfile("{userId}"),
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(userId, context))
+                     ProfileScreen(
+                        nav = nav,
+                        authViewModel = authViewModel,
+                        profileViewModel = profileViewModel
+                    )
+                }
+
+                // CÁC MÀN HÌNH KHÁC
+                composable(Routes.DONATE_BANK_SCREEN) { BankDonateScreen(nav = nav) }
+                composable(Routes.CREATE_POST_SCREEN) { CreatePostScreen(navController = nav) }
+                composable(Routes.MY_POSTS_SCREEN) {
+                    val postViewModel: PostViewModel = viewModel(factory = PostViewModelFactory(context))
+                    MyPostsScreen(nav = nav, authViewModel = authViewModel, postViewModel = postViewModel)
+                }
+//                composable(Routes.ADOPTS_COLLECTION) {
+//                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+////                    MyAdoptPostsScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+//                }
+                composable(Routes.CREATE_ADOPT_POST_SCREEN) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
+                }
+                composable(Routes.ACTIVITIES_LIST_SCREEN) {
+                    val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+                    ActivitiesScreen(nav = nav, authViewModel = authViewModel, activityViewModel = activityViewModel)
+                }
+
+
+                // ***** THÊM COMPOSABLE BỊ THIẾU CHO MÀN HÌNH CHI TIẾT *****
+                composable(
+                    route = Routes.ACTIVITY_DETAIL_WITH_ARG, // "activity_detail_screen/{activityId}"
+                    arguments = listOf(navArgument("activityId") {
+                        type = NavType.StringType
+                    })
+                ) { backStackEntry ->
+                    val activityId = backStackEntry.arguments?.getString("activityId")
+                    // Chỉ hiển thị màn hình nếu có ID hợp lệ
+                    if (activityId != null) {
+                        val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+                        ActivityDetailScreen(
+                            nav = nav,
+                            activityViewModel = activityViewModel,
+                            authViewModel = authViewModel,
+                            activityId = activityId
+                        )
                     }
                 }
-            }
+
+                // SỬA LẠI COMPOSABLE CHO MÀN HÌNH "TẠO"
+                composable(Routes.CREATE_ACTIVITY_SCREEN) {
+                    val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+
+                    // Gọi hàm với activityId = null để nó biết đây là chế độ TẠO
+                    CreateActivityScreen(nav = nav, activityViewModel = activityViewModel, activityId = null)
+                }
+
+// THÊM COMPOSABLE MỚI CHO MÀN HÌNH "SỬA"
+                composable(
+                    route = Routes.EDIT_ACTIVITY_WITH_ARG, // route = "edit_activity_screen/{activityId}"
+                    arguments = listOf(navArgument("activityId") {
+                        type = NavType.StringType
+                        // Bạn có thể thêm nullable = false vì ID là bắt buộc khi sửa
+                        nullable = false
+                    })
+                ) { backStackEntry ->
+                    // Lấy activityId từ route
+                    val activityId = backStackEntry.arguments?.getString("activityId")
+
+                    // Chỉ tiếp tục nếu có activityId hợp lệ
+                    if (activityId != null) {
+                        val context = LocalContext.current.applicationContext as Application
+                        val activityViewModel: ActivityViewModel = viewModel(factory = ActivityViewModelFactory(context))
+
+                        // <<== SỬA THÀNH TÊN NÀY
+                        // Gọi đúng màn hình CreateActivityScreen và truyền activityId vào
+                        // để nó tự động chuyển sang chế độ "Sửa"
+                        CreateActivityScreen(
+                            nav = nav,
+                            activityViewModel = activityViewModel,
+                            activityId = activityId // <<== Truyền ID vào đây
+                        )
+                    }
+                    // Nếu không có activityId, sẽ không có gì được hiển thị,
+                    // hoặc bạn có thể điều hướng người dùng quay lại.
+                }
+
+                composable(Routes.SETTINGS_SCREEN) { SettingsScreen(nav = nav, themeViewModel = themeViewModel) }
+                composable(Routes.NOTIFICATION_SCREEN) {
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    if (currentUser != null) {
+                        // Tạo ViewModel đúng cách (qua Factory)
+                        val factory =
+                            NotificationViewModelFactory(LocalContext.current.applicationContext as Application)
+                        val viewModel: NotificationViewModel = viewModel(factory = factory)
+
+                        //  Truyền userId + viewModel vào UI
+                        NotificationScreen(
+                            navController  = nav,
+                            viewModel = viewModel
+                        )
+                    }
+                }
+                composable(Routes.MESSAGES) { MessagesScreen(onBackClick = { nav.popBackStack() }, onThreadClick = { threadId -> nav.navigate(Routes.chat(threadId)) }) }
+
+                composable(
+                    route = Routes.PET_DETAIL,
+                    arguments = listOf(navArgument("id") { type = NavType.StringType })
+                ) { backStack ->
+                    val petId = backStack.arguments?.getString("id") ?: ""
+                    PetDetailScreen(id = petId, onBack = { nav.popBackStack() })
+                }
+
+                composable(
+                    route = "comment_screen/{postId}",
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                    CommentScreen(postId = postId, onBack = { nav.popBackStack() })
+                }
+
+                composable(Routes.ADOPT) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    AdoptScreen(nav = nav, adoptViewModel = adoptViewModel, authViewModel = authViewModel)
+                }
+
+                composable(Routes.CREATE_ADOPT_POST_SCREEN) {
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context))
+                    CreateAdoptPostScreen(nav = nav, adoptViewModel = adoptViewModel)
+                }
+                composable(
+                    route = Routes.PET_DETAIL_ROUTE_WITH_ARG, // tức là "pet_detail_screen/{id}"
+                    arguments = listOf(navArgument("id") { type = NavType.StringType })
+                ) { backStack ->
+                    val petId = backStack.arguments?.getString("id") ?: ""
+                    val adoptViewModel: AdoptViewModel = viewModel(factory = AdoptViewModelFactory(context)) // Thêm ViewModel
+
+                    // THÊM LỜI GỌI MÀN HÌNH BỊ THIẾU
+                    PetDetailScreen(
+                        id = petId,
+                        onBack = { nav.popBackStack() },
+                        nav = nav,
+                        adoptViewModel = adoptViewModel // Truyền ViewModel vào
+                    )
+                }
+                composable(
+                    route = Routes.CHAT,
+                    arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val threadId = backStackEntry.arguments?.getString("threadId")!!
+                    ChatScreen(threadId = threadId, nav = nav)
+                }
+                composable(
+                    route = "chat/{threadId}",
+                    arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val threadId = backStackEntry.arguments?.getString("threadId")!!
+                    ChatScreen(threadId = threadId, nav = nav)
+                }
 
 
-            // MÀN CHI TIẾT
-            composable(
-                route = Routes.PET_DETAIL,
-                arguments = listOf(navArgument("id") { type = NavType.StringType })
-            ) { backStack ->
-                val petId = backStack.arguments?.getString("id") ?: ""
-                PetDetailScreen(
-                    id = petId,
-                    onBack = { nav.popBackStack() }
-                )
-            }
 
-            // MÀN COMMENT
-            composable(
-                route = "${Routes.COMMENT_SCREEN}/{postId}",
-                arguments = listOf(navArgument("postId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString("postId") ?: ""
-
-                CommentScreen(
-                    postId = postId,
-                    onBack = { nav.popBackStack() }
-                )
-            }
-
-            // MY_ADOPT_POSTS_SCREEN: Dùng lại VM đã tạo ở ngoài
-            composable(Routes.MY_ADOPT_POSTS_SCREEN) {
-                MyAdoptPostsScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel,
-                    authViewModel = authViewModel
-                )
-            }
-
-            // CREATE_ADOPT_POST_SCREEN: Dùng lại AdoptVM đã tạo ở ngoài
-            composable(Routes.CREATE_ADOPT_POST_SCREEN) {
-                CreateAdoptPostScreen(
-                    nav = nav,
-                    adoptViewModel = adoptViewModel
-                )
-            }
-
-            // ACTIVITIES_LIST_SCREEN: Dùng lại VM đã tạo ở ngoài
-            composable(Routes.ACTIVITIES_LIST_SCREEN) {
-                ActivitiesScreen(
-                    nav = nav,
-                    authViewModel = authViewModel,
-                    activityViewModel = activityViewModel
-                )
-            }
-
-            // CREATE_ACTIVITY_SCREEN: Dùng lại ActivityVM đã tạo ở ngoài
-            composable(Routes.CREATE_ACTIVITY_SCREEN) {
-                CreateActivityScreen(
-                    nav = nav,
-                    activityViewModel = activityViewModel
-                )
             }
         }
     }
 }
 
-
-fun NavHostController.goPetDetail(id: String) {
-    navigate(Routes.petDetail(id))
-}
-
 @Composable
 private fun BottomBar(nav: NavHostController) {
-    // Code BottomBar giữ nguyên KKK
-    val items = listOf(
-        NavItem.Home,
-        NavItem.Donate,
-        NavItem.Adopt,
-        NavItem.Profile
-    )
-
-    // route hiện tại để biết tab nào đang active
+    val items = listOf(NavItem.Home, NavItem.Donate, NavItem.Adopt, NavItem.Profile)
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(LightBackground)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
         Row(
@@ -266,78 +316,58 @@ private fun BottomBar(nav: NavHostController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items.forEachIndexed { index, item ->
+            items.forEach { item ->
                 val selected = currentRoute == item.route
-
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(24.dp))
                         .clickable {
-                            if (currentRoute != item.route) {
-                                nav.navigate(item.route) {
-                                    popUpTo(Routes.HOME) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                            nav.navigate(item.route) {
+                                popUpTo(nav.graph.findStartDestination().id) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // icon với nền tròn khi active
                     Box(
                         modifier = Modifier
                             .size(if (selected) 36.dp else 28.dp)
                             .clip(CircleShape)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary
-                                else Color.Transparent
-                            ),
+                            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = item.icon,
                             contentDescription = item.label,
-                            tint = if (selected)
-                                MaterialTheme.colorScheme.onPrimary
-                            else
-                                LocalContentColor.current,
+                            tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
-
                     Spacer(Modifier.height(6.dp))
-
                     if (selected) {
-                        // label nổi bật dạng chip cam
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.primary)
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
                         ) {
                             Text(
                                 text = item.label,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                textAlign = TextAlign.Center
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     } else {
-                        // label xám nhạt khi inactive
                         Text(
                             text = item.label,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                         )
                     }
-                }
-
-                // spacing giữa item, trừ item cuối cùng
-                if (index != items.lastIndex) {
-                    Spacer(modifier = Modifier.width(4.dp))
                 }
             }
         }

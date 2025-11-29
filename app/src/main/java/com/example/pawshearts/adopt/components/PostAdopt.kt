@@ -15,24 +15,32 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.pawshearts.R
 import com.example.pawshearts.adopt.Adopt
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostAdopt(
     post: Adopt,
-    onEditClick: (Adopt) -> Unit
+    onEditClick: (Adopt) -> Unit,
+    onCommentClick: (String) -> Unit,
+    // === THAM SỐ ĐÃ THÊM ===
+    isLiked: Boolean,
+    onLikeClick: (String) -> Unit,
+    onShareClick: (Adopt) -> Unit
 ) {
+    val OrangeColor = Color(0xFFE65100)
+
     Card(
-        onClick = { onEditClick(post) },
-        shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        onClick = { onEditClick(post) } // Mở chi tiết/chỉnh sửa
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
 
-            // T VỚI M XÀI 'imageUrl' XỊN M UP LÊN Á KKK
-            val painter = if (post.imageUrl != null)
+            // --- HEADER VÀ THÔNG TIN PET ---
+            val painter = if (post.imageUrl != null && post.imageUrl.isNotEmpty())
                 rememberAsyncImagePainter(post.imageUrl)
             else
                 painterResource(id = R.drawable.avatardefault)
@@ -43,29 +51,29 @@ fun PostAdopt(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(8.dp)), // Làm tròn ảnh chút
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.height(10.dp))
-
-            // SỬA MẤY CÁI FIELD NÀY CHO NÓ XỊN KKK
             Text(
-                post.petName,
+                post.petName ?:"Tên Pet không rõ",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Giống: ${post.petBreed} - ${post.petAge} tháng", // <-- M HIỆN VẦY XỊN VCL KKK
+                "Giống: ${post.petBreed} - ${post.petAge} tháng",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                post.description, // <-- 'description' XỊN KKK
+                post.description ?:"Không có mô tả",
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2 // M cho nó 2 dòng thôi
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
+
         }
     }
 }

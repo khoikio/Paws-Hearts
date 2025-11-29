@@ -1,26 +1,23 @@
 package com.example.pawshearts.adopt
 
-import com.google.firebase.firestore.ServerTimestamp
-import java.util.Date
+import com.google.firebase.Timestamp
 
 data class Adopt(
-    // ID Tụi nó sẽ tự tạo
-    val id: String = "", // Firebase tự điền
-    val userId: String = "", // ID
-    val userName: String = "", // Tên
-    val userAvatarUrl: String? = null, // Avatar
+    val id: String? = null,       // THAY ĐỔI: Làm cho id nullable
+    val userId: String? = null,   // THAY ĐỔI: Làm cho userId nullable
+    val userName: String? = null,
+    val userAvatarUrl: String? = null,
 
-    // Thông tin Pet M nhập KKK
-    val petName: String = "",
-    val petBreed: String = "", // Giống
-    val petAge: Int = 0, // Tuổi (tháng)
-    val petWeight: Double = 0.0, // Cân nặng (kg)
-    val petGender: String = "", // Giới tính
-    val petLocation: String = "", // Khu vực
-    val description: String = "", // Mô tả
-    val imageUrl: String? = null, // Ảnh Pet
+    val petName: String? = null,
+    val petBreed: String? = null,
+    val petAge: Int? = null,
+    val petWeight: Double? = null,
+    val petGender: String? = null,
+    val petLocation: String? = null,
+    val description: String? = null,
+    val imageUrl: String? = null,
+    val petHealthStatus: String? = null,
 
-    @ServerTimestamp
-    val timestamp: Date? = null // Giờ đăng
-
+    val adoptionRequirements: String? = null,
+    val createdAt: Timestamp? = null
 )

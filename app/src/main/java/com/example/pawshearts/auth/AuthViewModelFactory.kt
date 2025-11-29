@@ -4,36 +4,38 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pawshearts.data.local.PawsHeartsDatabase
+import com.example.pawshearts.image.RetrofitCloudinary
+// 👇 Import cái này (Sửa package nếu mày để chỗ khác)
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-/**
- * Đây là một "nhà máy" sản xuất ra AuthViewModel.
- * Lý do cần nó: AuthViewModel cần một AuthRepository để hoạt động,
- * và chúng ta không thể tạo nó theo cách thông thường.
- * Factory này sẽ chịu trách nhiệm tạo ra tất cả các dependency cần thiết.
- */
 class AuthViewModelFactory(
-    private val application: Application // Cần Application Context để tạo Database
+    private val application: Application
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        // Kiểm tra xem hệ thống có đang yêu cầu tạo một AuthViewModel không
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-
-            // Bước 1: Tạo ra các "nguyên liệu" từ tầng Data
-            val database = PawsHeartsDatabase.getDatabase(application)
-            val userDao = database.userDao()
+            // 1. Chuẩn bị nguyên liệu
+            val auth = FirebaseAuth.getInstance()
             val firestore = FirebaseFirestore.getInstance()
+            val userDao = PawsHeartsDatabase.getDatabase(application).userDao()
 
-            // Bước 2: Tạo ra Repository với các nguyên liệu đó
-            val repository = AuthRepositoryImpl(userDao, firestore)
+            // 👇 LẤY DỊCH VỤ CLOUDINARY RA
+            val cloudinaryService = RetrofitCloudinary.instance
 
-            // Bước 3: Tạo ra AuthViewModel với Repository
+            // 2. Lắp ráp vào Repository
+            // (Lưu ý: Bên file AuthRepositoryImpl mày phải sửa Constructor cho khớp thứ tự này nha)
+            val repository = AuthRepositoryImpl(
+                auth = auth,
+                firestore = firestore,
+                userDao = userDao, // Giữ lại cái này cho mày
+                cloudinaryService = cloudinaryService // Thêm cái này vào
+            )
+
+            // 3. Tạo ViewModel
             return AuthViewModel(repository) as T
         }
-
-        // Nếu hệ thống yêu cầu một ViewModel khác mà Factory này không biết, hãy báo lỗi
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

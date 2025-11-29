@@ -1,25 +1,50 @@
 package com.example.pawshearts.navmodel
 
 object Routes {
+    const val SPLASH_SCREEN = "splash_screen"
+    const val LOGIN_SCREEN = "login_screen"
+    const val REGISTER_SCREEN = "register_screen"
+
     const val HOME = "home"
     const val DONATE = "donate"
     const val ADOPT = "adopt"
-    const val PROFILE = "profile"
 
-    const val LOGIN_SCREEN = "login"
-    const val REGISTER_SCREEN = "register"
+    // SỬA LẠI PROFILE ROUTE
+    const val PROFILE = "profile" // Route gốc cho profile của mình
+    fun userProfile(userId: String) = "profile/$userId" // Route cho profile người khác
 
-    // Detail: truyền postId
-    const val PET_DETAIL = "pet/{id}"
-    fun petDetail(id: String) = "pet/$id"
-    const val COMMENT_SCREEN = "comment_screen"
-    fun comment(postId: String) = "$COMMENT_SCREEN/$postId"
-    const val SPLASH_SCREEN = "splash_screen"
-    const val CREATE_POST_SCREEN = "create_post_screen"
-    const val MY_POSTS_SCREEN = "my-posts" // taps hiện các bài đăng
-    const val MY_ADOPT_POSTS_SCREEN = "my-adopt-posts"  // (TRANG LIST NHẬN NUÔI)
-    const val CREATE_ADOPT_POST_SCREEN = "create-adopt-post" //(TRANG TẠO BÀI NHẬN NUÔI)
-    const val DONATE_BANK_SCREEN = "donate-bank-info"
-    const val ACTIVITIES_LIST_SCREEN = "activities_list"
-    const val CREATE_ACTIVITY_SCREEN = "create_activity"
+    const val MESSAGES = "messages"
+    const val PET_DETAIL = "pet_detail/{id}"
+    fun petDetail(id: String) = "pet_detail/$id"
+
+
+
+    const val CREATE_POST_SCREEN = "create_post"
+    const val MY_ADOPT_POSTS_SCREEN = "my_adopt_posts_screen"
+    const val MY_POSTS_SCREEN = "my_posts_screen"
+
+    const val ADOPTS_COLLECTION = "adopt_posts_collection"
+    const val PET_DETAIL_SCREEN = "pet_detail_screen"
+
+    const val CREATE_ADOPT_POST_SCREEN = "create_adopt_post_screen"
+    const val PET_DETAIL_ROUTE_WITH_ARG = "pet_detail_screen/{id}"
+    const val DONATE_BANK_SCREEN = "donate_bank_screen"
+
+    // --- PHẦN HOẠT ĐỘNG (ACTIVITIES) ---
+    const val ACTIVITIES_LIST_SCREEN = "activities_list_screen"
+    const val CREATE_ACTIVITY_SCREEN = "create_activity_screen"
+
+    const val EDIT_ACTIVITY_SCREEN = "edit_activity_screen"
+    const val EDIT_ACTIVITY_WITH_ARG = "$EDIT_ACTIVITY_SCREEN/{activityId}"
+
+
+    //
+    const val ACTIVITY_DETAIL_SCREEN = "activity_detail_screen"
+    const val ACTIVITY_DETAIL_WITH_ARG = "$ACTIVITY_DETAIL_SCREEN/{activityId}"
+
+    const val SETTINGS_SCREEN = "settings_screen"
+    const val NOTIFICATION_SCREEN = "notification_screen"
+    const val CHAT = "chat_screen/{threadId}"
+    fun chat(threadId: String) = "chat/$threadId"
+
 }

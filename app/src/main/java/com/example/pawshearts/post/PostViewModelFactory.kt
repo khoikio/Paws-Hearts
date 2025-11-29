@@ -1,25 +1,33 @@
 package com.example.pawshearts.post
 
-import android.app.Application // <-- M PHẢI CÓ CÁI NÀY
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.pawshearts.post.PostRepositoryImpl
+import com.example.pawshearts.image.RetrofitCloudinary
+import com.example.pawshearts.notification.NotificationFirebaseSource
 import com.google.firebase.firestore.FirebaseFirestore
 
-
 class PostViewModelFactory(
-    private val application: Application // <-- SỬA DÒNG NÀY: THÊM CÁI NÀY VÔ
+    private val application: Application
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PostViewModel::class.java)) {
-
-            // Giờ M lấy Firestore sau khi M có 'application' -> HẾT CRASH
             val firestore = FirebaseFirestore.getInstance()
-            val repository = PostRepositoryImpl(firestore)
 
-            return PostViewModel(repository) as T
+            // 👇 SỬA Ở ĐÂY: Lấy instance Cloudinary ra
+            val cloudinaryService = RetrofitCloudinary.instance
+
+            // 👇 BỎ VÀO ĐÂY: Truyền thêm tham số thứ 2
+            val postRepository = PostRepositoryImpl(firestore, cloudinaryService)
+
+            val notificationSource = NotificationFirebaseSource(firestore)
+
+            return PostViewModel(
+                repository = postRepository,
+                notificationSource = notificationSource
+            ) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -21,14 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.pawshearts.Utils.uriToFile
 import com.example.pawshearts.auth.AuthResult
-import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,8 +45,10 @@ fun CreateAdoptPostScreen(
     var petGender by remember { mutableStateOf("") }
     var petLocation by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var adoptionRequirements by remember { mutableStateOf("") } // <-- SỬA: Bổ sung State cho yêu cầu nhận nuôi
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-
+    var petHealthStatus by remember { mutableStateOf("") }
+    val context = LocalContext.current
     // 2. LAUNCHER ĐỂ CHỌN ẢNH
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -87,14 +90,22 @@ fun CreateAdoptPostScreen(
                     }
                 },
                 actions = {
-                    // NÚT "ĐĂNG" XỊN VCL KKK
                     TextButton(
                         onClick = {
-                            if (!showLoading) { // Nếu đéo đang tải...
-                                // M GỌI HÀM VM M ƠI KKK
+                            if (!showLoading) {
+                                // 👇 BƯỚC QUAN TRỌNG: CONVERT URI -> FILE
+                                val fileAnhThat: File? = if (imageUri != null) {
+                                    uriToFile(imageUri!!, context) // Dùng hàm Utils
+                                } else {
+                                    null
+                                }
+
                                 adoptViewModel.createAdoptPost(
                                     petName, petBreed, petAge, petWeight,
-                                    petGender, petLocation, description, imageUri
+                                    petGender, petLocation, description,
+                                    adoptionRequirements,
+
+                                    imageFile = fileAnhThat
                                 )
                             }
                         },
@@ -103,21 +114,19 @@ fun CreateAdoptPostScreen(
                         Text(
                             "ĐĂNG",
                             fontWeight = FontWeight.Bold,
-                            color = if (showLoading) Color.Gray else Color(0xFFE65100)
-                        )
+                            color = if (showLoading) Color.Gray else MaterialTheme.colorScheme.primary                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFF3E0),
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black,
-                    actionIconContentColor = Color(0xFFE65100)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // <-- Sửa ở đây
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant, // <-- Sửa ở đây
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant, // <-- Sửa ở đây
+                    actionIconContentColor = MaterialTheme.colorScheme.primary // <-- Sửa ở đây
                 )
             )
         }
     ) { paddingValues ->
 
-        // 5. CÁI FORM KKK
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -132,17 +141,17 @@ fun CreateAdoptPostScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFAFAFA))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(
                         1.dp,
-                        Color(0xFFEEEEEE),
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), // <-- Sửa ở đây
                         RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri == null) {
                     TextButton(onClick = { imagePicker.launch("image/*") }) {
-                        Text("🖼️ Chọn ảnh pet KKK")
+                        Text("🖼️ Chọn ảnh pet")
                     }
                 } else {
                     Image(
@@ -185,6 +194,11 @@ fun CreateAdoptPostScreen(
                 label = "Giới tính (Đực/Cái)"
             )
             FormTextField(
+                value = petHealthStatus,
+                onValueChange = { petHealthStatus = it },
+                label = "Sức khỏe (Đã tiêm phòng, đã triệt sản, các bệnh lý ...)",
+            )
+            FormTextField(
                 value = petLocation,
                 onValueChange = { petLocation = it },
                 label = "Khu vực (Quận/Thành phố)"
@@ -193,6 +207,15 @@ fun CreateAdoptPostScreen(
                 value = description,
                 onValueChange = { description = it },
                 label = "Mô tả (Tính cách, tình trạng...)",
+                modifier = Modifier.height(120.dp),
+                singleLine = false
+            )
+
+            // <-- SỬA: Bổ sung trường nhập liệu cho yêu cầu nhận nuôi
+            FormTextField(
+                value = adoptionRequirements,
+                onValueChange = { adoptionRequirements = it },
+                label = "Yêu cầu nhận nuôi (Điều kiện)",
                 modifier = Modifier.height(120.dp),
                 singleLine = false
             )
@@ -214,10 +237,10 @@ fun CreateAdoptPostScreen(
             AlertDialog(
                 onDismissRequest = { showErrorDialog = null },
                 icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red) },
-                title = { Text("Lỗi vcl M ơi :@") },
+                title = { Text("Lỗi ") },
                 text = { Text(showErrorDialog ?: "Lỗi đéo biết KKK") },
                 confirmButton = {
-                    TextButton(onClick = { showErrorDialog = null }) { Text("OK M") }
+                    TextButton(onClick = { showErrorDialog = null }) { Text("") }
                 }
             )
         }

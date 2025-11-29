@@ -9,49 +9,97 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
+import java.io.File
 
 class AdoptViewModel(
     private val repository: AdoptRepository
 ) : ViewModel(){
-    // TẠM THỜI TẠO CÁI LIST RỖNG
-    private val _myAdoptPosts = MutableStateFlow<List<Adopt>>(emptyList())
-    val myAdoptPosts: StateFlow<List<Adopt>> = _myAdoptPosts
+
     private val _allAdoptPosts = MutableStateFlow<List<Adopt>>(emptyList())
     val allAdoptPosts: StateFlow<List<Adopt>> = _allAdoptPosts
-    private val _postResult = MutableStateFlow<AuthResult<Unit>?>(null)
-    val postResult: StateFlow<AuthResult<Unit>?> = _postResult
-    //  code hàm fetch, hàm create sau
+
+    // START: BỔ SUNG CHO MYADOPTPOSTSSCREEN
+    private val _myAdoptPosts = MutableStateFlow<List<Adopt>>(emptyList())
+    val myAdoptPosts: StateFlow<List<Adopt>> = _myAdoptPosts
+
+    fun fetchMyAdoptPosts(userId: String) {
+        viewModelScope.launch {
+            // Giả định AdoptRepository có hàm getMyAdoptPostsFlow(userId) trả về Flow
+            repository.getMyAdoptPostsFlow(userId)
+                .collect { posts ->
+                    _myAdoptPosts.value = posts
+                }
+        }
+    }
+    // END: BỔ SUNG CHO MYADOPTPOSTSSCREEN
+
+    private val _adoptPostDetail = MutableStateFlow<Adopt?>(null)
+    val adoptPostDetail: StateFlow<Adopt?> = _adoptPostDetail
+
+    private val _filterState = MutableStateFlow(FilterState())
+    val filterState: StateFlow<FilterState> = _filterState
+
+    data class FilterState(
+        val species: String? = null,
+        val minAge: Int? = null,
+        val maxAge: Int? = null,
+        val location: String? = null
+    )
+
     init {
-        fetchAllAdoptPosts()
+        viewModelScope.launch {
+            // Lắng nghe thay đổi của bộ lọc và fetch lại danh sách
+            _filterState.collectLatest { filter ->
+                fetchAllAdoptPosts(filter)
+            }
+        }
     }
 
-    // === HÀM TẢI TẤT CẢ KKK ===
-    private fun fetchAllAdoptPosts() {
+    private fun fetchAllAdoptPosts(filter: FilterState) {
         viewModelScope.launch {
-            repository.getAllAdoptPostsFlow().collect { posts ->
+            repository.getAllAdoptPostsFlow(
+                species = filter.species,
+                minAge = filter.minAge,
+                maxAge = filter.maxAge,
+                location = filter.location
+            ).collect { posts ->
                 _allAdoptPosts.value = posts
             }
         }
     }
-    fun fetchMyAdoptPosts(userId: String) {
-        if (userId.isBlank()) {
-            _myAdoptPosts.value = emptyList() // Nếu ID rỗng thì trả list rỗng
-            return
-        }
+
+    fun updateFilter(
+        species: String? = _filterState.value.species,
+        minAge: Int? = _filterState.value.minAge,
+        maxAge: Int? = _filterState.value.maxAge,
+        location: String? = _filterState.value.location
+    ) {
+        // Cập nhật StateFlow filter. Việc này sẽ tự động gọi fetchAllAdoptPosts
+        _filterState.value = _filterState.value.copy(
+            species = species,
+            minAge = minAge,
+            maxAge = maxAge,
+            location = location
+        )
+    }
+
+    fun fetchAdoptPostDetail(postId: String) {
         viewModelScope.launch {
-            // Nó sẽ gọi cái Repo (Đang trả list rỗng M code ở Bước 1 KKK)
-            repository.getMyAdoptPostsFlow(userId).collect { posts ->
-                _myAdoptPosts.value = posts // Cập nhật list
-            }
+            _adoptPostDetail.value = repository.getAdoptPostById(postId)
         }
     }
 
-    fun createAdoptPost(/* ... */) {
-        // viewModelScope.launch { ... }
+    fun resetAdoptPostDetail() {
+        _adoptPostDetail.value = null
     }
+
+    // Logic CreateAdoptPost (Giữ nguyên)
+    private val _postResult = MutableStateFlow<AuthResult<Unit>?>(null)
+    val postResult: StateFlow<AuthResult<Unit>?> = _postResult
+
     fun createAdoptPost(
         petName: String,
         petBreed: String,
@@ -60,63 +108,70 @@ class AdoptViewModel(
         petGender: String,
         petLocation: String,
         description: String,
-        imageUri: Uri? // Ảnh M chọn
+        adoptionRequirements: String,
+        imageFile: File? // <--- Nhận File nha (Không phải Uri)
     ) {
-        // 1. LẤY INFO USER
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
-            _postResult.value = AuthResult.Error("M đéo login KKK :@")
+            _postResult.value = AuthResult.Error("Người dùng chưa đăng nhập.")
             return
         }
         val userId = currentUser.uid
-        val userName = currentUser.displayName ?: "User đéo tên"
+        val userName = currentUser.displayName ?: "User ẩn danh"
         val userAvatarUrl = currentUser.photoUrl?.toString()
 
-        // 2. BÁO LÀ "ĐANG ĐĂNG..."
         _postResult.value = AuthResult.Loading
 
         viewModelScope.launch {
             try {
+                // 1. UPLOAD ẢNH LÊN CLOUDINARY (Nếu có file)
                 var imageUrl: String? = null
 
-                // 3. NẾU M CÓ CHỌN ẢNH -> T VỚI M UP ẢNH LÊN STORAGE
-                if (imageUri != null) {
-                    val storageRef = FirebaseStorage.getInstance()
-                        .getReference("adopt_images/${UUID.randomUUID()}") // Tên file ngẫu nhiên
-                    imageUrl = storageRef.putFile(imageUri).await()
-                        .storage.downloadUrl.await().toString()
-                    Log.d("AdoptVM", "Up ảnh xịn: $imageUrl")
+                if (imageFile != null) {
+                    Log.d("AdoptVM", "📸 Đang upload ảnh Pet...")
+                    when (val uploadResult = repository.uploadImage(imageFile)) {
+                        is AuthResult.Success -> {
+                            imageUrl = uploadResult.data
+                            Log.d("AdoptVM", "✅ Upload xong: $imageUrl")
+                        }
+                        is AuthResult.Error -> {
+                            _postResult.value = AuthResult.Error("Lỗi ảnh: ${uploadResult.message}")
+                            return@launch
+                        }
+                        else -> {}
+                    }
                 }
 
-                // 4. TẠO CÁI "KHUÔN" (OBJECT)
+                // 2. TẠO ID MỚI (Logic cũ của mày)
+                val newPostId = repository.getNewAdoptPostId()
+
+                // 3. TẠO OBJECT ADOPT
                 val newAdoptPost = Adopt(
-                    id = "", // Firebase tự điền
+                    id = newPostId,
                     userId = userId,
                     userName = userName,
                     userAvatarUrl = userAvatarUrl,
                     petName = petName,
                     petBreed = petBreed,
-                    petAge = petAge.toIntOrNull() ?: 0, // Chuyển "12" -> 12
-                    petWeight = petWeight.toDoubleOrNull() ?: 0.0, // Chuyển "5.5" -> 5.5
+                    petAge = petAge.toIntOrNull() ?: 0,
+                    petWeight = petWeight.toDoubleOrNull() ?: 0.0,
                     petGender = petGender,
                     petLocation = petLocation,
                     description = description,
-                    imageUrl = imageUrl, // Link ảnh M vừa up
-                    timestamp = null // Firebase tự điền
+                    imageUrl = imageUrl, // <--- Link Cloudinary nằm ở đây
+                    adoptionRequirements = adoptionRequirements
                 )
 
-                // 5. QUĂNG CHO REPO KKK
-                val result = repository.createAdoptPost(newAdoptPost)
-                _postResult.value = result // Báo kết quả (Thành công / Thất bại)
+                // 4. LƯU VÀO FIRESTORE
+                val result = repository.createAdoptPostWithId(newPostId, newAdoptPost)
+                _postResult.value = result
 
             } catch (e: Exception) {
-                Log.e("AdoptVM", "Lỗi vcl M ơi", e)
-                _postResult.value = AuthResult.Error(e.message ?: "Lỗi đéo biết KKK :v")
+                _postResult.value = AuthResult.Error(e.message ?: "Lỗi không xác định")
             }
         }
     }
 
-    // === T THÊM CÁI NÀY VÔ LÀ HẾT LỖI ĐỎ KKK ===
     fun resetPostResult() {
         _postResult.value = null
     }

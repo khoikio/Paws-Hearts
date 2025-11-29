@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawshearts.data.model.UserData
-import com.example.pawshearts.auth.AuthRepository
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,103 +12,143 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.FirebaseAuth
-
-
+import androidx.navigation.NavHostController
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.pawshearts.navmodel.Routes
+import kotlinx.coroutines.delay
+import java.io.File
 
 class AuthViewModel(
-    private val repository: AuthRepository // Chỉ phụ thuộc vào Interface, không phải Implementation
+    private val repository: AuthRepository
 ) : ViewModel() {
 
-    // --- TRẠNG THÁI (STATE) CUNG CẤP CHO UI ---
-
-    // Cung cấp người dùng hiện tại từ Firebase Auth (nếu có)
     val currentUser: FirebaseUser?
         get() = repository.currentUser
+
+    // Ai đang đăng nhập
+    val currentUserState: StateFlow<FirebaseUser?> = repository.currentUserStateFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = repository.currentUser
+        )
+
+    // Trạng thái login/register
     private val _authState = MutableStateFlow<AuthResult<FirebaseUser>?>(null)
     val authState: StateFlow<AuthResult<FirebaseUser>?> = _authState.asStateFlow()
 
-
-    // Cung cấp trạng thái đăng nhập (true/false)
+    // Đã login hay chưa
     val isUserLoggedIn: StateFlow<Boolean> = repository.isUserLoggedInFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = repository.currentUser != null
         )
+
+    // Gợi ý email/pass sau khi register xong
     private val _prefilledCredentials = MutableStateFlow<Pair<String, String>?>(null)
     val prefilledCredentials: StateFlow<Pair<String, String>?> = _prefilledCredentials.asStateFlow()
 
-
-    // --- CÁC HÀNH ĐỘNG (ACTIONS) TỪ UI ---
-
+    // Logout đơn giản (nếu cần dùng ở đâu đó khác)
     fun logout() {
         viewModelScope.launch {
             repository.logout()
         }
     }
 
-    fun updateAvatar(uri: Uri) {
+
+    // Logout + điều hướng về màn login
+    fun logoutAndNavigate(navController: NavHostController) {
+        navController.navigate(Routes.LOGIN_SCREEN) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                inclusive = true
+            }
+            launchSingleTop = true
+        }
         viewModelScope.launch {
-            val userId = currentUser?.uid
-            if (userId == null) {
-                Log.e("AuthViewModel", "Đéo up avatar đc vì M chưa login KKK")
-                return@launch
-            }
-
-            // Tạm thời T ko báo Loading (M muốn M tự thêm State)
-            // NÓ GỌI HÀM XỊN M VỪA CODE BÊN REPO NÈ KKK
-            val result = repository.uploadAvatar(userId, uri)
-
-            if (result is AuthResult.Error) {
-                Log.e("AuthViewModel", "Lỗi up avatar: ${result.message}")
-                // M nên hiện Toast lỗi ở đây
-            }
-
+            delay(100)
+            repository.logout()
         }
     }
+
+    fun updateAvatar(imageFile: File) {
+        viewModelScope.launch {
+            val userId = currentUser?.uid ?: return@launch
+
+            // BƯỚC 1: Bắn ảnh lên Cloudinary
+            // (Hàm uploadImage này mày phải viết trong AuthRepository nha)
+            val uploadResult = repository.uploadImage(imageFile)
+
+            when (uploadResult) {
+                is AuthResult.Success -> {
+                    val newLink = uploadResult.data
+                    Log.d("AuthViewModel", "✅ Cloudinary trả về link: $newLink")
+
+                    // BƯỚC 2: Lưu cái link đó vào Firestore
+                    // (Hàm này cập nhật trường 'profilePictureUrl' trong user)
+                    repository.updateUserAvatar(userId, newLink)
+
+                    // BƯỚC 3: Refresh lại data để UI cập nhật ảnh mới liền
+                    refreshUserProfile()
+                }
+                is AuthResult.Error -> {
+                    Log.e("AuthViewModel", "Lỗi up avatar: ${uploadResult.message}")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    // Profile user đang đăng nhập (Room cache)
     private val _userProfile = MutableStateFlow<UserData?>(null)
     val userProfile: StateFlow<UserData?> = _userProfile.asStateFlow()
 
-    // Trong AuthViewModel.kt
     init {
+        // Lần đầu load app, refresh profile user hiện tại
+        currentUser?.uid?.let {
+            viewModelScope.launch {
+                repository.refreshUserProfile()
+            }
+        }
+
+        // Nghe trạng thái login và sync userProfile từ Room
         viewModelScope.launch {
-            // Lắng nghe trạng thái đăng nhập
-            isUserLoggedIn.collect { loggedIn ->
-                if (loggedIn && currentUser != null) {
-                    // Khi đăng nhập, bắt đầu lắng nghe profile từ Room
-                    repository.getUserProfileFlow(currentUser!!.uid).collect { userData ->
-                        _userProfile.value = userData
+            repository.isUserLoggedInFlow.collect { isLoggedIn ->
+                if (isLoggedIn && currentUser != null) {
+                    repository.getUserProfileFlow(currentUser!!.uid).collect { userDataFromRoom ->
+                        _userProfile.value = userDataFromRoom
                     }
                 } else {
-                    // Khi đăng xuất, xóa profile
                     _userProfile.value = null
                 }
             }
         }
     }
 
-
-
-
-    // 4. THÊM HÀM CẬP NHẬT INFO CÁ NHÂN (M đã có trong Repo)
-    fun updatePersonalInfo(email: String, phone: String, address: String) {
+    // Dùng cho ProfileScreen (sau khi follow/unfollow xong)
+    fun refreshUserProfile() {
         viewModelScope.launch {
-            repository.updateUserPersonalInfo(phone, address)
+            repository.refreshUserProfile()
         }
     }
 
-    // 5. THÊM HÀM CẬP NHẬT PROFILE (TÊN, EMAIL)
+
+    fun refreshProfile() {
+        refreshUserProfile()
+    }
+
     fun updateProfile(newName: String, newEmail: String) {
         viewModelScope.launch {
             repository.updateProfile(newName, newEmail)
         }
     }
+
     fun updateUserPersonalInfo(phone: String, address: String) {
         viewModelScope.launch {
             repository.updateUserPersonalInfo(phone, address)
         }
     }
+
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
             _authState.value = AuthResult.Loading
@@ -118,13 +157,11 @@ class AuthViewModel(
         }
     }
 
-    // Tạm thời T thêm 2 hàm này cho M (Register/Login bằng Email)
     fun registerWithEmail(email: String, pass: String, fullName: String) {
         viewModelScope.launch {
             _authState.value = AuthResult.Loading
-            val result = repository.registerWithEmail(email,pass, fullName)
+            val result = repository.registerWithEmail(email, pass, fullName)
             if (result is AuthResult.Success) {
-                // Nếu đăng ký OK, M lưu pass/email lại để tự điền
                 _prefilledCredentials.value = Pair(email, pass)
             }
             _authState.value = result
@@ -139,14 +176,11 @@ class AuthViewModel(
         }
     }
 
-    // Hàm set lỗi (khi M nhập form sai)
     fun setAuthError(message: String) {
         _authState.value = AuthResult.Error(message)
     }
 
-    // Xóa tự động điền (sau khi đã điền)
     fun clearPrefilledCredentials() {
         _prefilledCredentials.value = null
     }
 }
-

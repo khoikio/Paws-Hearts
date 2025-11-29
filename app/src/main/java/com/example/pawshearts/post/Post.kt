@@ -9,10 +9,10 @@ data class Post(
     @PrimaryKey
     val id: String = "", // ID của bài post
     val userId: String = "", // ID của thằng đăng bài :D
-    val username: String? = null, // Tên thằng đăng
-    val userAvatarUrl: String? = null, // Avatar thằng đăng
+    val userName: String = "",
+    val userAvatarUrl: String? = null,
 
-    val createdAt: Timestamp = Timestamp.Companion.now(), // Thời gian đăng bài
+    val createdAt: Timestamp? = null,
 
 
     val petName: String = "",
@@ -22,7 +22,7 @@ data class Post(
     val location: String? = null,
     val weightKg: Double? = 0.0,
 
-    val imageUrl: String = "", // Ảnh pet
+    val imageUrl: String = "",
     val description: String = "",
     val likes: List<String> = emptyList(), // Danh sách ID thằng like
     val commentCount: Int = 0, // Số lượng bình luận

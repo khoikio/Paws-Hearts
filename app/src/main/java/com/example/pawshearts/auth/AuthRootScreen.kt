@@ -1,7 +1,7 @@
 package com.example.pawshearts.auth
 
 import android.app.Activity
-import android.app.Application // <-- T THÊM IMPORT NÀY
+import android.app.Application
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -14,78 +14,52 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.pawshearts.R
 import com.example.pawshearts.navmodel.Routes
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import androidx.navigation.NavController
-// XÓA CÁI IMPORT AuthRepositoryImpl ĐI
-// import com.example.pawshearts.auth.AuthRepositoryImpl // <-- XÓA CÁI NÀY
-
-// T THÊM 2 IMPORT NÀY
-import com.example.pawshearts.auth.AuthViewModel
-import com.example.pawshearts.auth.AuthViewModelFactory
-
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthRootScreen(navController: NavController) {
-    // T BỎ CÁI AuthViewModelProvider CỦA M RA
-    // AuthViewModelProvider { viewModel -> // <-- BỎ CÁI NÀY
-
-    val context = LocalContext.current
-
-    // --- LẤY VIEWMODEL THEO CÁCH ĐÚNG NÈ KKK ---
-    val application = context.applicationContext as Application
-    val authViewModelFactory = AuthViewModelFactory(application)
-    val viewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
-    // ----------------------------------------------
+    val context = LocalContext.current.applicationContext as Application
+    val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
-    val isLoggedIn by viewModel.isUserLoggedIn.collectAsStateWithLifecycle()
+    var isLoginMode by remember { mutableStateOf(true) }
 
-    // --- GLOBAL STATES ---
-    var isLoginMode by remember { mutableStateOf(true) } // <-- State Chuyển đổi Tab
-
-    // Register fields (Cần giữ lại để sau khi đăng ký thành công, form cũ không bị mất data)
-    var registerFullName by remember { mutableStateOf("") }
-    // ... (Bạn có thể giữ lại các state đăng ký khác ở đây nếu cần)
-
-    // Login fields (Cần giữ lại cho prefill)
     var emailOrPhone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) } // <-- Chỉ cần giữ lại cái này
 
     val isLoading = authState is AuthResult.Loading
     val prefilled by viewModel.prefilledCredentials.collectAsStateWithLifecycle()
 
-    // Navigate when logged in
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
+    // XÓA HOẶC COMMENT OUT CÁI NÀY ĐI
+
+    LaunchedEffect(authState) {
+        if (authState is AuthResult.Success) {
             navController.navigate(Routes.HOME) {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
         }
     }
 
-    // Auto-Fill logic (Sau khi Register thành công)
-    LaunchedEffect(prefilled) {
-        prefilled?.let { (prefillEmail, prefillPassword) ->
-            emailOrPhone = prefillEmail
-            password = prefillPassword
-            isLoginMode = true // <-- Chuyển về Tab Login
-            viewModel.clearPrefilledCredentials()
-        }
-    }
 
-    // --- GOOGLE SIGN-IN SETUP ---
+//    LaunchedEffect(prefilled) {
+//        prefilled?.let { (prefillEmail, prefillPassword) ->
+//            emailOrPhone = prefillEmail
+//            password = prefillPassword
+//            isLoginMode = true
+//            viewModel.clearPrefilledCredentials()
+//        }
+//    }
+
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -116,21 +90,66 @@ fun AuthRootScreen(navController: NavController) {
         }
     )
 
-    // --- BOX CHỨA FORM VÀ BOTTOM BAR ---
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { isLoginMode = true },
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isLoginMode) MaterialTheme.colorScheme.primary else Color(0xFFE0E0E0)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            "Đăng nhập",
+                            color = if (isLoginMode) Color.White else Color.DarkGray,
+                            fontWeight = if (isLoginMode) FontWeight.Bold else FontWeight.Normal,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    Button(
+                        onClick = { isLoginMode = false },
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (!isLoginMode) MaterialTheme.colorScheme.primary else Color(0xFFE0E0E0)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            "Đăng ký",
+                            color = if (!isLoginMode) Color.White else Color.DarkGray,
+                            fontWeight = if (!isLoginMode) FontWeight.Bold else FontWeight.Normal,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 32.dp)
-                .padding(top = 24.dp, bottom = 120.dp),
+                .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            // Header
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 if (isLoginMode) "Paws & Hearts" else "Tạo tài khoản",
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.displayLarge,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = if (isLoginMode) Color(0xFFE65100) else Color.Black
             )
@@ -145,7 +164,6 @@ fun AuthRootScreen(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error message
             if (authState is AuthResult.Error) {
                 Card(
                     modifier = Modifier
@@ -161,71 +179,23 @@ fun AuthRootScreen(navController: NavController) {
                 }
             }
 
-            // --- CHỖ GỌI 2 MÀN HÌNH TÁCH RA ---
             if (isLoginMode) {
                 LoginTabScreen(
                     viewModel = viewModel,
                     isLoading = isLoading,
                     googleSignInLauncher = googleSignInLauncher,
                     googleSignInClient = googleSignInClient,
-                    prefillEmail = emailOrPhone, // Truyền State Prefill/Input
+                    prefillEmail = emailOrPhone,
                     prefillPassword = password,
-                    onEmailOrPhoneChange = { emailOrPhone = it }, // Cập nhật State
-                    onPasswordChange = { password = it } // Cập nhật State
+                    onEmailOrPhoneChange = { emailOrPhone = it },
+                    onPasswordChange = { password = it }
                 )
             } else {
                 RegisterTabScreen(
                     viewModel = viewModel,
                     isLoading = isLoading,
-                    onSwitchToLogin = { isLoginMode = true } // Callback để về Login
+                    onSwitchToLogin = { isLoginMode = true }
                 )
-            }
-        }
-
-        // --- BOTTOM FIXED TAB (LOGIC SWITCH) ---
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = { isLoginMode = true },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isLoginMode) MaterialTheme.colorScheme.primary else Color(0xFFE0E0E0)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "Đăng nhập",
-                        color = if (isLoginMode) Color.White else Color.DarkGray,
-                        fontWeight = if (isLoginMode) FontWeight.Bold else FontWeight.Normal,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                Button(
-                    onClick = { isLoginMode = false },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!isLoginMode) MaterialTheme.colorScheme.primary else Color(0xFFE0E0E0)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        "Đăng ký",
-                        color = if (!isLoginMode) Color.White else Color.DarkGray,
-                        fontWeight = if (!isLoginMode) FontWeight.Bold else FontWeight.Normal,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
             }
         }
     }

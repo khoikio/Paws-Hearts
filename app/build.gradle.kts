@@ -6,9 +6,7 @@ plugins {
     alias(libs.plugins.protobuf)      // DataStore Proto (chỉ nếu dùng catalog)
     id("com.google.gms.google-services") // Firebase
 
-    // XÓA các plugin trùng hoặc không cần, KHÔNG cần thêm lại android.application/kotlin.android bên dưới nữa!
-    // id("com.android.application")    // Bỏ vì đã có ở alias(libs.plugins.android.application)
-    // id("org.jetbrains.kotlin.android") // Bỏ vì đã có ở alias(libs.plugins.kotlin.android)
+
 }
 
 android {
@@ -25,12 +23,17 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            // Tắt R8 khi debug để build cho nhanh và tránh lỗi vặt
+            // Khi nào mày muốn test bản release, hãy bật cái này lên true
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -62,12 +65,15 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.core)
     implementation(libs.protobuf.javalite)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.ai)
+    implementation(libs.androidx.compose.ui.unit)
     ksp(libs.androidx.room.compiler) // Room
 
     implementation(platform(libs.firebase.bom))
@@ -79,6 +85,8 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -87,5 +95,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
+    // luu anh bang cloudary
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 }
